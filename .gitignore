@@ -1,0 +1,14 @@
+# Coverage directory used by istanbul
+coverage
+
+# Dependency directory
+node_modules
+
+# Ignore built files
+dist
+output
+
+# IDE
+.vs
+.idea/
+*.iml

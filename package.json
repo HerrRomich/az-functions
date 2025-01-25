@@ -9,7 +9,8 @@
     "build": "webpack --mode=production",
     "watch": "webpack --mode=development --watch",
     "test": "jest --env=node --colors --coverage",
-    "lint": "eslint -c eslint.config.mjs ./src"
+    "lint": "eslint -c eslint.config.mjs ./src",
+    "publish": "npm publish --access public"
   },
   "engines": {
     "node": ">=20"
@@ -82,7 +83,6 @@
     "webpack-node-externals": "^3.0.0",
     "webpack-bundle-analyzer": "^4.10.2"
   },
-  "packageManager": "yarn",
   "repository": {
     "type": "git",
     "url": "git@github.com:HerrRomich/az-functions.git"

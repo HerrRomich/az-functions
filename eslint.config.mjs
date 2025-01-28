@@ -33,7 +33,7 @@ export function provideConfig(rootName) {
     ...eslintTypescript.configs.stylistic,
     {
       languageOptions: {
-        ecmaVersion: 2022,
+        ecmaVersion: 'latest',
       },
     },
   ];
@@ -52,7 +52,7 @@ export function provideConfig(rootName) {
     nodePlugin.configs['flat/recommended'],
     {
       languageOptions: {
-        ecmaVersion: 2022,
+        ecmaVersion: 'latest',
         sourceType: 'module',
         globals: {
           es6: true,

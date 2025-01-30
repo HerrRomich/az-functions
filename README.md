@@ -56,7 +56,7 @@ export const platformContainer = new Container({
 
 ```
 
-## Step 4. Register components
+## Step 3. Register components
 There are a number of currently supported **Azure functions triggers** that could be defined over decorators.
 The components could be either directly registered in the *platformContainer*. In this case the module should be imported before start of platform.
 ```typescript
@@ -73,11 +73,11 @@ Or they could be registered in **InversifyJS** module and loaded before platform
 // src/message-handlers/index.ts
 import { ContainerModule } from 'inversify';
 import { AZURE_FUNCTION } from '@herrromich/az-functions';
-import { DeviceCommandHandler } from './device.handlers';
+import { DeviceCommandHandler } from './device-command.handlers';
 
 // Registering of handlers
 export const deviceHandlersModule = new ContainerModule((bind) => {
-  bind(AZURE_FUNCTION).to(DeviceHandlers);
+  bind(AZURE_FUNCTION).to(DeviceCommandHandler);
 });
 ```
 

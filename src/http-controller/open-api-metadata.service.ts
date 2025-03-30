@@ -1,7 +1,7 @@
 import { ResponseConfig, RouteConfig, ZodRequestBody } from '@asteasolutions/zod-to-openapi';
 import { injectable } from 'inversify';
 import { optionalStringSchema, stringSchema } from 'shared';
-import { ZodArray, ZodRawShape, ZodType, z } from 'zod';
+import { z, ZodArray, ZodRawShape, ZodType } from 'zod';
 import {
   ControllerMetadata,
   ControllerOperationMetadata,
@@ -17,7 +17,7 @@ type Responses = Record<string, ResponseConfig>;
 export class OpenApiMetadataService {
   getTags(
     controllerMetadata: ControllerMetadata,
-    operationMetadata: ControllerOperationMetadata
+    operationMetadata: ControllerOperationMetadata,
   ): string[] | undefined {
     const tags = [...new Set([...(controllerMetadata.tags ?? []), ...(operationMetadata.tags ?? [])])];
     return tags.length ? tags : undefined;
@@ -28,7 +28,7 @@ export class OpenApiMetadataService {
     const headersShape: ZodRawShape = {};
     const queriesShape: ZodRawShape = {};
     let requestBody: ZodRequestBody | undefined = undefined;
-    operationMetadata.args.forEach((arg) => {
+    operationMetadata.args.forEach(arg => {
       switch (arg.type) {
         case 'path':
           paramsShape[arg.name] = arg.schema ?? stringSchema;
@@ -50,6 +50,11 @@ export class OpenApiMetadataService {
             },
           };
           break;
+        case 'undefined':
+        case 'request':
+        case 'user':
+        case 'context':
+          break;
       }
     });
 
@@ -70,10 +75,10 @@ export class OpenApiMetadataService {
       const customStatus = directResponse.status ?? 200;
       responses[customStatus] = {
         description: directResponse.description,
-        content: directResponse.schema
+        content: directResponse.contentSchema
           ? {
               ['application/json']: {
-                schema: directResponse.schema,
+                schema: directResponse.contentSchema,
               },
             }
           : undefined,
@@ -82,9 +87,7 @@ export class OpenApiMetadataService {
     return Object.getOwnPropertyNames(responses).length
       ? responses
       : {
-          responses: {
-            204: {},
-          },
+          '204': { description: 'Default no content' },
         };
   }
 

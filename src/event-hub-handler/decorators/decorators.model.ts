@@ -1,20 +1,19 @@
-import { EventHubTriggerOptions } from '@azure/functions';
+import { EventHubFunctionOptions, EventHubTriggerOptions } from '@azure/functions';
 import { CommonArgMetadata } from 'shared';
 import { ZodType } from 'zod';
 
-export interface EventHubConfig {
+export type EventHubHandlerCardinality = EventHubTriggerOptions['cardinality'];
+
+export type EventHubHandlerConfig = {
   connection: string;
   eventHubName: string;
-}
-
-export interface EventHubHandlersMetadata extends EventHubConfig {
-  type: 'event-hub-handlers';
-}
-
-export interface EventHubHandlerConfig {
-  triggerId?: string;
+  triggerId: string;
   consumerGroup?: string;
-  cardinality?: EventHubTriggerOptions['cardinality'];
+  cardinality?: EventHubHandlerCardinality;
+} & Pick<EventHubFunctionOptions, 'extraInputs' | 'extraOutputs'>;
+
+export interface EventHubHandlerMetadata extends EventHubHandlerConfig {
+  type: 'event-hub-handler';
 }
 
 export interface EventHubHandlerMessageArgConfig {
@@ -37,8 +36,8 @@ export interface EventHubHandlerDataArgMetadata extends EventHubHandlerMessageAr
 
 export type EventHubHandlerArgMetadata = CommonArgMetadata | EventHubHandlerDataArgMetadata;
 
-export interface EventHubHandlerArgsMetadata {
+export interface EventHubHandleMethodArgsMetadata {
   args: EventHubHandlerArgMetadata[];
 }
 
-export type EventHubHandlerMetadata = EventHubHandlerConfig & EventHubHandlerArgsMetadata;
+export type EventHubHandleMethodMetadata = EventHubHandlerConfig & EventHubHandleMethodArgsMetadata;

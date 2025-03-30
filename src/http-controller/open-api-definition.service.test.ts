@@ -35,7 +35,7 @@ describe('OpenApiDefinitionService', () => {
           name: 'test-application2',
           context: 'test-contest-2',
           openApiConfig: {
-            openapi: '3.0.0',
+            openapi: '3.0.1',
             info: {
               version: '1.0.0',
               title: 'unknown',
@@ -62,9 +62,7 @@ describe('OpenApiDefinitionService', () => {
 
       expect(applications).toEqual(['test-application1', 'test-application2']);
     });
-  });
 
-  describe('getApplications', () => {
     it('should return existing application', () => {
       const application = subject.getApplication('test-application1');
 
@@ -77,7 +75,7 @@ describe('OpenApiDefinitionService', () => {
     it('should throw if application is unknown', () => {
       expect(() => subject.getApplication('unknown-application')).toThrowWithMessage(
         Error,
-        'Unknown OpenAPI definition: unknown-application.'
+        'Unknown OpenAPI definition: unknown-application.',
       );
     });
   });
@@ -98,14 +96,14 @@ describe('OpenApiDefinitionService', () => {
     it('should throw if Open API definition is unknown', () => {
       expect(() => subject.getRegistry('unknown-definition')).toThrowWithMessage(
         HttpControllerDefinitionError,
-        'Unknown OpenAPI definition: unknown-definition.'
+        'Unknown OpenAPI definition: unknown-definition.',
       );
     });
 
     it('should throw if Open API definition name was not set', () => {
       expect(() => subject.getRegistry('')).toThrowWithMessage(
         HttpControllerDefinitionError,
-        'OpenAPI definition is not set.'
+        'OpenAPI definition is not set.',
       );
     });
   });
@@ -114,7 +112,7 @@ describe('OpenApiDefinitionService', () => {
     it('should generate bare OPEN API Definition document', () => {
       const apiDocument = subject.generateDocument('test-application2', 'test-api-url');
       expect(apiDocument).toMatchObject({
-        openapi: '3.0.0',
+        openapi: '3.0.1',
         servers: [
           {
             url: 'test-api-url/test-contest-2',
@@ -149,14 +147,14 @@ describe('OpenApiDefinitionService', () => {
     it('should throw if Open API definition is unknown', () => {
       expect(() => subject.generateDocument('unknown-definition')).toThrowWithMessage(
         HttpControllerDefinitionError,
-        'Unknown OpenAPI definition: unknown-definition.'
+        'Unknown OpenAPI definition: unknown-definition.',
       );
     });
 
     it('should throw if Open API definition name was not set', () => {
       expect(() => subject.generateDocument('')).toThrowWithMessage(
         HttpControllerDefinitionError,
-        'OpenAPI definition is not set.'
+        'OpenAPI definition is not set.',
       );
     });
   });

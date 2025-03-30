@@ -1,32 +1,29 @@
-import { Container, interfaces } from 'inversify';
-import { MockProxy, mock } from 'jest-mock-extended';
-import { EventHubHandlersRegistrationService } from '../event-hub-handler/event-hub-handlers-registration.service';
+import { ResolutionContext } from 'inversify';
+import { mock, MockProxy } from 'jest-mock-extended';
+import { EventHubHandlerRegistrationService } from '../event-hub-handler/event-hub-handler-registration.service';
 import { HttpControllerRegistrationService } from '../http-controller';
 import { RegisterFunctionFactory, registerFunctionsFactory } from './register-functions.factory';
 
 describe('registerFunctionsFactory', () => {
   let factory: RegisterFunctionFactory;
-  let mockContext: MockProxy<interfaces.Context>;
-  let mockContainer: MockProxy<Container>;
+  let mockContext: MockProxy<ResolutionContext>;
   let mockHttpRegistrationService: MockProxy<HttpControllerRegistrationService>;
-  let mockEventHubRegistrationService: MockProxy<EventHubHandlersRegistrationService>;
+  let mockEventHubRegistrationService: MockProxy<EventHubHandlerRegistrationService>;
 
   beforeEach(() => {
-    mockContainer = mock();
     mockContext = mock();
-    mockContext.container = mockContainer;
     factory = registerFunctionsFactory(mockContext);
     mockHttpRegistrationService = mock();
-    mockContainer.get.calledWith(HttpControllerRegistrationService).mockReturnValue(mockHttpRegistrationService);
+    mockContext.get.calledWith(HttpControllerRegistrationService).mockReturnValue(mockHttpRegistrationService);
     mockEventHubRegistrationService = mock();
-    mockContainer.get.calledWith(EventHubHandlersRegistrationService).mockReturnValue(mockEventHubRegistrationService);
+    mockContext.get.calledWith(EventHubHandlerRegistrationService).mockReturnValue(mockEventHubRegistrationService);
   });
 
   it('should return HttpControllerRegistrationService', () => {
     expect(factory('http-controller')).toEqual(mockHttpRegistrationService);
   });
 
-  it('should return HttpControllerRegistrationService', () => {
-    expect(factory('event-hub-handlers')).toEqual(mockEventHubRegistrationService);
+  it('should return EventHubRegistrationService', () => {
+    expect(factory('event-hub-handler')).toEqual(mockEventHubRegistrationService);
   });
 });

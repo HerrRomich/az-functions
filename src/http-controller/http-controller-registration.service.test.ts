@@ -20,8 +20,6 @@ class TestController {
 }
 
 describe('HttpControllerPlatformService', () => {
-  let testController: TestController;
-
   const testRestApplication: RestApplication = {
     name: 'test-application',
     context: 'rest-context',
@@ -46,6 +44,8 @@ describe('HttpControllerPlatformService', () => {
     application: 'test-application',
   };
 
+  const testController = new TestController();
+
   let getOperationRegistrationData: unknown;
   let mockGetRequest: MockProxy<RequestHandler>;
 
@@ -58,7 +58,6 @@ describe('HttpControllerPlatformService', () => {
   let subject: HttpControllerRegistrationService;
 
   beforeEach(() => {
-    testController = new TestController();
     mockHttpControllerMetadataService = mock();
     mockHttpControllerMetadataService.getOperationMetadata
       .calledWith(testController, 'testGetRequest')
@@ -111,7 +110,7 @@ describe('HttpControllerPlatformService', () => {
         'start',
         mockHttpControllerMetadataService,
         mockOpenApiDefinitionService,
-        mockRequestHandlerProvider
+        mockRequestHandlerProvider,
       );
     });
 
@@ -121,12 +120,12 @@ describe('HttpControllerPlatformService', () => {
       expect(mockRequestHandlerProvider.getHttpRequestHandler).toHaveBeenNthCalledWith(
         1,
         expect.objectContaining(getOperationRegistrationData),
-        expect.anything()
+        expect.anything(),
       );
       expect(mockRequestHandlerProvider.getHttpRequestHandler).toHaveBeenNthCalledWith(
         2,
         expect.objectContaining(postOperationRegistrationData),
-        expect.anything()
+        expect.anything(),
       );
       const getMethod = mockRequestHandlerProvider.getHttpRequestHandler.mock.calls[0]?.[1];
       expect(await getMethod?.()).toEqual('get-response');
@@ -140,7 +139,7 @@ describe('HttpControllerPlatformService', () => {
           route: 'rest-context/test-path/test-get-request-path',
           methods: ['GET'],
           handler: mockGetRequest,
-        })
+        }),
       );
       expect(app.http).toHaveBeenNthCalledWith(
         2,
@@ -149,16 +148,16 @@ describe('HttpControllerPlatformService', () => {
           route: 'rest-context/test-path/test-post-request-path',
           methods: ['POST'],
           handler: mockPostRequest,
-        })
+        }),
       );
 
       expect(mockOpenApiDefinitionService.registerOperation).toHaveBeenNthCalledWith(
         1,
-        expect.objectContaining(getOperationRegistrationData)
+        expect.objectContaining(getOperationRegistrationData),
       );
       expect(mockOpenApiDefinitionService.registerOperation).toHaveBeenNthCalledWith(
         2,
-        expect.objectContaining(postOperationRegistrationData)
+        expect.objectContaining(postOperationRegistrationData),
       );
     });
   });
@@ -169,7 +168,7 @@ describe('HttpControllerPlatformService', () => {
         'print-open-api',
         mockHttpControllerMetadataService,
         mockOpenApiDefinitionService,
-        mockRequestHandlerProvider
+        mockRequestHandlerProvider,
       );
     });
 
@@ -182,11 +181,11 @@ describe('HttpControllerPlatformService', () => {
 
       expect(mockOpenApiDefinitionService.registerOperation).toHaveBeenNthCalledWith(
         1,
-        expect.objectContaining(getOperationRegistrationData)
+        expect.objectContaining(getOperationRegistrationData),
       );
       expect(mockOpenApiDefinitionService.registerOperation).toHaveBeenNthCalledWith(
         2,
-        expect.objectContaining(postOperationRegistrationData)
+        expect.objectContaining(postOperationRegistrationData),
       );
     });
   });

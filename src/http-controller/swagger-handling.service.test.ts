@@ -41,9 +41,9 @@ describe('SwaggerHandlingService', () => {
         status: 200,
         jsonBody: mockOpenApiObject,
       });
-      expect(mockOpenApiDefinitionService.generateDocument).toBeCalledWith(
+      expect(mockOpenApiDefinitionService.generateDocument).toHaveBeenCalledWith(
         'test-definition',
-        'http://test.server.com/context'
+        'http://test.server.com/context',
       );
     });
 
@@ -76,9 +76,9 @@ describe('SwaggerHandlingService', () => {
         status: 404,
         body: 'Definition name=test-definition is not found.',
       });
-      expect(mockOpenApiDefinitionService.generateDocument).toBeCalledWith(
+      expect(mockOpenApiDefinitionService.generateDocument).toHaveBeenCalledWith(
         'test-definition',
-        'http://test.server.com/context'
+        'http://test.server.com/context',
       );
     });
 
@@ -95,27 +95,10 @@ describe('SwaggerHandlingService', () => {
         status: 500,
         body: 'Cannot process definition name=test-definition.',
       });
-      expect(mockOpenApiDefinitionService.generateDocument).toBeCalledWith(
+      expect(mockOpenApiDefinitionService.generateDocument).toHaveBeenCalledWith(
         'test-definition',
-        'http://test.server.com/context'
+        'http://test.server.com/context',
       );
-    });
-  });
-
-  describe('handleSwaggerUi', () => {
-    it('should redirect to index.html', () => {
-      mockRequest = mock<HttpRequest>({
-        url: 'http://test.server.com/context/spec',
-      });
-
-      const response = subject.handleSwaggerUi(mockRequest);
-
-      expect(response).toMatchObject({
-        status: 301,
-        headers: {
-          Location: 'http://test.server.com/context/spec/index.html',
-        },
-      });
     });
   });
 
@@ -151,7 +134,7 @@ describe('SwaggerHandlingService', () => {
 
       expect(response).toMatchObject({
         body: expect.stringContaining(
-          'urls: [{"name":"Application 1","url":"./definition/application1"},{"name":"Application 2","url":"./definition/application2"}],'
+          'urls: [{"name":"Application 1","url":"./definition/application1"},{"name":"Application 2","url":"./definition/application2"}],',
         ),
         headers: {
           ContentType: 'application/javascript',
@@ -189,9 +172,7 @@ describe('SwaggerHandlingService', () => {
 
     it('should return not found for unknown file', async () => {
       mockRequest.params['fileName'] = 'unknown-content.unk';
-      mockFsReadFile.mockImplementation(() => {
-        throw new Error('Error');
-      });
+      mockFsReadFile.mockRejectedValue(new Error('Error'));
       const response = await subject.handleSwaggerContent(mockRequest);
 
       expect(response).toMatchObject({

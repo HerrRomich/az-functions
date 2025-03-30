@@ -24,17 +24,15 @@ export class AzurePlatform {
     @inject(REGISTER_FUNCTIONS_FACTORY) private readonly registerFunctionsFactory: RegisterFunctionFactory,
     private readonly swaggerHandlingService: SwaggerHandlingService,
     private readonly metadataService: PlatformComponentMetadataService,
-    private readonly openApiDefinitionService: OpenApiDefinitionService
+    private readonly openApiDefinitionService: OpenApiDefinitionService,
   ) {}
 
   async start() {
     if (this.openApiDefinitionService.getApplications().length > 0 && this.platformMode === 'start') {
       this.registerSwaggerUi();
     }
-    const azureFunctions = this.platformContainer.isBound(AZURE_FUNCTION)
-      ? await this.platformContainer.getAllAsync<AzureFunctions>(AZURE_FUNCTION)
-      : [];
-    azureFunctions.forEach((azureFunction) => this.registerFunctions(azureFunction));
+    const azureFunctions = await this.platformContainer.getAllAsync<AzureFunctions>(AZURE_FUNCTION);
+    azureFunctions.forEach(azureFunction => this.registerFunctions(azureFunction));
     if (this.platformMode === 'print-open-api') {
       await this.printOpenApi();
     }
@@ -42,21 +40,17 @@ export class AzurePlatform {
 
   private registerSwaggerUi() {
     app.get('swaggerUi', {
-      route: 'spec',
-      handler: (request) => this.swaggerHandlingService.handleSwaggerUi(request),
-    });
-    app.get('swaggerUiFile', {
-      route: 'spec/{fileName}',
-      handler: async (request) => await this.swaggerHandlingService.handleSwaggerContent(request),
+      route: 'spec/{fileName?}',
+      handler: async request => await this.swaggerHandlingService.handleSwaggerContent(request),
     });
     app.get('openApiDefinition', {
       route: 'spec/definition/{definitionName}',
-      handler: (request) => this.swaggerHandlingService.handleOpenApiDefinition(request),
+      handler: request => this.swaggerHandlingService.handleOpenApiDefinition(request),
     });
   }
 
   private registerFunctions(azureFunctions: AzureFunctions) {
-    const metadata = this.metadataService.getMetadata(azureFunctions);
+    const metadata = this.metadataService.getMetadata(azureFunctions.constructor);
     const triggerType = metadata?.type;
     if (!triggerType) {
       throw new AzureFunctionRegistrationError(`Unmanageable azure trigger: ${azureFunctions.constructor.name}`);
@@ -66,17 +60,13 @@ export class AzurePlatform {
 
   private async printOpenApi() {
     const printPath = process.env.OPEN_API_PRINT_PATH ?? path.resolve(process.cwd(), 'dist/open-api-definitions');
-    try {
-      await fs.stat(printPath);
-    } catch (e: unknown) {
-      await fs.mkdir(printPath);
-    }
+    await fs.stat(printPath).catch(() => fs.mkdir(printPath));
     for (const application of this.openApiDefinitionService.getApplications()) {
       try {
         const definition = this.openApiDefinitionService.generateDocument(application);
-        let filePath = path.resolve(printPath, `${application}-api.json`);
+        let filePath = path.resolve(printPath, `${application}.json`);
         await fs.writeFile(filePath, JSON.stringify(definition, null, 2));
-        filePath = path.resolve(printPath, `${application}-api.yaml`);
+        filePath = path.resolve(printPath, `${application}.yaml`);
         await fs.writeFile(filePath, YAML.stringify(definition));
       } catch (e: unknown) {
         if (e instanceof Error) {

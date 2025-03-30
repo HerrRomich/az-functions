@@ -23,7 +23,7 @@ export class HttpControllerRegistrationService implements FunctionsRegistrationS
     @inject(PLATFORM_MODE) private readonly platformMode: PlatformMode,
     private readonly controllerMetadataService: HttpControllerMetadataService,
     private readonly openApiDefinitionService: OpenApiDefinitionService,
-    private readonly httpRequestHandlerProvider: HttpRequestHandlerProvider
+    private readonly httpRequestHandlerProvider: HttpRequestHandlerProvider,
   ) {}
 
   register(functions: AzureFunctions, controllerMetadata: ControllerMetadata) {
@@ -60,17 +60,18 @@ export class HttpControllerRegistrationService implements FunctionsRegistrationS
       return await controllerPrototype[operation].call(controller, ...args);
     };
     const httpRequestHandler = this.httpRequestHandlerProvider.getHttpRequestHandler(registrationData, method);
-    app.http(operationMetadata.operationId ?? operation, {
+    const { operationId, method: httpMethod, authLevel, extraInputs, extraOutputs } = operationMetadata;
+    app.http(operationId ?? operation, {
       route,
-      methods: [httpMethodMap[operationMetadata.method]],
+      methods: [httpMethodMap[httpMethod]],
       handler: httpRequestHandler,
+      authLevel,
+      extraInputs,
+      extraOutputs,
     });
   }
 
   private getRoute(controllerMetadata: ControllerMetadata, operationMetadata: ControllerOperationMetadata) {
-    return (controllerMetadata.path + '/' + (operationMetadata.path ?? ''))
-      .replace(/^\/*/, '')
-      .replace(/\/*$/, '')
-      .replace(/\/{2,}/, '/');
+    return (controllerMetadata.path + '/' + (operationMetadata.path ?? '')).replace(/^\/*/, '').replace(/\/{2,}/, '/');
   }
 }

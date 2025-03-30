@@ -1,12 +1,13 @@
 import { app } from '@azure/functions';
-import { Container, interfaces } from 'inversify';
+import { BindInWhenOnFluentSyntax, BindToFluentSyntax, Container, ResolutionContext } from 'inversify';
 import { DeepMockProxy, mock, mockDeep, MockProxy } from 'jest-mock-extended';
 import * as process from 'process';
 import { PLATFORM_CONTAINER, PLATFORM_MODE, sharedModule } from 'shared';
+import { Logger } from 'winston';
 import { AzurePlatform } from './azure-platform';
-import { eventHubHandlersModule, httpControllerModule, platform, STARTUP_SERVICE, StartupService } from './index';
+import { eventHubHandlersModule, httpControllerModule, platform, STARTUP_SERVICE } from './index';
 import { PlatformComponentMetadataService } from './platform-component-metadata.service';
-import { REGISTER_FUNCTIONS_FACTORY } from './register-functions.factory';
+import { REGISTER_FUNCTIONS_FACTORY, registerFunctionsFactory } from './register-functions.factory';
 
 jest.mock('inversify', () => {
   const original = jest.requireActual('inversify');
@@ -16,22 +17,23 @@ jest.mock('inversify', () => {
   };
 });
 jest.mock('@azure/functions');
+jest.mock('./register-functions.factory');
 
 describe('test platform', () => {
-  let mockContainer: MockProxy<Container>;
-  let mockBindingTo: MockProxy<interfaces.BindingToSyntax<unknown>>;
-  let mockPlatformModeBinding: MockProxy<interfaces.BindingToSyntax<unknown>>;
-  let mockBindingIn: MockProxy<interfaces.BindingInWhenOnSyntax<unknown>>;
-  let mockBindingInWhenOn: MockProxy<interfaces.BindingInWhenOnSyntax<unknown>>;
+  let mockSystemContainer: MockProxy<Container>;
+  let mockBindingTo: MockProxy<BindToFluentSyntax<unknown>>;
+  let mockPlatformModeBinding: MockProxy<BindToFluentSyntax<unknown>>;
+  let mockBindingInWhenOn: MockProxy<BindInWhenOnFluentSyntax<unknown>>;
   let mockAzurePlatform: MockProxy<AzurePlatform>;
   let mockPlatformContainer: DeepMockProxy<Container>;
   let prevPlatformMode: string | undefined;
   let mockAppStart: jest.Mock;
-  let startupCounter = 0;
+  let mockStartup: jest.Mock;
+  let mockContext: MockProxy<ResolutionContext>;
 
   beforeEach(() => {
-    mockContainer = mock();
-    jest.mocked(Container).mockReturnValue(mockContainer);
+    mockSystemContainer = mock();
+    jest.mocked(Container).mockReturnValue(mockSystemContainer);
 
     mockAppStart = jest.fn();
     app.hook.appStart = mockAppStart;
@@ -39,7 +41,7 @@ describe('test platform', () => {
     mockBindingTo = mock();
     mockBindingInWhenOn = mock();
     mockPlatformModeBinding = mock();
-    mockContainer.bind.mockImplementation((serviceIdentifier) => {
+    mockSystemContainer.bind.mockImplementation(serviceIdentifier => {
       if (serviceIdentifier === PLATFORM_MODE) {
         return mockPlatformModeBinding;
       }
@@ -47,21 +49,19 @@ describe('test platform', () => {
     });
     mockPlatformContainer = mockDeep();
     mockPlatformContainer.bind.mockReturnValue(mockPlatformModeBinding);
-    mockPlatformContainer.isBound.calledWith(STARTUP_SERVICE).mockReturnValue(true);
+    mockStartup = jest.fn();
     mockPlatformContainer.get.calledWith(STARTUP_SERVICE).mockReturnValue({
-      startup: async () => {
-        startupCounter++;
-      },
-    } as StartupService);
+      startup: mockStartup,
+    });
 
-    mockBindingIn = mock();
-    mockPlatformModeBinding.to.mockReturnValue(mockBindingIn);
+    mockPlatformModeBinding.to.mockReturnValue(mockBindingInWhenOn);
     mockPlatformModeBinding.toSelf.mockReturnValue(mockBindingInWhenOn);
     mockPlatformModeBinding.toDynamicValue.mockReturnValue(mockBindingInWhenOn);
 
     mockAzurePlatform = mock();
+    mockContext = mock();
 
-    mockContainer.getAsync.mockImplementation(async (serviceIdentifier): Promise<AzurePlatform | undefined> => {
+    mockSystemContainer.getAsync.mockImplementation(async (serviceIdentifier): Promise<AzurePlatform | undefined> => {
       if (serviceIdentifier === AzurePlatform) {
         return mockAzurePlatform;
       }
@@ -77,27 +77,32 @@ describe('test platform', () => {
   it('should initialize system container and start azure platform with function list', async () => {
     await platform(mockPlatformContainer);
 
-    expect(mockContainer.bind).toHaveBeenCalledWith(AzurePlatform);
-    expect(mockContainer.bind).toHaveBeenCalledWith(PLATFORM_CONTAINER);
-    expect(mockContainer.bind).toHaveBeenCalledWith(PlatformComponentMetadataService);
-    expect(mockContainer.bind).toHaveBeenCalledWith(PLATFORM_MODE);
-    expect(mockContainer.bind).toHaveBeenCalledWith(REGISTER_FUNCTIONS_FACTORY);
-    expect(mockContainer.load).toHaveBeenCalledWith(sharedModule);
-    expect(mockContainer.load).toHaveBeenCalledWith(httpControllerModule);
-    expect(mockContainer.load).toHaveBeenCalledWith(eventHubHandlersModule);
+    expect(mockSystemContainer.bind).toHaveBeenCalledWith(AzurePlatform);
+    expect(mockPlatformContainer.bind).toHaveBeenCalledWith(Logger);
+    expect(mockSystemContainer.bind).toHaveBeenCalledWith(PLATFORM_CONTAINER);
+    expect(mockSystemContainer.bind).toHaveBeenCalledWith(PlatformComponentMetadataService);
+    expect(mockSystemContainer.bind).toHaveBeenCalledWith(PLATFORM_MODE);
+    expect(mockSystemContainer.bind).toHaveBeenCalledWith(REGISTER_FUNCTIONS_FACTORY);
+    expect(mockSystemContainer.load).toHaveBeenCalledWith(sharedModule, httpControllerModule, eventHubHandlersModule);
     expect(mockPlatformModeBinding.toConstantValue).toHaveBeenCalledWith('start');
     expect(mockAppStart).toHaveBeenCalled();
     const startupMethod = mockAppStart.mock.calls[0][0];
-    expect(startupCounter).toEqual(0);
+    expect(mockStartup).not.toHaveBeenCalled();
     await startupMethod();
-    expect(startupCounter).toEqual(1);
+    expect(mockStartup).toHaveBeenCalled();
+
+    const dynamicValueFunc = mockPlatformModeBinding.toDynamicValue.mock.calls[0]![0];
+    expect(dynamicValueFunc(mockContext)).toBeInstanceOf(Logger);
+    const factoryFunc = mockBindingTo.toFactory.mock.calls[0]![0] as any;
+    factoryFunc(mockContext);
+    expect(registerFunctionsFactory).toHaveBeenCalledWith(mockContext);
   });
 
   it('should print open api', async () => {
     process.env.PLATFORM_MODE = 'print-open-api';
     await platform(mockPlatformContainer);
 
-    expect(mockContainer.bind).toHaveBeenCalledWith(AzurePlatform);
+    expect(mockSystemContainer.bind).toHaveBeenCalledWith(AzurePlatform);
     expect(mockAzurePlatform.start).toHaveBeenCalled();
     expect(mockPlatformModeBinding.toConstantValue).toHaveBeenCalledWith('print-open-api');
     expect(app.hook.appStart).not.toHaveBeenCalled();

@@ -1,3 +1,4 @@
+import { HttpFunctionOptions } from '@azure/functions';
 import { OperationObject, SecurityRequirementObject } from 'openapi3-ts/oas30';
 import { CommonArgMetadata } from 'shared';
 import { ZodType } from 'zod';
@@ -24,10 +25,10 @@ export type ControllerOperationConfig = Pick<
     response?: {
       status?: number;
       description: string;
-      schema?: ZodType<unknown>;
+      contentSchema?: ZodType<unknown>;
     };
     permissions?: string[];
-  };
+  } & Pick<HttpFunctionOptions, 'authLevel' | 'extraInputs' | 'extraOutputs'>;
 
 export interface ControllerRequest {
   required?: boolean;

@@ -1,9 +1,17 @@
-import { Container, interfaces } from 'inversify';
-import { MockProxy, mock } from 'jest-mock-extended';
+import { Container, ResolutionContext } from 'inversify';
+import { mock, MockProxy } from 'jest-mock-extended';
 import { PLATFORM_CONTAINER } from 'shared';
 import { z } from 'zod';
 import { HttpControllerDefinitionError } from './http-controller-platform.model';
-import { API_SCHEMA, ApiSchema, OpenAPIObjectConfig, REST_APPLICATION, RestApplication } from './http-controller.model';
+import {
+  API_RESPONSE,
+  API_SCHEMA,
+  ApiResponse,
+  ApiSchema,
+  OpenAPIObjectConfig,
+  REST_APPLICATION,
+  RestApplication,
+} from './http-controller.model';
 import { buildRestOpenApiRegistry } from './rest-open-api.regstry';
 import { AuthenticationServiceFactory } from './security';
 
@@ -18,7 +26,7 @@ describe('buildRestOpenApiRegistry', () => {
       name: 'test-application2',
       context: 'test-contest-2',
       openApiConfig: {
-        openapi: '3.0.0',
+        openapi: '3.0.1',
         info: {
           version: '1.0.0',
           title: 'unknown',
@@ -35,19 +43,31 @@ describe('buildRestOpenApiRegistry', () => {
 
   const testSchemaEntries = [
     {
-      refId: 'schema1',
-      zodSchema: z.string(),
+      name: 'schema1',
+      schema: z.string(),
     } as ApiSchema,
     {
-      refId: 'schema2',
-      zodSchema: z.number(),
+      name: 'schema2',
+      schema: {
+        type: 'string',
+      },
     } as ApiSchema,
   ];
 
+  const testResponseEntries = [
+    {
+      name: 'response1',
+      response: { description: 'Response1' },
+    } as ApiResponse,
+    {
+      name: 'response2',
+      response: { description: 'Response2' },
+    } as ApiResponse,
+  ];
+
   let mockAuth: MockProxy<AuthenticationServiceFactory>;
-  let mockContainer: MockProxy<Container>;
   let mockPlatformContainer: MockProxy<Container>;
-  let mockContext: MockProxy<interfaces.Context>;
+  let mockContext: MockProxy<ResolutionContext>;
 
   beforeEach(() => {
     mockAuth = mock();
@@ -56,22 +76,21 @@ describe('buildRestOpenApiRegistry', () => {
     });
 
     mockPlatformContainer = mock();
-    mockPlatformContainer.isBound.calledWith(REST_APPLICATION).mockReturnValue(true);
     mockPlatformContainer.getAll.calledWith(REST_APPLICATION).mockReturnValue(testApplications);
 
-    mockPlatformContainer.isBoundTagged
-      .calledWith(API_SCHEMA, REST_APPLICATION, 'test-application1')
-      .mockReturnValue(true);
-    mockPlatformContainer.getAllTagged
-      .calledWith(API_SCHEMA, REST_APPLICATION, 'test-application1')
+    mockPlatformContainer.getAll.calledWith(API_SCHEMA, expect.anything()).mockReturnValue([]);
+    mockPlatformContainer.getAll
+      .calledWith(API_SCHEMA, expect.objectContaining({ tag: { key: REST_APPLICATION, value: 'test-application1' } }))
       .mockReturnValue(testSchemaEntries);
 
-    mockContainer = mock();
-    mockContainer.get.calledWith(PLATFORM_CONTAINER).mockReturnValue(mockPlatformContainer);
-    mockContainer.get.calledWith(AuthenticationServiceFactory).mockReturnValue(mockAuth);
+    mockPlatformContainer.getAll.calledWith(API_RESPONSE, expect.anything()).mockReturnValue([]);
+    mockPlatformContainer.getAll
+      .calledWith(API_RESPONSE, expect.objectContaining({ tag: { key: REST_APPLICATION, value: 'test-application2' } }))
+      .mockReturnValue(testResponseEntries);
 
     mockContext = mock();
-    mockContext.container = mockContainer;
+    mockContext.get.calledWith(PLATFORM_CONTAINER).mockReturnValue(mockPlatformContainer);
+    mockContext.get.calledWith(AuthenticationServiceFactory).mockReturnValue(mockAuth);
   });
 
   it('should return map of rest open api registrations', () => {
@@ -90,7 +109,7 @@ describe('buildRestOpenApiRegistry', () => {
           name: 'test-application2',
           context: 'test-contest-2',
           openApiConfig: {
-            openapi: '3.0.0',
+            openapi: '3.0.1',
             info: {
               version: '1.0.0',
               title: 'unknown',
@@ -111,13 +130,22 @@ describe('buildRestOpenApiRegistry', () => {
         type: 'schema',
         schema: expect.anything(),
       },
-      {
-        type: 'schema',
-        schema: expect.anything(),
-      },
+      { type: 'component', componentType: 'schemas', name: 'schema2', component: { type: 'string' } },
     ]);
     expect(entries['test-application2']?.registry.definitions).toContainAllValues([
       { component: { type: 'oauth2' }, componentType: 'securitySchemes', name: 'OAuth2', type: 'component' },
+      {
+        type: 'component',
+        componentType: 'responses',
+        name: 'response1',
+        component: { description: 'Response1' },
+      },
+      {
+        type: 'component',
+        componentType: 'responses',
+        name: 'response2',
+        component: { description: 'Response2' },
+      },
     ]);
   });
 
@@ -126,7 +154,7 @@ describe('buildRestOpenApiRegistry', () => {
 
     expect(() => buildRestOpenApiRegistry(mockContext)).toThrowWithMessage(
       HttpControllerDefinitionError,
-      'Unknown security scheme OAuth2. Check OpenAPI definition test-application2.'
+      'Unknown security scheme OAuth2. Check OpenAPI definition test-application2.',
     );
   });
 });

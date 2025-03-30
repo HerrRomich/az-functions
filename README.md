@@ -51,7 +51,6 @@ import { Container } from 'inversify';
 
 export const platformContainer = new Container({
   defaultScope: 'Singleton',
-  skipBaseClassChecks: true,
 });
 
 ```
@@ -76,8 +75,8 @@ import { AZURE_FUNCTION } from '@herrromich/az-functions';
 import { DeviceCommandHandler } from './device-command.handlers';
 
 // Registering of handlers
-export const deviceHandlersModule = new ContainerModule((bind) => {
-  bind(AZURE_FUNCTION).to(DeviceCommandHandler);
+export const deviceHandlersModule = new ContainerModule(loadOptions => {
+  loadOptions.bind(AZURE_FUNCTION).to(DeviceCommandHandler);
 });
 ```
 
@@ -146,7 +145,7 @@ platformContainer.bind<RestApplication>(REST_APPLICATION).toConstantValue(USERS_
 ```
 ```typescript
 // src/apis/users-management/users-management.controller.ts
-import { Controller, Get, Logger } from '@@herrromich/az-functions';
+import { controller, get, Logger } from '@@herrromich/az-functions';
 import { USERS_MANAGEMENT_API } from './users-management.application';
 import { z } from 'zod';
 
@@ -170,7 +169,7 @@ export const usersResponseDtoSchema = z
 
 export type UsersResponseDto = z.infer<typeof usersResponseDtoSchema>;
 
-@Controller({
+@controller({
   application: USERS_MANAGEMENT_API,
   path: 'users',
   tags: ['Users'],
@@ -182,7 +181,7 @@ export class UsersController {
     private readonly usersMapper: UsersMapper
   ) {}
 
-  @Get({
+  @get({
     response: {
       schema: usersResponseDtoSchema,
       description: 'Returns a list of users',
@@ -208,11 +207,11 @@ platformContainer.bind(AZURE_FUNCTION).to(UsersController);
 import { z } from 'zod';
 import { telemetrySchema } from './telemetry.model';
 import {
-  AZURE_FUNCTION, 
-  EventHubHandlers, 
+  AZURE_FUNCTION,
+  eventHubHandler,
+  EventHubHandler, 
   EventHubMessageWrapper, 
-  Handler, 
-  Message, 
+  message, 
   Logger
 } from '@herrromich/az-functions';
 import { InvocationContext } from "@azure/functions";
@@ -231,22 +230,20 @@ const devicePropertiesSchema = z
   });
 type DeviceProperties = z.infer<typeof devicePropertiesSchema>;
 
-@EventHubHandlers({
+@eventHubHandler({
+  triggerId: 'handleDeviceTelemetry',
   connection: 'eventhub',
   eventHubName: 'telemetry',
+  consumerGroup: 'handlerTelemetry',
+  cardinality: 'many',
 })
-export class DeviceHandlers {
+export class DeviceHandlers implements EventHubHandler {
   constructor(private readonly logger: Logger) {
   }
 
-  @Handler({
-    triggerId: 'handleDeviceTelemetry',
-    cardinality: 'many',
-    consumerGroup: 'handlerTelemetry',
-  })
-  async handleDeviceTelemetry(
+  async handle(
     context: InvocationContext,
-    @Message({
+    @message({
       withPayload: deviceMessageSchema,
       withProperties: devicePropertiesSchema,
       withEventData: true

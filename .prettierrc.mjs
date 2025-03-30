@@ -1,10 +1,23 @@
 export default {
-  'singleQuote': true,
-  'printWidth': 120,
-  'tabWidth': 2,
-  'useTabs': false,
-  'arrowParens': 'always',
-  'trailingComma': 'es5',
-  'quoteProps': 'preserve',
-  'plugins': ['prettier-plugin-organize-imports'],
+  bracketSpacing: true,
+  singleQuote: true,
+  trailingComma: 'all',
+  arrowParens: 'avoid',
+
+  endOfLine: 'auto',
+  useTabs: false,
+  printWidth: 120,
+  tabWidth: 2,
+  jsxSingleQuote: true,
+  jsxBracketSameLine: false,
+  quoteProps: 'consistent',
+
+  overrides: [
+    {
+      files: ['*.json', '*.yaml'],
+      options: {
+        singleQuote: false,
+      },
+    },
+  ],
 };

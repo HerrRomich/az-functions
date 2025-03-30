@@ -19,45 +19,47 @@ import {
   QueryItemSchema,
 } from './decorators.model';
 
-export function Controller(config: ControllerConfig) {
+export function controller(config: ControllerConfig) {
   return function <T extends AzureFunctions>(target: T) {
     const metadata: ControllerMetadata = {
       type: 'http-controller',
       ...config,
     };
     Reflect.defineMetadata(AZURE_FUNCTION_METADATA_KEY, metadata, target);
-    decorate(injectable(), target);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+    decorate(injectable(), target as Function);
   };
 }
 
-export function Get(operationConfig?: ControllerOperationConfig) {
+export function get(operationConfig?: ControllerOperationConfig) {
   return provideControllerOperationDecorator({ method: 'get', ...operationConfig });
 }
 
-export function Head(operationConfig?: ControllerOperationConfig) {
+export function head(operationConfig?: ControllerOperationConfig) {
   return provideControllerOperationDecorator({ method: 'head', ...operationConfig });
 }
 
-export function Delete(operationConfig?: ControllerOperationConfig) {
+export function _delete(operationConfig?: ControllerOperationConfig) {
   return provideControllerOperationDecorator({ method: 'delete', ...operationConfig });
 }
 
-export function Post(operationConfig?: ControllerRequestBodyOperationConfig) {
+export function post(operationConfig?: ControllerRequestBodyOperationConfig) {
   return provideControllerOperationDecorator({ method: 'post', ...operationConfig });
 }
 
-export function Put(operationConfig?: ControllerRequestBodyOperationConfig) {
+export function put(operationConfig?: ControllerRequestBodyOperationConfig) {
   return provideControllerOperationDecorator({ method: 'put', ...operationConfig });
 }
 
-export function Patch(operationConfig?: ControllerRequestBodyOperationConfig) {
+export function patch(operationConfig?: ControllerRequestBodyOperationConfig) {
   return provideControllerOperationDecorator({ method: 'patch', ...operationConfig });
 }
 
 function provideControllerOperationDecorator(baseMetadata: ControllerOperationBaseMetadata) {
   return function (target: AzureFunctions, propertyKey: string | symbol) {
-    const argsMetadata = (Reflect.getOwnMetadata(HTTP_OPERATION_METADATA_KEY, target, propertyKey) ??
-      initializeMetadata(target, propertyKey)) as ControllerOperationArgsMetadata;
+    const ownMetadata = Reflect.getOwnMetadata(HTTP_OPERATION_METADATA_KEY, target, propertyKey);
+    const argsMetadata = (ownMetadata ??
+      shared.initializeMetadata(target, propertyKey, getCommonArg)) as ControllerOperationArgsMetadata;
     const metadata: ControllerOperationMetadata = {
       ...baseMetadata,
       ...argsMetadata,
@@ -66,7 +68,7 @@ function provideControllerOperationDecorator(baseMetadata: ControllerOperationBa
   };
 }
 
-export function Body(bodyConfig: ControllerRequest) {
+export function body(bodyConfig: ControllerRequest) {
   return adjustOperationMetadata({
     type: 'body',
     ...bodyConfig,
@@ -78,7 +80,7 @@ export interface PathParamConfig {
   schema?: PathSchema;
 }
 
-export function PathParam(config: PathParamConfig) {
+export function pathParam(config: PathParamConfig) {
   return adjustOperationMetadata({
     type: 'path',
     ...config,
@@ -90,7 +92,7 @@ export interface QueryParamConfig {
   schema?: QueryItemSchema;
 }
 
-export function QueryParam(config: QueryParamConfig) {
+export function queryParam(config: QueryParamConfig) {
   return adjustOperationMetadata({
     type: 'query',
     ...config,
@@ -102,20 +104,20 @@ export interface HeaderParamConfig {
   schema?: ZodType<string | undefined>;
 }
 
-export function HeaderParam(config: HeaderParamConfig) {
+export function headerParam(config: HeaderParamConfig) {
   return adjustOperationMetadata({
     type: 'header',
     ...config,
   });
 }
 
-export function Request() {
+export function request() {
   return adjustOperationMetadata({
     type: 'request',
   });
 }
 
-export function User() {
+export function user() {
   return adjustOperationMetadata({
     type: 'user',
   });
@@ -123,10 +125,6 @@ export function User() {
 
 function adjustOperationMetadata(operationArg: OperationArgMetadata) {
   return adjustMetadata(HTTP_OPERATION_METADATA_KEY, operationArg, getCommonArg);
-}
-
-function initializeMetadata(target: AzureFunctions, propertyKey: string | symbol): ControllerOperationArgsMetadata {
-  return shared.initializeMetadata(target, propertyKey, getCommonArg);
 }
 
 function getCommonArg(paramType: unknown): ControllerOperationCommonArgMetadata {

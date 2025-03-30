@@ -45,7 +45,7 @@ describe('BearerSecurityAuthorizationService', () => {
       mockHttpRequest.headers.get.calledWith('Authorization').mockReturnValue(authorizationHaedr);
       await expect(subject.authenticate(mockHttpRequest)).rejects.toThrowWithMessage(
         AuthenticationError,
-        'No Bearer token in Authorization header.'
+        'No Bearer token in Authorization header.',
       );
 
       expect(mockBearerTokenService.getUserAccountFromToken).not.toHaveBeenCalled();

@@ -1,10 +1,16 @@
 import { InvocationContext } from '@azure/functions';
 import { mock, MockProxy } from 'jest-mock-extended';
 import { PlatformContextLocalStorage } from '../shared/platform-context-local-storage';
-import { Logger } from './logger';
+import { AzureLogTransporter } from './logger';
 
-describe('test Logger', () => {
-  let subject: Logger;
+describe('test AzureLogTransporter', () => {
+  let mockNext: jest.Mock;
+
+  let subject: AzureLogTransporter;
+
+  beforeEach(async () => {
+    mockNext = jest.fn();
+  });
 
   afterEach(() => {
     jest.resetAllMocks();
@@ -22,47 +28,38 @@ describe('test Logger', () => {
       mockedConsole = mock<typeof global.console>();
       storedConsole = global.console;
       global.console = mockedConsole;
-      subject = new Logger(mockedContextStorage);
+      subject = new AzureLogTransporter(mockedContextStorage);
     });
 
     afterEach(() => {
       global.console = storedConsole;
     });
 
-    it('should call console.log', () => {
-      subject.log('a', 'b', 'c');
+    it.each([
+      ['console.log', 'unknown', () => mockedConsole.log],
+      ['console.trace', 'trace', () => mockedConsole.trace],
+      ['console.info', 'info', () => mockedConsole.info],
+      ['console.debug', 'debug', () => mockedConsole.debug],
+      ['console.warn', 'warn', () => mockedConsole.warn],
+      ['console.error', 'error', () => mockedConsole.error],
+    ])('should call %s', (_, level, methodReceiver) => {
+      subject.log(
+        {
+          level,
+          message: 'Message',
+          param1: {
+            key: 'key',
+            value: 'value',
+          },
+        },
+        mockNext,
+      );
 
-      expect(mockedConsole.log).toHaveBeenCalledWith('a', 'b', 'c');
-    });
-
-    it('should call console trace', () => {
-      subject.trace('a', 'b', 'c');
-
-      expect(mockedConsole.trace).toHaveBeenCalledWith('a', 'b', 'c');
-    });
-
-    it('should call console info', () => {
-      subject.info('a', 'b', 'c');
-
-      expect(mockedConsole.info).toHaveBeenCalledWith('a', 'b', 'c');
-    });
-
-    it('should call console debug', () => {
-      subject.debug('a', 'b', 'c');
-
-      expect(mockedConsole.debug).toHaveBeenCalledWith('a', 'b', 'c');
-    });
-
-    it('should call console warn', () => {
-      subject.warn('a', 'b', 'c');
-
-      expect(mockedConsole.warn).toHaveBeenCalledWith('a', 'b', 'c');
-    });
-
-    it('should call console error', () => {
-      subject.error('a', 'b', 'c');
-
-      expect(mockedConsole.error).toHaveBeenCalledWith('a', 'b', 'c');
+      expect(methodReceiver()).toHaveBeenCalledWith({
+        message: 'Message',
+        param1: { key: 'key', value: 'value' },
+      });
+      expect(mockNext).toHaveBeenCalled();
     });
   });
 
@@ -75,43 +72,34 @@ describe('test Logger', () => {
       mockedContextStorage.getStore.mockReturnValue({
         invocationContext: mockedContext,
       });
-      subject = new Logger(mockedContextStorage);
+      subject = new AzureLogTransporter(mockedContextStorage);
     });
 
-    it('should call console.log', () => {
-      subject.log('a', 'b', 'c');
+    it.each([
+      ['context.log', 'unknown', () => mockedContext.log],
+      ['context.trace', 'trace', () => mockedContext.trace],
+      ['context.info', 'info', () => mockedContext.info],
+      ['context.debug', 'debug', () => mockedContext.debug],
+      ['context.warn', 'warn', () => mockedContext.warn],
+      ['context.error', 'error', () => mockedContext.error],
+    ])('should call %s', (_, level, methodReceiver) => {
+      subject.log(
+        {
+          level,
+          message: 'Message',
+          param1: {
+            key: 'key',
+            value: 'value',
+          },
+        },
+        mockNext,
+      );
 
-      expect(mockedContext.log).toHaveBeenCalledWith('a', 'b', 'c');
-    });
-
-    it('should call console trace', () => {
-      subject.trace('a', 'b', 'c');
-
-      expect(mockedContext.trace).toHaveBeenCalledWith('a', 'b', 'c');
-    });
-
-    it('should call console info', () => {
-      subject.info('a', 'b', 'c');
-
-      expect(mockedContext.info).toHaveBeenCalledWith('a', 'b', 'c');
-    });
-
-    it('should call console debug', () => {
-      subject.debug('a', 'b', 'c');
-
-      expect(mockedContext.debug).toHaveBeenCalledWith('a', 'b', 'c');
-    });
-
-    it('should call console warn', () => {
-      subject.warn('a', 'b', 'c');
-
-      expect(mockedContext.warn).toHaveBeenCalledWith('a', 'b', 'c');
-    });
-
-    it('should call console error', () => {
-      subject.error('a', 'b', 'c');
-
-      expect(mockedContext.error).toHaveBeenCalledWith('a', 'b', 'c');
+      expect(methodReceiver()).toHaveBeenCalledWith({
+        message: 'Message',
+        param1: { key: 'key', value: 'value' },
+      });
+      expect(mockNext).toHaveBeenCalled();
     });
   });
 });

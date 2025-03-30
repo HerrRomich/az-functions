@@ -16,7 +16,7 @@ export * from './http-controller.model';
 export * from './open-api-definition.service';
 export * from './swagger-handling.service';
 
-export const httpControllerModule = new ContainerModule((bind) => {
+export const httpControllerModule = new ContainerModule(({ bind }) => {
   bind(HttpControllerMetadataService).toSelf();
   bind(HttpRequestHandlerProvider).toSelf();
   bind(HttpControllerRegistrationService).toSelf();
@@ -25,5 +25,5 @@ export const httpControllerModule = new ContainerModule((bind) => {
   bind(OpenApiMetadataService).toSelf();
   bind(AuthenticationServiceFactory).toSelf();
   bind(OpenApiDefinitionService).toSelf();
-  bind(REST_OPEN_API_REGISTRY).toDynamicValue((context) => buildRestOpenApiRegistry(context));
+  bind(REST_OPEN_API_REGISTRY).toDynamicValue(context => buildRestOpenApiRegistry(context));
 });

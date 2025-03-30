@@ -20,7 +20,7 @@ export type AsyncHttpRequestProvider = (input: AsyncHttpRequestProviderInput) =>
 export type AsyncHttpRequestArgsProvider = (
   request: HttpRequest,
   context: InvocationContext,
-  userAccount: UserAccount
+  userAccount: UserAccount,
 ) => Promise<unknown[]>;
 
 export const httpMethodMap: Record<OperationMethod, HttpMethod> = {

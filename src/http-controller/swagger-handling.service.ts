@@ -13,24 +13,15 @@ import { OpenApiDefinitionService } from './open-api-definition.service';
 export class SwaggerHandlingService {
   constructor(
     @inject(BASE_DIR) private readonly baseDir: string,
-    private readonly openApiDefinitionService: OpenApiDefinitionService
+    private readonly openApiDefinitionService: OpenApiDefinitionService,
   ) {}
-
-  public handleSwaggerUi(request: HttpRequest): HttpResponseInit {
-    return {
-      status: 301,
-      headers: {
-        Location: request.url.replace(/\/*$/, '') + '/index.html',
-      },
-    };
-  }
 
   public async handleSwaggerContent(request: HttpRequest): Promise<HttpResponseInit> {
     const fileNme = request.params['fileName'] ?? 'index.html';
     if (fileNme === 'swagger-initializer.js') {
       const definitions = this.openApiDefinitionService.getApplications();
       const primaryUrl = definitions[0] ?? '';
-      const urls = definitions.map((definitionName) => ({
+      const urls = definitions.map(definitionName => ({
         name: this.openApiDefinitionService.getApplication(definitionName).openApiConfig.info.title ?? definitionName,
         url: `./definition/${definitionName}`,
       }));
@@ -67,22 +58,21 @@ window.onload = function () {
   }
 
   private async serveSwaggerUi(fileName: string): Promise<HttpResponseInit> {
-    try {
-      const buffer = await fs.readFile(path.join(this.baseDir, 'assets/swagger-ui', fileName));
-      const contentType = mime.contentType(fileName);
-      return {
-        status: StatusCodes.OK,
-        body: buffer,
-        headers: {
-          ContentType: contentType || 'application/octet-stream',
-        },
-      };
-    } catch (e: unknown) {
+    const buffer = await fs.readFile(path.join(this.baseDir, 'assets/swagger-ui', fileName)).catch(() => undefined);
+    if (!buffer) {
       return {
         status: StatusCodes.BAD_REQUEST,
         body: 'Path parameter is unknown',
       };
     }
+    const contentType = mime.contentType(fileName);
+    return {
+      status: StatusCodes.OK,
+      body: buffer,
+      headers: {
+        ContentType: contentType || 'application/octet-stream',
+      },
+    };
   }
 
   handleOpenApiDefinition(request: HttpRequest): HttpResponseInit {

@@ -20,8 +20,6 @@ export const AZURE_FUNCTION = Symbol.for('AZURE_FUNCTION');
 
 export type AzureFunctions = object;
 
-export type AzureFunctionsConstructor = new (...args: never[]) => AzureFunctions;
-
 export interface PlatformContext {
   readonly invocationContext?: InvocationContext;
   readonly userAccount?: UserAccount;

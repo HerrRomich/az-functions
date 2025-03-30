@@ -9,11 +9,12 @@ export * from './platform-context-local-storage';
 export * from './platform.model';
 export * from './security.model';
 
-export const sharedModule = new ContainerModule((bind) => {
+export const sharedModule = new ContainerModule(({ bind }) => {
   bind(BASE_DIR).toConstantValue(path.resolve(__dirname, '.'));
   bind(SYSTEM_USER_ACCOUNT).toConstantValue(systemUserAccount);
 });
 
 export function zodTypeName(schema: ZodType): ZodFirstPartyTypeKind {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (schema._def as any).typeName;
 }

@@ -4,7 +4,7 @@ import { Container } from 'inversify';
 import { anyFunction, mock, MockProxy } from 'jest-mock-extended';
 import * as path from 'path';
 import * as process from 'process';
-import { AZURE_FUNCTION, AzureFunctionRegistrationError, AzureFunctionsConstructor, PlatformMode } from 'shared';
+import { AZURE_FUNCTION, AzureFunctionRegistrationError, AzureFunctions, PlatformMode } from 'shared';
 import { OpenApiDefinitionService, SwaggerHandlingService } from '../http-controller';
 import { AzurePlatform } from './azure-platform';
 import { ComponentMetadata, FunctionsRegistrationService } from './model';
@@ -13,6 +13,9 @@ import { RegisterFunctionFactory } from './register-functions.factory';
 
 jest.mock('@azure/functions');
 jest.mock('fs/promises');
+
+class TestClass1 {}
+class TestClass2 {}
 
 describe('test AzureContainer', () => {
   const initSubject = (platformMode: PlatformMode = 'start') => {
@@ -24,7 +27,7 @@ describe('test AzureContainer', () => {
       registerFunctionFactory,
       mockSwaggerHandlingService,
       mockMetadataService,
-      mockApiDefinitionService
+      mockApiDefinitionService,
     );
   };
 
@@ -41,6 +44,7 @@ describe('test AzureContainer', () => {
     mockSwaggerHandlingService = mock();
     mockMetadataService = mock();
     mockApiDefinitionService = mock();
+    mockPlatformContainer.getAllAsync.calledWith(AZURE_FUNCTION).mockResolvedValue([]);
   });
 
   it('should not register swagger UI if no app config', async () => {
@@ -54,37 +58,12 @@ describe('test AzureContainer', () => {
 
   it('should register swagger UI', async () => {
     initSubject();
-
-    await subject.start();
-
-    expect(app.get).toHaveBeenNthCalledWith(1, 'swaggerUi', {
-      route: 'spec',
-      handler: anyFunction(),
-    });
-
-    expect(app.get).toHaveBeenNthCalledWith(2, 'swaggerUiFile', {
-      route: 'spec/{fileName}',
-      handler: anyFunction(),
-    });
-
-    expect(app.get).toHaveBeenNthCalledWith(3, 'openApiDefinition', {
-      route: 'spec/definition/{definitionName}',
-      handler: anyFunction(),
-    });
-  });
-
-  it('should register swagger UI', async () => {
-    initSubject();
     let swaggerUiHandler: HttpHandler | undefined = undefined;
-    let swaggerUiFileHandler: HttpHandler | undefined = undefined;
     let openApiDefinitionHandler: HttpHandler | undefined = undefined;
     jest.mocked(app.get).mockImplementation((name, { handler }: HttpMethodFunctionOptions) => {
       switch (name) {
         case 'swaggerUi':
           swaggerUiHandler = handler;
-          break;
-        case 'swaggerUiFile':
-          swaggerUiFileHandler = handler;
           break;
         case 'openApiDefinition':
           openApiDefinitionHandler = handler;
@@ -93,17 +72,22 @@ describe('test AzureContainer', () => {
     });
     await subject.start();
 
+    expect(app.get).toHaveBeenNthCalledWith(1, 'swaggerUi', {
+      route: 'spec/{fileName?}',
+      handler: anyFunction(),
+    });
+
+    expect(app.get).toHaveBeenNthCalledWith(2, 'openApiDefinition', {
+      route: 'spec/definition/{definitionName}',
+      handler: anyFunction(),
+    });
+
     const request = mock<HttpRequest>();
     const context = mock<InvocationContext>();
 
     expect(swaggerUiHandler).toBeDefined();
-    expect(mockSwaggerHandlingService.handleSwaggerUi).not.toHaveBeenCalled();
-    await swaggerUiHandler!(request, context);
-    expect(mockSwaggerHandlingService.handleSwaggerUi).toHaveBeenCalledWith(request);
-
-    expect(swaggerUiFileHandler).toBeDefined();
     expect(mockSwaggerHandlingService.handleSwaggerContent).not.toHaveBeenCalled();
-    await swaggerUiFileHandler!(request, context);
+    await swaggerUiHandler!(request, context);
     expect(mockSwaggerHandlingService.handleSwaggerContent).toHaveBeenCalledWith(request);
 
     expect(openApiDefinitionHandler).toBeDefined();
@@ -114,17 +98,16 @@ describe('test AzureContainer', () => {
 
   it('should register functions', async () => {
     initSubject();
-    const mockedComponent1 = mock<AzureFunctionsConstructor>();
+    const mockedComponent1 = new TestClass1();
     const mockedComponent1Metadata1 = {
       type: 'http-controller',
     } as unknown as ComponentMetadata;
-    const mockedComponent2 = mock<AzureFunctionsConstructor>();
+    const mockedComponent2 = new TestClass2();
     const mockedComponent1Metadata2 = {
       type: 'event-hub-handlers',
     } as unknown as ComponentMetadata;
-    mockMetadataService.getMetadata.calledWith(mockedComponent1).mockReturnValue(mockedComponent1Metadata1);
-    mockMetadataService.getMetadata.calledWith(mockedComponent2).mockReturnValue(mockedComponent1Metadata2);
-    mockPlatformContainer.isBound.calledWith(AZURE_FUNCTION).mockReturnValue(true);
+    mockMetadataService.getMetadata.calledWith(mockedComponent1.constructor).mockReturnValue(mockedComponent1Metadata1);
+    mockMetadataService.getMetadata.calledWith(mockedComponent2.constructor).mockReturnValue(mockedComponent1Metadata2);
     mockPlatformContainer.getAllAsync
       .calledWith(AZURE_FUNCTION)
       .mockResolvedValue([mockedComponent1, mockedComponent2]);
@@ -132,12 +115,21 @@ describe('test AzureContainer', () => {
     await subject.start();
 
     expect(mockMetadataService.getMetadata).toHaveBeenCalledTimes(2);
-    expect(mockFunctionsRegistrationService.register).toHaveBeenCalledWith(mockedComponent1, mockedComponent1Metadata1);
+    expect(mockFunctionsRegistrationService.register).toHaveBeenNthCalledWith(
+      1,
+      mockedComponent1,
+      mockedComponent1Metadata1,
+    );
+    expect(mockFunctionsRegistrationService.register).toHaveBeenNthCalledWith(
+      2,
+      mockedComponent2,
+      mockedComponent1Metadata2,
+    );
   });
 
   it('should fail registration if meets unknow type', async () => {
     initSubject();
-    const mockedComponent = mock<AzureFunctionsConstructor>();
+    const mockedComponent = mock<AzureFunctions>();
     mockMetadataService.getMetadata.calledWith(mockedComponent).mockReturnValue(undefined);
     mockPlatformContainer.isBound.calledWith(AZURE_FUNCTION).mockReturnValue(true);
     mockPlatformContainer.getAllAsync.calledWith(AZURE_FUNCTION).mockResolvedValue([mockedComponent]);

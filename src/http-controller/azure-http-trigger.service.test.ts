@@ -1,6 +1,7 @@
 import { HttpRequest, InvocationContext } from '@azure/functions';
 import { DeepMockProxy, mock, mockDeep, MockProxy } from 'jest-mock-extended';
 import { UserAccount } from 'shared';
+import { Writable } from 'type-fest';
 import { z } from 'zod';
 import { AzureHttpTriggerService } from './azure-http-trigger.service';
 import { ControllerOperationMetadata } from './decorators';
@@ -23,7 +24,7 @@ describe('AzureHttpTriggerService', () => {
       response: {
         status: 200,
         description: 'Test description',
-        schema: z.object({ testProp: z.string() }),
+        contentSchema: z.object({ testProp: z.string() }),
       },
     } as unknown as ControllerOperationMetadata;
 
@@ -122,17 +123,17 @@ describe('AzureHttpTriggerService', () => {
   describe('buildArgProviders', () => {
     const testUserAccount = {} as UserAccount;
 
-    let mockRequest: DeepMockProxy<HttpRequest>;
+    let mockRequest: DeepMockProxy<Writable<HttpRequest>>;
 
     beforeEach(() => {
-      mockRequest = mockDeep<HttpRequest>({
-        url: 'http://test-server.test/api/test/12?text-query-single=query-item&text-query-multi=query-item1&text-query-multi=query-item2&number-query-single=3951&number-query-multi=146&number-query-multi=553&boolean-query1=true&boolean-query2=false&mixed-query=4682&mixed-query=mixed-value',
-        params: {
-          'path-item1': '12',
-          'path-item2': 'text',
-        },
-      });
-      mockRequest.headers.get.mockImplementation((name) => {
+      mockRequest = mockDeep();
+      mockRequest.url =
+        'http://test-server.test/api/test/12?text-query-single=query-item&text-query-multi=query-item1&text-query-multi=query-item2&number-query-single=3951&number-query-multi=146&number-query-multi=553&boolean-query1=true&boolean-query2=false&mixed-query=4682&mixed-query=mixed-value';
+      mockRequest.params = {
+        'path-item1': '12',
+        'path-item2': 'text',
+      };
+      mockRequest.headers.get.mockImplementation(name => {
         switch (name) {
           case 'header-item1':
             return '12';
@@ -215,7 +216,7 @@ describe('AzureHttpTriggerService', () => {
       expect(args[7]).toEqual('12');
     });
 
-    it('should fail in case of multiple parsing errors ', async () => {
+    it('should fail in case of multiple parsing errors', async () => {
       const argsProvider = subject.buildArgProviders({
         method: 'put',
         args: [
@@ -276,7 +277,7 @@ describe('AzureHttpTriggerService', () => {
 
       await expect(argsProvider(mockRequest, mockContext, testUserAccount)).rejects.toThrowWithMessage(
         BadRequestError,
-        /Error parsing request body:[\s\S]*Error parsing path parameter=path-item1:[\s\S]*Error parsing header item=header-item1:/
+        /Error parsing request body:[\s\S]*Error parsing path parameter=path-item1:[\s\S]*Error parsing header item=header-item1:/,
       );
     });
 
@@ -400,7 +401,7 @@ describe('AzureHttpTriggerService', () => {
 
         await expect(argsProvider(mockRequest, mockContext, testUserAccount)).rejects.toThrowWithMessage(
           BadRequestError,
-          /^Error parsing request body:/
+          /^Error parsing request body:/,
         );
       });
 
@@ -409,7 +410,7 @@ describe('AzureHttpTriggerService', () => {
 
         await expect(argsProvider(mockRequest, mockContext, testUserAccount)).rejects.toThrowWithMessage(
           BadRequestError,
-          /^Unknown error\./
+          /^Unknown error\./,
         );
       });
     });
@@ -485,7 +486,7 @@ describe('AzureHttpTriggerService', () => {
           });
           await expect(argsProvider(mockRequest, mockContext, testUserAccount)).rejects.toThrowWithMessage(
             BadRequestError,
-            /^Error parsing query item=number-query:/
+            /^Error parsing query item=number-query:/,
           );
         });
       });
@@ -584,7 +585,7 @@ describe('AzureHttpTriggerService', () => {
           });
           await expect(argsProvider(mockRequest, mockContext, testUserAccount)).rejects.toThrowWithMessage(
             BadRequestError,
-            /^Error parsing query item=text-query-single:/
+            /^Error parsing query item=text-query-single:/,
           );
         });
       });
@@ -688,7 +689,7 @@ describe('AzureHttpTriggerService', () => {
           });
           await expect(argsProvider(mockRequest, mockContext, testUserAccount)).rejects.toThrowWithMessage(
             BadRequestError,
-            /^Error parsing path parameter=unknown-path:/
+            /^Error parsing path parameter=unknown-path:/,
           );
         });
       });
@@ -741,7 +742,7 @@ describe('AzureHttpTriggerService', () => {
 
           await expect(argsProvider(mockRequest, mockContext, testUserAccount)).rejects.toThrowWithMessage(
             BadRequestError,
-            /^Error parsing path parameter=path-item1:/
+            /^Error parsing path parameter=path-item1:/,
           );
         });
 
@@ -758,7 +759,7 @@ describe('AzureHttpTriggerService', () => {
           });
           await expect(argsProvider(mockRequest, mockContext, testUserAccount)).rejects.toThrowWithMessage(
             BadRequestError,
-            /^Error parsing path parameter=path-item2:/
+            /^Error parsing path parameter=path-item2:/,
           );
         });
       });
@@ -795,7 +796,7 @@ describe('AzureHttpTriggerService', () => {
 
         await expect(argsProvider(mockRequest, mockContext, testUserAccount)).rejects.toThrowWithMessage(
           BadRequestError,
-          /^Error parsing path parameter=path-item2:/
+          /^Error parsing path parameter=path-item2:/,
         );
       });
     });
@@ -867,7 +868,7 @@ describe('AzureHttpTriggerService', () => {
 
           await expect(argsProvider(mockRequest, mockContext, testUserAccount)).rejects.toThrowWithMessage(
             BadRequestError,
-            /^Error parsing header item=header-item2:/
+            /^Error parsing header item=header-item2:/,
           );
         });
       });

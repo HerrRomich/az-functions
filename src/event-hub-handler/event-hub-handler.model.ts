@@ -1,6 +1,12 @@
 import { InvocationContext } from '@azure/functions';
 import { z } from 'zod';
 
+export interface EventHubHandler {
+  handle(...args: any[]): void | Promise<void>;
+}
+
+export const HANDLE_METHOD_NAME = 'handle';
+
 export class EventHubTriggerDefinitionError extends Error {
   constructor(message?: string, options?: ErrorOptions) {
     super(message, options);

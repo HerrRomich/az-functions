@@ -39,7 +39,7 @@ export class AzureHttpTriggerService {
   async handleHttpRequest(
     context: InvocationContext,
     operationMetadata: ControllerOperationMetadata,
-    method: () => Promise<unknown>
+    method: () => Promise<unknown>,
   ): Promise<HttpResponseInit> {
     try {
       const directResponse = operationMetadata.response;
@@ -47,7 +47,7 @@ export class AzureHttpTriggerService {
       if (directResponse) {
         return {
           status: directResponse.status ?? 200,
-          jsonBody: directResponse.schema?.parse(result),
+          jsonBody: directResponse.contentSchema?.parse(result) ?? result,
         };
       } else {
         return result as HttpResponseInit;
@@ -61,7 +61,7 @@ export class AzureHttpTriggerService {
           const validationError = fromZodError(e);
           context.error(
             `Response validation error.
-${validationError.stack}`
+${validationError.stack}`,
           );
         } else if (e instanceof Error) {
           context.error(e.stack);
@@ -78,7 +78,7 @@ ${validationError.stack}`
 
   buildArgProviders(operationMetadata: ControllerOperationMetadata): AsyncHttpRequestArgsProvider {
     const argProviders: AsyncHttpRequestProvider[] = [];
-    operationMetadata.args.forEach((arg) => {
+    operationMetadata.args.forEach(arg => {
       switch (arg.type) {
         case 'path': {
           argProviders.push(this.getPathParamProvider(arg));
@@ -121,11 +121,11 @@ ${validationError.stack}`
        */
       const queryItems = new URL(request.url).searchParams;
       const args = await Promise.allSettled(
-        argProviders.map((argProvider) => {
+        argProviders.map(argProvider => {
           const asyncArgProvider = async () => argProvider({ request, context, userAccount, queryItems });
           return asyncArgProvider();
-        })
-      ).then((results) => {
+        }),
+      ).then(results => {
         const splittedResults = results.reduce(
           (aggregator, currentValue) => {
             if (currentValue.status === 'fulfilled') {
@@ -135,12 +135,12 @@ ${validationError.stack}`
             }
             return aggregator;
           },
-          { fulfilled: Array<unknown>(), rejected: Array(0) }
+          { fulfilled: Array<unknown>(), rejected: Array(0) },
         );
         if (splittedResults.rejected.length === 0) {
           return splittedResults.fulfilled;
         } else {
-          const message = splittedResults.rejected.map((reason) => reason.message ?? String(reason)).join('\n\n');
+          const message = splittedResults.rejected.map(reason => reason.message ?? String(reason)).join('\n\n');
           throw new BadRequestError(message);
         }
       });
@@ -157,7 +157,7 @@ ${validationError.stack}`
         if (e instanceof ZodError) {
           throw new ArgParseError(
             `Error parsing request body:
-${fromZodError(e).message}`
+${fromZodError(e).message}`,
           );
         } else {
           throw e;
@@ -167,19 +167,19 @@ ${fromZodError(e).message}`
   }
 
   private getPathParamProvider(
-    arg: OperationPathArgMetadata
-  ): (input: AsyncHttpRequestProviderInput) => string | number | boolean {
+    arg: OperationPathArgMetadata,
+  ): (input: AsyncHttpRequestProviderInput) => string | number {
     const paramSchema = arg.schema ?? stringSchema;
     const coercePathParamSchema = this.getCoercedSchema(paramSchema);
     const pathParamName = arg.name;
-    return ({ request }): string | number | boolean => {
+    return ({ request }) => {
       const pathParam = request.params[pathParamName];
       try {
         return coercePathParamSchema.parse(pathParam);
       } catch (e) {
         throw new ArgParseError(
           `Error parsing path parameter=${pathParamName}:
-${fromError(e).message}`
+${fromError(e).message}`,
         );
       }
     };
@@ -187,7 +187,7 @@ ${fromError(e).message}`
 
   private getHeaderProvider(
     headerItemName: string,
-    headerSchema: ZodType<string | undefined>
+    headerSchema: ZodType<string | undefined>,
   ): (input: AsyncHttpRequestProviderInput) => string | undefined {
     return ({ request }): string | undefined => {
       const headerElöement = request.headers.get(headerItemName) ?? undefined;
@@ -196,14 +196,14 @@ ${fromError(e).message}`
       } catch (e) {
         throw new ArgParseError(
           `Error parsing header item=${headerItemName}:
-${fromError(e).message}`
+${fromError(e).message}`,
         );
       }
     };
   }
 
   private getQueryItemProvider(
-    arg: OperationQueryArgMetadata
+    arg: OperationQueryArgMetadata,
   ): (input: AsyncHttpRequestProviderInput) => QueryItemType {
     const querySchema = arg.schema ?? optionalStringSchema;
     const isArray = zodTypeName(querySchema) === ZodFirstPartyTypeKind.ZodArray;
@@ -221,7 +221,7 @@ ${fromError(e).message}`
       } catch (e) {
         throw new ArgParseError(
           `Error parsing query item=${queryItemName}:
-${fromError(e).message}`
+${fromError(e).message}`,
         );
       }
     };
@@ -249,9 +249,9 @@ ${fromError(e).message}`
     return z
       .string()
       .optional()
-      .transform((val) => {
-        switch (singleTypeName) {
-          case ZodFirstPartyTypeKind.ZodBoolean: {
+      .transform(val => {
+        if (singleTypeName === ZodFirstPartyTypeKind.ZodBoolean) {
+          {
             if (val === 'true') {
               return true;
             } else if (val === 'false') {
@@ -260,12 +260,13 @@ ${fromError(e).message}`
               return val;
             }
           }
-          case ZodFirstPartyTypeKind.ZodNumber: {
+        } else if (singleTypeName === ZodFirstPartyTypeKind.ZodNumber) {
+          {
             const numVal = Number(val).valueOf();
             return Number.isNaN(numVal) ? val : numVal;
           }
-          default:
-            return val;
+        } else {
+          return val;
         }
       });
   }

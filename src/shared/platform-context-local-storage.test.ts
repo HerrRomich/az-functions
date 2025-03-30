@@ -14,11 +14,10 @@ describe('test PlatformContextLocalStorage', () => {
     subject = new PlatformContextLocalStorage();
   });
 
-  it('should return context and user if run in local storage', (done) => {
+  it('should return context and user if run in local storage', () => {
     subject.run({ invocationContext: mockedContext, userAccount: mockedUserAccount }, () => {
       expect(subject.invocationContext).toBe(mockedContext);
       expect(subject.userAccount).toBe(mockedUserAccount);
-      done();
     });
   });
 });

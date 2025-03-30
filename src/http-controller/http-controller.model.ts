@@ -1,14 +1,20 @@
 import { HttpResponseInit } from '@azure/functions';
 import { StatusCodes } from 'http-status-codes';
-import type { OpenAPIObject } from 'openapi3-ts/oas30';
+import type { OpenAPIObject, ResponseObject, SchemaObject } from 'openapi3-ts/oas30';
 import { ZodTypeAny } from 'zod';
 
 export const REST_APPLICATION = Symbol.for('REST_APPLICATION');
 
 export const API_SCHEMA = Symbol.for('API_SCHEMA');
 export interface ApiSchema {
-  refId: string;
-  zodSchema: ZodTypeAny;
+  name: string;
+  schema: ZodTypeAny | SchemaObject;
+}
+
+export const API_RESPONSE = Symbol.for('API_RESPONSE');
+export interface ApiResponse {
+  name: string;
+  response: ResponseObject;
 }
 
 export type OpenAPIObjectConfig = Omit<OpenAPIObject, 'paths' | 'components' | 'webhooks'>;

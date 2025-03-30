@@ -45,7 +45,7 @@ describe('HttpRequestHandlerProvider', () => {
       mockHttpTriggerService,
       mockPlatformContainer,
       mockAuthenticationServiceFactory,
-      systemUserAccount
+      systemUserAccount,
     );
   });
 

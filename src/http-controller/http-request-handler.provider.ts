@@ -15,12 +15,12 @@ export class HttpRequestHandlerProvider {
     private readonly httpTriggerService: AzureHttpTriggerService,
     @inject(PLATFORM_CONTAINER) private readonly platformContainer: Container,
     private readonly authenticationServiceFactory: AuthenticationServiceFactory,
-    @inject(SYSTEM_USER_ACCOUNT) private readonly systemUserAccount: UserAccount
+    @inject(SYSTEM_USER_ACCOUNT) private readonly systemUserAccount: UserAccount,
   ) {}
 
   getHttpRequestHandler(
     registrationData: HttpOperationRegistrationData,
-    method: (...args: unknown[]) => Promise<unknown>
+    method: (...args: unknown[]) => Promise<unknown>,
   ): RequestHandler {
     const { application, operationMetadata } = registrationData;
     const argsProvider = this.httpTriggerService.buildArgProviders(operationMetadata);
@@ -69,7 +69,7 @@ export class HttpRequestHandlerProvider {
   private async authenticate(
     authenticationServices: AuthenticationSchemeService[],
     request: HttpRequest,
-    context: InvocationContext
+    context: InvocationContext,
   ): Promise<UserAccount> {
     if (authenticationServices.length === 0) {
       return this.systemUserAccount;

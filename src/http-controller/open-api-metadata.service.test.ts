@@ -97,6 +97,9 @@ describe('OpenApiMetadataService', () => {
               prop1: z.boolean(),
             }),
           },
+          {
+            type: 'user',
+          },
         ],
       } as unknown as ControllerOperationMetadata;
 
@@ -134,9 +137,9 @@ describe('OpenApiMetadataService', () => {
       const response = subject.getResponse({} as unknown as ControllerOperationMetadata);
 
       expect(response).toEqual({
-        responses: {
-          204: {},
-        },
+          204: {
+            description: 'Default no content',
+          },
       });
     });
 
@@ -145,7 +148,7 @@ describe('OpenApiMetadataService', () => {
       const testOperationMetadata = {
         response: {
           description: 'test response',
-          schema: testSchema,
+          contentSchema: testSchema,
         },
       } as ControllerOperationMetadata;
       const response = subject.getResponse(testOperationMetadata);
@@ -169,7 +172,7 @@ describe('OpenApiMetadataService', () => {
       response: {
         status: 201,
         description: 'test response',
-        schema: testSchema,
+        contentSchema: testSchema,
       },
     } as ControllerOperationMetadata;
     const response = subject.getResponse(testOperationMetadata);
@@ -192,7 +195,7 @@ describe('OpenApiMetadataService', () => {
       response: {
         status: 201,
         description: 'test response',
-        schema: testSchema,
+        contentSchema: testSchema,
       },
       responses: {
         201: {

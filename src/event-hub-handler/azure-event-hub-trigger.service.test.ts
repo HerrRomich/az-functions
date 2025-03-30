@@ -35,7 +35,7 @@ describe('AzureEventHubTriggerService', () => {
       expect(method).toHaveBeenCalled();
       expect(mockContext.error).toHaveBeenCalledWith(
         expect.toStartWith(`Internal error:
-Error: Call failed.`)
+Error: Call failed.`),
       );
     });
 
@@ -87,9 +87,8 @@ Error: Call failed.`)
         ],
       } as TriggerMetadataMany;
 
-      const argsProvider = subject.buildArgProviders({
-        cardinality: 'many',
-        args: [
+      const argsProvider = subject.buildArgProviders(
+        [
           {
             type: 'context',
           },
@@ -99,7 +98,8 @@ Error: Call failed.`)
             payloadSchema: z.object({ text: z.string(), number: z.number().optional() }),
           },
         ],
-      });
+        'many',
+      );
       const testMessages = [
         {
           text: 'text1',
@@ -149,7 +149,7 @@ Error: Call failed.`)
       ]);
     });
 
-    it('should fail in case of multiple parsing errors ', async () => {
+    it('should fail in case of multiple parsing errors', async () => {
       mockContext.triggerMetadata = {
         partitionContext: {
           consumerGroupName: 'consumer-group',
@@ -170,17 +170,15 @@ Error: Call failed.`)
           textProperty: 'text-property',
         },
       } as TriggerMetadataOne;
-      const argsProvider = subject.buildArgProviders({
-        args: [
-          {
-            type: 'context',
-          },
-          {
-            type: 'message',
-            payloadSchema: z.object({ text: z.string(), number: z.number().optional() }),
-          },
-        ],
-      });
+      const argsProvider = subject.buildArgProviders([
+        {
+          type: 'context',
+        },
+        {
+          type: 'message',
+          payloadSchema: z.object({ text: z.string(), number: z.number().optional() }),
+        },
+      ]);
       const testMessage = [
         {
           text: 'text1',
@@ -193,15 +191,14 @@ Error: Call failed.`)
 
       await expect(argsProvider(testMessage, mockContext)).rejects.toThrowWithMessage(
         HandlerArgsParseError,
-        /Error parsing extended message:/
+        /Error parsing extended message:/,
       );
     });
 
     it('should fail, if multiple cardinality combined with singular message', () => {
       expect(() =>
-        subject.buildArgProviders({
-          cardinality: 'many',
-          args: [
+        subject.buildArgProviders(
+          [
             {
               type: 'context',
             },
@@ -210,18 +207,18 @@ Error: Call failed.`)
               payloadSchema: z.object({ text: z.string(), number: z.number().optional() }),
             },
           ],
-        })
+          'many',
+        ),
       ).toThrowWithMessage(
         EventHubTriggerDefinitionError,
-        'Decorator "Message" is not allowed with cardinality "many".'
+        'Decorator "Message" is not allowed with cardinality "many".',
       );
     });
 
     it('should fail, if single cardinality combined with multiple messages', () => {
       expect(() =>
-        subject.buildArgProviders({
-          cardinality: 'one',
-          args: [
+        subject.buildArgProviders(
+          [
             {
               type: 'context',
             },
@@ -230,22 +227,21 @@ Error: Call failed.`)
               payloadSchema: z.object({ text: z.string(), number: z.number().optional() }),
             },
           ],
-        })
+          'one',
+        ),
       ).toThrowWithMessage(
         EventHubTriggerDefinitionError,
-        'Decorator "Messages" is only allowed with cardinality "many".'
+        'Decorator "Messages" is only allowed with cardinality "many".',
       );
     });
 
     describe('undefined', () => {
       it('should provide undefined', async () => {
-        const argsProvider = subject.buildArgProviders({
-          args: [
-            {
-              type: 'undefined',
-            },
-          ],
-        });
+        const argsProvider = subject.buildArgProviders([
+          {
+            type: 'undefined',
+          },
+        ]);
         const args = await argsProvider({}, mockContext);
 
         expect(args[0]).toBeUndefined();
@@ -277,14 +273,12 @@ Error: Call failed.`)
       });
 
       it('should provide message', async () => {
-        const argsProvider = subject.buildArgProviders({
-          args: [
-            {
-              type: 'message',
-              payloadSchema: z.object({ text: z.string(), number: z.number().optional() }).array(),
-            },
-          ],
-        });
+        const argsProvider = subject.buildArgProviders([
+          {
+            type: 'message',
+            payloadSchema: z.object({ text: z.string(), number: z.number().optional() }).array(),
+          },
+        ]);
         const testMessage = [
           {
             text: 'text1',
@@ -302,14 +296,12 @@ Error: Call failed.`)
 
       it('should fail, if metadata cannot be parsed', async () => {
         delete mockContext.triggerMetadata?.partitionContext;
-        const argsProvider = subject.buildArgProviders({
-          args: [
-            {
-              type: 'message',
-              payloadSchema: z.object({ text: z.string(), number: z.number().optional() }).array(),
-            },
-          ],
-        });
+        const argsProvider = subject.buildArgProviders([
+          {
+            type: 'message',
+            payloadSchema: z.object({ text: z.string(), number: z.number().optional() }).array(),
+          },
+        ]);
         const testMessage = [
           {
             text: 'text1',
@@ -322,19 +314,17 @@ Error: Call failed.`)
 
         await expect(argsProvider(testMessage, mockContext)).rejects.toThrowWithMessage(
           HandlerArgsParseError,
-          /Error parsing trigger metadata:/
+          /Error parsing trigger metadata:/,
         );
       });
 
       it('should fail, if message cannot be parsed', async () => {
-        const argsProvider = subject.buildArgProviders({
-          args: [
-            {
-              type: 'message',
-              payloadSchema: z.object({ text: z.string(), number: z.number().optional() }).array(),
-            },
-          ],
-        });
+        const argsProvider = subject.buildArgProviders([
+          {
+            type: 'message',
+            payloadSchema: z.object({ text: z.string(), number: z.number().optional() }).array(),
+          },
+        ]);
         const testMessage = [
           {
             text: 'text1',
@@ -347,7 +337,7 @@ Error: Call failed.`)
 
         await expect(argsProvider(testMessage, mockContext)).rejects.toThrowWithMessage(
           HandlerArgsParseError,
-          /Error parsing extended message:/
+          /Error parsing extended message:/,
         );
       });
     });
@@ -391,9 +381,8 @@ Error: Call failed.`)
       });
 
       it('should provide request', async () => {
-        const argsProvider = subject.buildArgProviders({
-          cardinality: 'many',
-          args: [
+        const argsProvider = subject.buildArgProviders(
+          [
             {
               type: 'messages',
               isEventData: true,
@@ -410,7 +399,8 @@ Error: Call failed.`)
               payloadSchema: z.object({ text: z.string(), number: z.number().optional() }),
             },
           ],
-        });
+          'many',
+        );
         const testMessage = [
           {
             text: 'text1',
@@ -479,15 +469,15 @@ Error: Call failed.`)
       });
 
       it('should fail, if message is not an array', async () => {
-        const argsProvider = subject.buildArgProviders({
-          cardinality: 'many',
-          args: [
+        const argsProvider = subject.buildArgProviders(
+          [
             {
               type: 'messages',
               payloadSchema: z.object({ text: z.string(), number: z.number().optional() }),
             },
           ],
-        });
+          'many',
+        );
         const testMessage = {
           text: 'text1',
           number: 123,
@@ -495,21 +485,21 @@ Error: Call failed.`)
 
         await expect(argsProvider(testMessage, mockContext)).rejects.toThrowWithMessage(
           HandlerArgsParseError,
-          /Message should be an array for cardinality=many/
+          'Message should be an array for cardinality=many',
         );
       });
 
       it('should fail, if metadata cannot be parsed', async () => {
         delete mockContext.triggerMetadata?.partitionKeyArray;
-        const argsProvider = subject.buildArgProviders({
-          cardinality: 'many',
-          args: [
+        const argsProvider = subject.buildArgProviders(
+          [
             {
               type: 'messages',
               payloadSchema: z.object({ text: z.string(), number: z.number().optional() }),
             },
           ],
-        });
+          'many',
+        );
         const testMessage = [
           {
             text: 'text1',
@@ -522,20 +512,20 @@ Error: Call failed.`)
 
         await expect(argsProvider(testMessage, mockContext)).rejects.toThrowWithMessage(
           HandlerArgsParseError,
-          /Error parsing trigger metadata:/
+          /Error parsing trigger metadata:/,
         );
       });
 
       it('should fail, if message cannot be parsed', async () => {
-        const argsProvider = subject.buildArgProviders({
-          cardinality: 'many',
-          args: [
+        const argsProvider = subject.buildArgProviders(
+          [
             {
               type: 'messages',
               payloadSchema: z.object({ text: z.string(), number: z.number().optional() }),
             },
           ],
-        });
+          'many',
+        );
         const testMessage = [
           {
             text: 'text1',
@@ -548,20 +538,18 @@ Error: Call failed.`)
 
         await expect(argsProvider(testMessage, mockContext)).rejects.toThrowWithMessage(
           HandlerArgsParseError,
-          /Error parsing extended message:/
+          /Error parsing extended message:/,
         );
       });
     });
 
     describe('context', () => {
       it('should provide context', async () => {
-        const argsProvider = subject.buildArgProviders({
-          args: [
-            {
-              type: 'context',
-            },
-          ],
-        });
+        const argsProvider = subject.buildArgProviders([
+          {
+            type: 'context',
+          },
+        ]);
         const args = await argsProvider({}, mockContext);
 
         expect(args[0]).toBe(mockContext);

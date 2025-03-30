@@ -92,10 +92,10 @@ describe('AuthorizationServiceFactory', () => {
               'test-security3': [],
             },
           ],
-        })
+        }),
       ).toThrowWithMessage(
         HttpControllerDefinitionError,
-        'Security context provider "unknown-security" is not registered.'
+        'Security context provider "unknown-security" is not registered.',
       );
     });
 
@@ -122,10 +122,10 @@ describe('AuthorizationServiceFactory', () => {
               'test-security3': [],
             },
           ],
-        })
+        }),
       ).toThrowWithMessage(
         HttpControllerDefinitionError,
-        'Security context provider "unknown-security" is not registered.'
+        'Security context provider "unknown-security" is not registered.',
       );
     });
   });

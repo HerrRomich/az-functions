@@ -1,15 +1,15 @@
 import { ContainerModule } from 'inversify';
 import { AzureEventHubTriggerService } from './azure-event-hub-trigger.service';
 import { EventHubHandlerProvider } from './event-hub-handler.provider';
-import { EventHubHandlersMetadataService } from './event-hub-handlers-metadata.service';
-import { EventHubHandlersRegistrationService } from './event-hub-handlers-registration.service';
+import { EventHubHandlerRegistrationService } from './event-hub-handler-registration.service';
+import { EventHubHandleMethodArgsMetadataService } from './event-hub-handle-method-args-metadata.service';
 
 export * from './decorators';
-export { EventHubMessageWrapper } from './event-hub-handler.model';
+export { EventHubMessageWrapper, EventHubHandler } from './event-hub-handler.model';
 
-export const eventHubHandlersModule = new ContainerModule((bind) => {
+export const eventHubHandlersModule = new ContainerModule(({ bind }) => {
   bind(AzureEventHubTriggerService).toSelf();
-  bind(EventHubHandlersMetadataService).toSelf();
+  bind(EventHubHandleMethodArgsMetadataService).toSelf();
   bind(EventHubHandlerProvider).toSelf();
-  bind(EventHubHandlersRegistrationService).toSelf();
+  bind(EventHubHandlerRegistrationService).toSelf();
 });

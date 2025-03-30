@@ -45,11 +45,11 @@ export class AuthenticationServiceFactory {
     const { operationSecurities, applicationSecurities } = operationSecurityData;
     let securitySchemes: string[] = [];
     if (operationSecurities && operationSecurities.length > 0) {
-      securitySchemes = operationSecurities.flatMap((security) => Object.keys(security));
+      securitySchemes = operationSecurities.flatMap(security => Object.keys(security));
     } else if (applicationSecurities?.length) {
-      securitySchemes = applicationSecurities.flatMap((security) => Object.keys(security));
+      securitySchemes = applicationSecurities.flatMap(security => Object.keys(security));
     }
-    return _.uniq(securitySchemes).map((securityScheme) => ({
+    return _.uniq(securitySchemes).map(securityScheme => ({
       securityScheme,
       authenticationService: this.getAuthenticationService(securityScheme),
     }));

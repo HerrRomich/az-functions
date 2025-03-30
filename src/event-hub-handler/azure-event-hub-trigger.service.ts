@@ -2,7 +2,11 @@ import { InvocationContext } from '@azure/functions';
 import { injectable } from 'inversify';
 import { z } from 'zod';
 import { fromError } from 'zod-validation-error';
-import { EventHubHandlerMessageArgMetadata, EventHubHandlerMetadata } from './decorators';
+import {
+  EventHubHandlerArgMetadata,
+  EventHubHandlerCardinality,
+  EventHubHandlerMessageArgMetadata,
+} from './decorators';
 import {
   EventHubArgProvider,
   EventHubArgProviderInput,
@@ -51,7 +55,7 @@ export class AzureEventHubTriggerService {
       if (e instanceof Error) {
         context.error(
           `Internal error:
-${e.stack}`
+${e.stack}`,
         );
       } else {
         context.error(`Internal error: ${String(e)}`);
@@ -59,21 +63,24 @@ ${e.stack}`
     }
   }
 
-  buildArgProviders(handlerMetadata: EventHubHandlerMetadata): EventHubAsyncArgsProvider {
+  buildArgProviders(
+    args: EventHubHandlerArgMetadata[],
+    cardinality?: EventHubHandlerCardinality,
+  ): EventHubAsyncArgsProvider {
     const argProviders: EventHubArgProvider[] = [];
-    handlerMetadata.args.forEach((arg) => {
+    args.forEach(arg => {
       switch (arg.type) {
         case 'context':
           argProviders.push(({ context }) => context);
           break;
         case 'message':
-          if (handlerMetadata.cardinality === 'many') {
+          if (cardinality === 'many') {
             throw new EventHubTriggerDefinitionError('Decorator "Message" is not allowed with cardinality "many".');
           }
           argProviders.push(this.getMessageProvider(arg));
           break;
         case 'messages':
-          if (handlerMetadata.cardinality !== 'many') {
+          if (cardinality !== 'many') {
             throw new EventHubTriggerDefinitionError('Decorator "Messages" is only allowed with cardinality "many".');
           }
           argProviders.push(this.getMessagesProvider(arg));
@@ -91,12 +98,12 @@ ${e.stack}`
       /* There is a Bug in request.query
          new URL(request.url).searchParams will be used instead for query parameters,
        */
-      const args = await Promise.allSettled(
-        argProviders.map((argProvider) => {
+      return await Promise.allSettled(
+        argProviders.map(argProvider => {
           const asyncArgProvider = async () => argProvider({ messages, context });
           return asyncArgProvider();
-        })
-      ).then((results) => {
+        }),
+      ).then(results => {
         const splittedResults = results.reduce(
           (aggregator, currentValue) => {
             if (currentValue.status === 'fulfilled') {
@@ -106,21 +113,20 @@ ${e.stack}`
             }
             return aggregator;
           },
-          { fulfilled: Array<unknown>(), rejected: Array(0) }
+          { fulfilled: Array<unknown>(), rejected: Array(0) },
         );
         if (splittedResults.rejected.length === 0) {
           return splittedResults.fulfilled;
         } else {
-          const message = splittedResults.rejected.map((reason) => reason.message ?? String(reason)).join('\n\n');
+          const message = splittedResults.rejected.map(reason => reason.message ?? String(reason)).join('\n\n');
           throw new HandlerArgsParseError(message);
         }
       });
-      return args;
     };
   }
 
   private getMessageProvider(
-    argMetadata: EventHubHandlerMessageArgMetadata
+    argMetadata: EventHubHandlerMessageArgMetadata,
   ): (input: EventHubArgProviderInput) => unknown {
     const extendedMessageSchema = this.provideExtendedMessageSchema(argMetadata);
     return async ({ context, messages }): Promise<unknown> => {
@@ -130,7 +136,7 @@ ${e.stack}`
       } catch (e: unknown) {
         throw new HandlerArgsParseError(
           `Error parsing trigger metadata:
-${fromError(e).message}`
+${fromError(e).message}`,
         );
       }
       const extendedMessage: EventHubMessageWrapper<unknown, unknown, unknown> & { eventData: EventHubEventData } = {
@@ -144,14 +150,14 @@ ${fromError(e).message}`
       } catch (e: unknown) {
         throw new HandlerArgsParseError(
           `Error parsing extended message:
-${fromError(e).message}`
+${fromError(e).message}`,
         );
       }
     };
   }
 
   private getMessagesProvider(
-    argMetadata: EventHubHandlerMessageArgMetadata
+    argMetadata: EventHubHandlerMessageArgMetadata,
   ): (input: EventHubArgProviderInput) => unknown {
     const extendedMessagesSchema = this.provideExtendedMessageSchema(argMetadata).array();
     return async ({ context, messages }): Promise<unknown> => {
@@ -164,7 +170,7 @@ ${fromError(e).message}`
       } catch (e: unknown) {
         throw new HandlerArgsParseError(
           `Error parsing trigger metadata:
-${fromError(e).message}`
+${fromError(e).message}`,
         );
       }
       try {
@@ -186,7 +192,7 @@ ${fromError(e).message}`
       } catch (e: unknown) {
         throw new HandlerArgsParseError(
           `Error parsing extended message:
-${fromError(e).message}`
+${fromError(e).message}`,
         );
       }
     };

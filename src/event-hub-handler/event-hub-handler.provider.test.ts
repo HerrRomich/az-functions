@@ -4,7 +4,8 @@ import { mock, MockProxy } from 'jest-mock-extended';
 import { PlatformContextLocalStorage } from 'shared';
 import { AzureEventHubTriggerService } from './azure-event-hub-trigger.service';
 import { EventHubHandlerProvider } from './event-hub-handler.provider';
-import { EventHubTriggerRegistrationData } from './event-hub-handlers-registration.service';
+import { EventHubTriggerRegistrationData } from './event-hub-handler-registration.service';
+import { PartialDeep } from 'type-fest';
 
 describe('EventHubHandlerProvider', () => {
   const storage = new PlatformContextLocalStorage();
@@ -29,13 +30,19 @@ describe('EventHubHandlerProvider', () => {
   });
 
   describe('getEventHubTriggerHandler', () => {
-    const testRegistrationData = {} as EventHubTriggerRegistrationData;
+    const testRegistrationData = {
+      handleMethodMetadata: {
+        args: [],
+      },
+    } as PartialDeep<EventHubTriggerRegistrationData> as EventHubTriggerRegistrationData;
 
     const mockMessage = {};
     const mockContext = {} as InvocationContext;
 
     it('should handle trigger', async () => {
-      const handler = subject.getEventHubTriggerHandler(testRegistrationData, async () => {});
+      const handler = subject.getEventHubTriggerHandler(testRegistrationData, async () => {
+        // no implementation
+      });
 
       await handler(mockMessage, mockContext);
     });

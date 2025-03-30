@@ -11,7 +11,7 @@ const defaultRestApplication: RestApplication = {
   name: DEFAULT_APPLICATION,
   context: DEFAULT_APPLICATION,
   openApiConfig: {
-    openapi: '3.0.0',
+    openapi: '3.0.1',
     info: {
       version: '1.0.0',
       title: 'unknown',
@@ -23,7 +23,7 @@ const defaultRestApplication: RestApplication = {
 export class OpenApiDefinitionService {
   constructor(
     private readonly openApiMetadataService: OpenApiMetadataService,
-    @inject(REST_OPEN_API_REGISTRY) private readonly restOpenApiEntries: RestOpenApiEntries
+    @inject(REST_OPEN_API_REGISTRY) private readonly restOpenApiEntries: RestOpenApiEntries,
   ) {}
 
   getApplications(): string[] {

@@ -21,7 +21,7 @@ describe('decorators', () => {
 
       expect(() => initializeMetadata(subject, 'unknownMethod', getCommonArg)).toThrowWithMessage(
         PlatformError,
-        "Method TestClass.unknownMethod doesn't exist or has no metadata. Be sure to import reflect-metadata."
+        "Method TestClass.unknownMethod doesn't exist or has no metadata. Be sure to import reflect-metadata.",
       );
     });
   });

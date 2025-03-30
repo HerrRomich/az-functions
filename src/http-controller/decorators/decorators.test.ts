@@ -2,19 +2,19 @@ import { HttpRequest, InvocationContext } from '@azure/functions';
 import { AZURE_FUNCTION_METADATA_KEY, UserAccount } from 'shared';
 import { z } from 'zod';
 import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Head,
-  HeaderParam,
-  Patch,
-  PathParam,
-  Post,
-  Put,
-  QueryParam,
-  Request,
-  User,
+  body,
+  controller,
+  _delete,
+  get,
+  head,
+  headerParam,
+  patch,
+  pathParam,
+  post,
+  put,
+  queryParam,
+  request,
+  user,
 } from './decorators';
 import {
   ControllerConfig,
@@ -44,37 +44,37 @@ const testControllerRequestBodyOperationConfig: ControllerRequestBodyOperationCo
   },
 };
 
-@Controller(testControllerConfig)
+@controller(testControllerConfig)
 class TestController {
-  @Get(testControllerOperationConfig)
-  async testGetRequest(@User() _1: UserAccount, _2: number, _3: HttpRequest, _4: InvocationContext) {
+  @get(testControllerOperationConfig)
+  async testGetRequest(@user() _1: UserAccount, _2: number, _3: HttpRequest, _4: InvocationContext) {
     console.log('get-request');
   }
 
-  @Head(testControllerOperationConfig)
-  async testHeadRequest(@HeaderParam({ name: 'test-header', schema: z.string() }) _1: string, _2: string) {
+  @head(testControllerOperationConfig)
+  async testHeadRequest(@headerParam({ name: 'test-header', schema: z.string() }) _1: string, _2: string) {
     console.log('head-request');
   }
 
-  @Delete(testControllerOperationConfig)
-  async testDeleteRequest(@Request() _1: HttpRequest, _2: { param: string }) {
+  @_delete(testControllerOperationConfig)
+  async testDeleteRequest(@request() _1: HttpRequest, _2: { param: string }) {
     console.log('delete-request');
   }
 
-  @Post(testControllerRequestBodyOperationConfig)
-  async testPostRequest(@User() _1: UserAccount, @Body({ schema: z.string() }) _2: string) {
+  @post(testControllerRequestBodyOperationConfig)
+  async testPostRequest(@user() _1: UserAccount, @body({ schema: z.string() }) _2: string) {
     console.log('post-request');
   }
 
-  @Put(testControllerRequestBodyOperationConfig)
-  async testPutRequest(@PathParam({ name: 'test-path', schema: z.string() }) _1: string, @User() _2: UserAccount) {
+  @put(testControllerRequestBodyOperationConfig)
+  async testPutRequest(@pathParam({ name: 'test-path', schema: z.string() }) _1: string, @user() _2: UserAccount) {
     console.log('put-request');
   }
 
-  @Patch(testControllerRequestBodyOperationConfig)
+  @patch(testControllerRequestBodyOperationConfig)
   async testPatchRequest(
-    @QueryParam({ name: 'test-query', schema: z.string().array() }) _1: HttpRequest,
-    _2: { param: string }
+    @queryParam({ name: 'test-query', schema: z.string().array() }) _1: HttpRequest,
+    _2: { param: string },
   ) {
     console.log('patch-request');
   }
@@ -89,7 +89,8 @@ describe('decorators', () => {
 
   describe('Controller', () => {
     it('should provide controller with metadata', () => {
-      expect(Reflect.getMetadataKeys(TestController)).toEqual(['azure_function', 'inversify:paramtypes']);
+      const metadataKeys = Reflect.getMetadataKeys(TestController);
+      expect(metadataKeys).toEqual(['azure_function', '@inversifyjs/core/classIsInjectableFlagReflectKey']);
       expect(Reflect.getMetadata(AZURE_FUNCTION_METADATA_KEY, TestController)).toEqual({
         type: 'http-controller',
         path: 'test-path',

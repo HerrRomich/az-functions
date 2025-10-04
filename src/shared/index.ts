@@ -1,6 +1,5 @@
 import { ContainerModule } from 'inversify';
-import * as path from 'path';
-import { ZodFirstPartyTypeKind, ZodType } from 'zod';
+import * as path from 'node:path';
 import { BASE_DIR } from './platform.model';
 import { SYSTEM_USER_ACCOUNT, systemUserAccount } from './security.model';
 
@@ -13,8 +12,3 @@ export const sharedModule = new ContainerModule(({ bind }) => {
   bind(BASE_DIR).toConstantValue(path.resolve(__dirname, '.'));
   bind(SYSTEM_USER_ACCOUNT).toConstantValue(systemUserAccount);
 });
-
-export function zodTypeName(schema: ZodType): ZodFirstPartyTypeKind {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (schema._def as any).typeName;
-}

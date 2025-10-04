@@ -9,13 +9,16 @@ export const AZURE_FUNCTION_METADATA_KEY = 'azure_function';
 
 export type PlatformMode = 'start' | 'print-open-api';
 
-export class AzureFunctionRegistrationError extends Error {
-  constructor(message: string, options?: ErrorOptions) {
+export class AzureFunctionError extends Error {
+  constructor(message?: string, options?: ErrorOptions) {
     super(message, options);
-    this.name = 'AzureFunctionRegistrationError';
-    Object.setPrototypeOf(this, AzureFunctionRegistrationError.prototype);
+    this.name = this.constructor.name;
+    Object.setPrototypeOf(this, new.target.prototype);
   }
 }
+
+export class AzureFunctionRegistrationError extends AzureFunctionError {}
+
 export const AZURE_FUNCTION = Symbol.for('AZURE_FUNCTION');
 
 export type AzureFunctions = object;
@@ -25,10 +28,4 @@ export interface PlatformContext {
   readonly userAccount?: UserAccount;
 }
 
-export class PlatformError extends Error {
-  constructor(message?: string, options?: ErrorOptions) {
-    super(message, options);
-    this.name = 'PlatformError';
-    Object.setPrototypeOf(this, PlatformError.prototype);
-  }
-}
+export class PlatformError extends AzureFunctionError {}

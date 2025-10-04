@@ -152,4 +152,21 @@ describe('test AzureContainer', () => {
     expect(mockApiDefinitionService.generateDocument).toHaveBeenNthCalledWith(1, 'app1');
     expect(mockApiDefinitionService.generateDocument).toHaveBeenNthCalledWith(2, 'app2');
   });
+
+  it('should print error, if generation fails', async () => {
+    jest.spyOn(process, 'cwd').mockReturnValue('test-dir');
+    jest.mocked(fs.stat).mockRejectedValue(new Error("Dir doesn't exist."));
+    jest.mocked(fs.writeFile).mockRejectedValue(new Error('Cannot write file'));
+    const spyConsoleError = jest.spyOn(console, 'error');
+    initSubject('print-open-api');
+    mockApiDefinitionService.getApplications.mockReturnValue(['app1', 'app2']);
+
+    await subject.start();
+
+    expect(fs.stat).toHaveBeenCalledWith(path.resolve('test-dir', 'dist/open-api-definitions'));
+    expect(fs.mkdir).toHaveBeenCalledWith(path.resolve('test-dir', 'dist/open-api-definitions'));
+    expect(mockApiDefinitionService.generateDocument).toHaveBeenNthCalledWith(1, 'app1');
+    expect(mockApiDefinitionService.generateDocument).toHaveBeenNthCalledWith(2, 'app2');
+    expect(spyConsoleError).toHaveBeenCalledWith(expect.toStartWith('Error: Cannot write file'));
+  });
 });

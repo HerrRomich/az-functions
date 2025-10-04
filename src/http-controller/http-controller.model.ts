@@ -1,17 +1,19 @@
 import { HttpResponseInit } from '@azure/functions';
 import { StatusCodes } from 'http-status-codes';
 import type { OpenAPIObject, ResponseObject, SchemaObject } from 'openapi3-ts/oas30';
-import { ZodTypeAny } from 'zod';
+import { ZodType } from 'zod';
+import { ServiceIdentifier } from 'inversify';
+import { AzureFunctionError } from 'shared';
 
-export const REST_APPLICATION = Symbol.for('REST_APPLICATION');
+export const REST_APPLICATION: ServiceIdentifier<RestApplication> = Symbol.for('REST_APPLICATION');
 
-export const API_SCHEMA = Symbol.for('API_SCHEMA');
+export const API_SCHEMA: ServiceIdentifier<ApiSchema> = Symbol.for('API_SCHEMA');
 export interface ApiSchema {
   name: string;
-  schema: ZodTypeAny | SchemaObject;
+  schema: ZodType | SchemaObject;
 }
 
-export const API_RESPONSE = Symbol.for('API_RESPONSE');
+export const API_RESPONSE: ServiceIdentifier<ApiResponse> = Symbol.for('API_RESPONSE');
 export interface ApiResponse {
   name: string;
   response: ResponseObject;
@@ -30,17 +32,15 @@ export interface HttpTriggerErrorOptions extends ErrorOptions {
   response?: HttpResponseInit;
 }
 
-export class HttpTriggerError extends Error {
+export class HttpTriggerError extends AzureFunctionError {
   private readonly _response: HttpResponseInit;
-  constructor(message: string, options?: HttpTriggerErrorOptions) {
+  constructor(message?: string, options?: HttpTriggerErrorOptions) {
     super(message, options);
     this._response = {
       ...options?.response,
       status: options?.response?.status ?? StatusCodes.INTERNAL_SERVER_ERROR,
-      ...{ body: options?.response?.body ?? message },
+      body: options?.response?.body ?? message,
     };
-    this.name = 'HttpTriggerError';
-    Object.setPrototypeOf(this, HttpTriggerError.prototype);
   }
 
   get response(): HttpResponseInit {
@@ -49,33 +49,25 @@ export class HttpTriggerError extends Error {
 }
 
 export class BadRequestError extends HttpTriggerError {
-  constructor(message: string, options?: HttpTriggerErrorOptions) {
+  constructor(message?: string, options?: HttpTriggerErrorOptions) {
     super(message, { ...options, response: { ...options?.response, status: StatusCodes.BAD_REQUEST } });
-    this.name = 'BadRequestError';
-    Object.setPrototypeOf(this, BadRequestError.prototype);
   }
 }
 
 export class UnauthorizedError extends HttpTriggerError {
-  constructor(message: string, options?: HttpTriggerErrorOptions) {
+  constructor(message?: string, options?: HttpTriggerErrorOptions) {
     super(message, { ...options, response: { ...options?.response, status: StatusCodes.UNAUTHORIZED } });
-    this.name = 'UnauthorizedError';
-    Object.setPrototypeOf(this, UnauthorizedError.prototype);
   }
 }
 
 export class NotFoundError extends HttpTriggerError {
-  constructor(message: string, options?: HttpTriggerErrorOptions) {
+  constructor(message?: string, options?: HttpTriggerErrorOptions) {
     super(message, { ...options, response: { ...options?.response, status: StatusCodes.NOT_FOUND } });
-    this.name = 'NotFoundError';
-    Object.setPrototypeOf(this, NotFoundError.prototype);
   }
 }
 
 export class InternalServerError extends HttpTriggerError {
-  constructor(message: string, options?: HttpTriggerErrorOptions) {
+  constructor(message?: string, options?: HttpTriggerErrorOptions) {
     super(message, { ...options, response: { ...options?.response, status: StatusCodes.INTERNAL_SERVER_ERROR } });
-    this.name = 'InternalServerError';
-    Object.setPrototypeOf(this, InternalServerError.prototype);
   }
 }

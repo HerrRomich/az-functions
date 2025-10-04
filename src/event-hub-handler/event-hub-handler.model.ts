@@ -1,19 +1,14 @@
 import { InvocationContext } from '@azure/functions';
 import { z } from 'zod';
+import { AzureFunctionError } from 'shared';
 
 export interface EventHubHandler {
-  handle(...args: any[]): void | Promise<void>;
+  handle(...args: unknown[]): void | Promise<void>;
 }
 
 export const HANDLE_METHOD_NAME = 'handle';
 
-export class EventHubTriggerDefinitionError extends Error {
-  constructor(message?: string, options?: ErrorOptions) {
-    super(message, options);
-    this.name = 'EventHubTriggerDefinitionError';
-    Object.setPrototypeOf(this, EventHubTriggerDefinitionError.prototype);
-  }
-}
+export class EventHubTriggerDefinitionError extends AzureFunctionError {}
 
 export interface EventHubArgProviderInput {
   context: InvocationContext;
@@ -28,7 +23,7 @@ export const eventHubEventDataSchema = z.object({
     consumerGroupName: z.string(),
     eventHubPath: z.string(),
   }),
-  enqueuedTimeUtc: z.string().datetime(),
+  enqueuedTimeUtc: z.iso.datetime(),
   offset: z.string(),
   partitionKey: z.string(),
   sequenceNumber: z.number().int(),
@@ -37,20 +32,14 @@ export const eventHubEventDataSchema = z.object({
 export type EventHubEventData = z.infer<typeof eventHubEventDataSchema>;
 
 export type EventHubMessageWrapper<
-  T = unknown,
-  P = undefined,
-  SP = undefined,
-  ED extends true | undefined = undefined,
+  PAYLOAD = unknown,
+  PROPERTIES = undefined,
+  SYSTEM_PROPERTIES = undefined,
+  EVENT_DATA extends true | undefined = undefined,
 > = {
-  payload: T;
-} & (P extends undefined ? object : { properties: P }) &
-  (SP extends undefined ? object : { systemProperties: SP }) &
-  (ED extends undefined ? object : { eventData: EventHubEventData });
+  payload: PAYLOAD;
+} & (PROPERTIES extends undefined ? object : { properties: PROPERTIES }) &
+  (SYSTEM_PROPERTIES extends undefined ? object : { systemProperties: SYSTEM_PROPERTIES }) &
+  (EVENT_DATA extends undefined ? object : { eventData: EventHubEventData });
 
-export class HandlerArgsParseError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = HandlerArgsParseError.prototype.constructor.name;
-    Object.setPrototypeOf(this, HandlerArgsParseError.prototype);
-  }
-}
+export class HandlerArgsParseError extends AzureFunctionError {}

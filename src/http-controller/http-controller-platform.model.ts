@@ -1,14 +1,8 @@
 import { HttpMethod, HttpRequest, InvocationContext } from '@azure/functions';
-import { UserAccount } from 'shared';
+import { AzureFunctionError, UserAccount } from 'shared';
 import { OperationMethod } from './decorators';
 
-export class HttpControllerDefinitionError extends Error {
-  constructor(message?: string, options?: ErrorOptions) {
-    super(message, options);
-    this.name = 'HttpControllerDefinitionError';
-    Object.setPrototypeOf(this, HttpControllerDefinitionError.prototype);
-  }
-}
+export class HttpControllerDefinitionError extends AzureFunctionError {}
 
 export interface AsyncHttpRequestProviderInput {
   request: HttpRequest;

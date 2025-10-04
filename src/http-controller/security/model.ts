@@ -1,11 +1,10 @@
 import { SecuritySchemeObject } from 'openapi3-ts/oas30';
 import { AuthenticationService } from './authentication-service';
+import { AzureFunctionError } from 'shared';
 
-export class AuthenticationError extends Error {
+export class AuthenticationError extends AzureFunctionError {
   constructor(message?: string, options?: ErrorOptions) {
     super(message, options);
-    this.name = 'AuthenticationError';
-    Object.setPrototypeOf(this, AuthenticationError.prototype);
   }
 }
 

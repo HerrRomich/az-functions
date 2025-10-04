@@ -57,8 +57,8 @@ export class HttpRequestHandlerProvider {
         }
       }
       const contextStorage = await this.platformContainer.getAsync(PlatformContextLocalStorage);
-      return contextStorage.run({ invocationContext: context, userAccount }, async () => {
-        return this.httpTriggerService.handleHttpRequest(context, operationMetadata, async () => {
+      return await contextStorage.run({ invocationContext: context, userAccount }, async () => {
+        return await this.httpTriggerService.handleHttpRequest(context, operationMetadata, async () => {
           const args = await argsProvider(request, context, userAccount);
           return await method(...args);
         });

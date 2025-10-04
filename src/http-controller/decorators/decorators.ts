@@ -19,7 +19,7 @@ import {
   QueryItemSchema,
 } from './decorators.model';
 
-export function controller(config: ControllerConfig) {
+export function httpController(config: ControllerConfig) {
   return function <T extends AzureFunctions>(target: T) {
     const metadata: ControllerMetadata = {
       type: 'http-controller',
@@ -31,27 +31,27 @@ export function controller(config: ControllerConfig) {
   };
 }
 
-export function get(operationConfig?: ControllerOperationConfig) {
+export function httpGet(operationConfig?: ControllerOperationConfig) {
   return provideControllerOperationDecorator({ method: 'get', ...operationConfig });
 }
 
-export function head(operationConfig?: ControllerOperationConfig) {
+export function httpHead(operationConfig?: ControllerOperationConfig) {
   return provideControllerOperationDecorator({ method: 'head', ...operationConfig });
 }
 
-export function _delete(operationConfig?: ControllerOperationConfig) {
+export function httpDelete(operationConfig?: ControllerOperationConfig) {
   return provideControllerOperationDecorator({ method: 'delete', ...operationConfig });
 }
 
-export function post(operationConfig?: ControllerRequestBodyOperationConfig) {
+export function httpPost(operationConfig?: ControllerRequestBodyOperationConfig) {
   return provideControllerOperationDecorator({ method: 'post', ...operationConfig });
 }
 
-export function put(operationConfig?: ControllerRequestBodyOperationConfig) {
+export function httpPut(operationConfig?: ControllerRequestBodyOperationConfig) {
   return provideControllerOperationDecorator({ method: 'put', ...operationConfig });
 }
 
-export function patch(operationConfig?: ControllerRequestBodyOperationConfig) {
+export function httpPatch(operationConfig?: ControllerRequestBodyOperationConfig) {
   return provideControllerOperationDecorator({ method: 'patch', ...operationConfig });
 }
 
@@ -68,7 +68,7 @@ function provideControllerOperationDecorator(baseMetadata: ControllerOperationBa
   };
 }
 
-export function body(bodyConfig: ControllerRequest) {
+export function httpBody(bodyConfig: ControllerRequest) {
   return adjustOperationMetadata({
     type: 'body',
     ...bodyConfig,
@@ -80,7 +80,7 @@ export interface PathParamConfig {
   schema?: PathSchema;
 }
 
-export function pathParam(config: PathParamConfig) {
+export function httpPathParam(config: PathParamConfig) {
   return adjustOperationMetadata({
     type: 'path',
     ...config,
@@ -92,7 +92,7 @@ export interface QueryParamConfig {
   schema?: QueryItemSchema;
 }
 
-export function queryParam(config: QueryParamConfig) {
+export function httpQueryParam(config: QueryParamConfig) {
   return adjustOperationMetadata({
     type: 'query',
     ...config,
@@ -104,14 +104,14 @@ export interface HeaderParamConfig {
   schema?: ZodType<string | undefined>;
 }
 
-export function headerParam(config: HeaderParamConfig) {
+export function httpHeaderParam(config: HeaderParamConfig) {
   return adjustOperationMetadata({
     type: 'header',
     ...config,
   });
 }
 
-export function request() {
+export function httpRequest() {
   return adjustOperationMetadata({
     type: 'request',
   });

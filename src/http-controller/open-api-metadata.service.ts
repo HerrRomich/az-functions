@@ -1,7 +1,7 @@
 import { ResponseConfig, RouteConfig, ZodRequestBody } from '@asteasolutions/zod-to-openapi';
 import { injectable } from 'inversify';
 import { optionalStringSchema, stringSchema } from 'shared';
-import { z, ZodArray, ZodRawShape, ZodType } from 'zod';
+import { z, ZodArray, ZodType } from 'zod';
 import {
   ControllerMetadata,
   ControllerOperationMetadata,
@@ -24,11 +24,11 @@ export class OpenApiMetadataService {
   }
 
   getRequest(operationMetadata: ControllerOperationMetadata): RouteConfigRequest {
-    const paramsShape: ZodRawShape = {};
-    const headersShape: ZodRawShape = {};
-    const queriesShape: ZodRawShape = {};
+    const paramsShape: Record<string, ZodType> = {};
+    const headersShape: Record<string, ZodType> = {};
+    const queriesShape: Record<string, ZodType> = {};
     let requestBody: ZodRequestBody | undefined = undefined;
-    operationMetadata.args.forEach(arg => {
+    for (const arg of operationMetadata.args) {
       switch (arg.type) {
         case 'path':
           paramsShape[arg.name] = arg.schema ?? stringSchema;
@@ -56,7 +56,7 @@ export class OpenApiMetadataService {
         case 'context':
           break;
       }
-    });
+    }
 
     return {
       params: z.object(paramsShape),
@@ -66,10 +66,8 @@ export class OpenApiMetadataService {
     };
   }
 
-  getResponse(operationMetadata: ControllerOperationMetadata): Responses {
-    const responses = {
-      ...(operationMetadata.responses ?? {}),
-    };
+  getResponses(operationMetadata: ControllerOperationMetadata): Responses {
+    const responses = { ...operationMetadata.responses };
     const directResponse = operationMetadata.response;
     if (directResponse) {
       const customStatus = directResponse.status ?? 200;
@@ -87,14 +85,16 @@ export class OpenApiMetadataService {
     return Object.getOwnPropertyNames(responses).length
       ? responses
       : {
-          '204': { description: 'Default no content' },
+          '204': {
+            description: 'Default no content',
+          },
         };
   }
 
   private static getQueryType(arg: OperationQueryArgMetadata): ZodType<QueryItemType> {
     let querySchema = arg.schema;
     if (querySchema instanceof ZodArray) {
-      querySchema = querySchema.optional();
+      querySchema = (querySchema as ZodType<string[] | number[]>).optional();
     }
     return querySchema ?? optionalStringSchema;
   }

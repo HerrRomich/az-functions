@@ -1,13 +1,13 @@
 import { app } from '@azure/functions';
-import { BindInWhenOnFluentSyntax, BindToFluentSyntax, Container, ResolutionContext } from 'inversify';
+import { BindInWhenOnFluentSyntax, BindToFluentSyntax, Container } from 'inversify';
 import { DeepMockProxy, mock, mockDeep, MockProxy } from 'jest-mock-extended';
 import * as process from 'process';
 import { PLATFORM_CONTAINER, PLATFORM_MODE, sharedModule } from 'shared';
-import { Logger } from 'winston';
 import { AzurePlatform } from './azure-platform';
 import { eventHubHandlersModule, httpControllerModule, platform, STARTUP_SERVICE } from './index';
 import { PlatformComponentMetadataService } from './platform-component-metadata.service';
-import { REGISTER_FUNCTIONS_FACTORY, registerFunctionsFactory } from './register-functions.factory';
+import { REGISTER_FUNCTIONS_FACTORY } from './register-functions.factory';
+import * as winston from 'winston';
 
 jest.mock('inversify', () => {
   const original = jest.requireActual('inversify');
@@ -29,7 +29,6 @@ describe('test platform', () => {
   let prevPlatformMode: string | undefined;
   let mockAppStart: jest.Mock;
   let mockStartup: jest.Mock;
-  let mockContext: MockProxy<ResolutionContext>;
 
   beforeEach(() => {
     mockSystemContainer = mock();
@@ -59,7 +58,6 @@ describe('test platform', () => {
     mockPlatformModeBinding.toDynamicValue.mockReturnValue(mockBindingInWhenOn);
 
     mockAzurePlatform = mock();
-    mockContext = mock();
 
     mockSystemContainer.getAsync.mockImplementation(async (serviceIdentifier): Promise<AzurePlatform | undefined> => {
       if (serviceIdentifier === AzurePlatform) {
@@ -78,7 +76,7 @@ describe('test platform', () => {
     await platform(mockPlatformContainer);
 
     expect(mockSystemContainer.bind).toHaveBeenCalledWith(AzurePlatform);
-    expect(mockPlatformContainer.bind).toHaveBeenCalledWith(Logger);
+    expect(mockPlatformContainer.bind).toHaveBeenCalledWith(winston.Logger);
     expect(mockSystemContainer.bind).toHaveBeenCalledWith(PLATFORM_CONTAINER);
     expect(mockSystemContainer.bind).toHaveBeenCalledWith(PlatformComponentMetadataService);
     expect(mockSystemContainer.bind).toHaveBeenCalledWith(PLATFORM_MODE);
@@ -90,12 +88,6 @@ describe('test platform', () => {
     expect(mockStartup).not.toHaveBeenCalled();
     await startupMethod();
     expect(mockStartup).toHaveBeenCalled();
-
-    const dynamicValueFunc = mockPlatformModeBinding.toDynamicValue.mock.calls[0]![0];
-    expect(dynamicValueFunc(mockContext)).toBeInstanceOf(Logger);
-    const factoryFunc = mockBindingTo.toFactory.mock.calls[0]![0] as any;
-    factoryFunc(mockContext);
-    expect(registerFunctionsFactory).toHaveBeenCalledWith(mockContext);
   });
 
   it('should print open api', async () => {

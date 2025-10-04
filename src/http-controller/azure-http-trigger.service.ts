@@ -1,18 +1,8 @@
 import { HttpResponseInit, InvocationContext } from '@azure/functions';
 import { StatusCodes } from 'http-status-codes';
 import { injectable } from 'inversify';
-import { optionalStringSchema, stringSchema, zodTypeName } from 'shared';
-import {
-  z,
-  ZodArrayDef,
-  ZodError,
-  ZodFirstPartyTypeKind,
-  ZodNullableDef,
-  ZodOptionalDef,
-  ZodPipeline,
-  ZodType,
-} from 'zod';
-import { fromError, fromZodError } from 'zod-validation-error';
+import { AzureFunctionError, optionalStringSchema, stringSchema } from 'shared';
+import { z, ZodArray, ZodError, ZodNullable, ZodOptional, ZodPipe, ZodType } from 'zod';
 import {
   ControllerOperationMetadata,
   OperationPathArgMetadata,
@@ -26,13 +16,7 @@ import {
 } from './http-controller-platform.model';
 import { BadRequestError, HttpTriggerError } from './http-controller.model';
 
-class ArgParseError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ArgParseError';
-    Object.setPrototypeOf(this, ArgParseError.prototype);
-  }
-}
+class ArgParseError extends AzureFunctionError {}
 
 @injectable()
 export class AzureHttpTriggerService {
@@ -58,10 +42,10 @@ export class AzureHttpTriggerService {
         return e.response;
       } else {
         if (e instanceof ZodError) {
-          const validationError = fromZodError(e);
           context.error(
             `Response validation error.
-${validationError.stack}`,
+${z.prettifyError(e)}
+${e.stack}`,
           );
         } else if (e instanceof Error) {
           context.error(e.stack);
@@ -78,7 +62,7 @@ ${validationError.stack}`,
 
   buildArgProviders(operationMetadata: ControllerOperationMetadata): AsyncHttpRequestArgsProvider {
     const argProviders: AsyncHttpRequestProvider[] = [];
-    operationMetadata.args.forEach(arg => {
+    for (const arg of operationMetadata.args) {
       switch (arg.type) {
         case 'path': {
           argProviders.push(this.getPathParamProvider(arg));
@@ -110,17 +94,18 @@ ${validationError.stack}`,
           argProviders.push(() => undefined);
           break;
       }
-    });
+    }
     return this.getArgsProvider(argProviders);
   }
 
   private getArgsProvider(argProviders: AsyncHttpRequestProvider[]): AsyncHttpRequestArgsProvider {
-    return async (request, context, userAccount) => {
+    return async (request, context, userAccount): Promise<unknown[]> => {
       /* There is a Bug in request.query
          new URL(request.url).searchParams will be used instead for query parameters,
        */
       const queryItems = new URL(request.url).searchParams;
-      const args = await Promise.allSettled(
+
+      return await Promise.allSettled(
         argProviders.map(argProvider => {
           const asyncArgProvider = async () => argProvider({ request, context, userAccount, queryItems });
           return asyncArgProvider();
@@ -135,7 +120,7 @@ ${validationError.stack}`,
             }
             return aggregator;
           },
-          { fulfilled: Array<unknown>(), rejected: Array(0) },
+          { fulfilled: new Array<unknown>(), rejected: new Array(0) },
         );
         if (splittedResults.rejected.length === 0) {
           return splittedResults.fulfilled;
@@ -144,7 +129,6 @@ ${validationError.stack}`,
           throw new BadRequestError(message);
         }
       });
-      return args;
     };
   }
 
@@ -157,7 +141,7 @@ ${validationError.stack}`,
         if (e instanceof ZodError) {
           throw new ArgParseError(
             `Error parsing request body:
-${fromZodError(e).message}`,
+${z.prettifyError(e)}`,
           );
         } else {
           throw e;
@@ -177,10 +161,15 @@ ${fromZodError(e).message}`,
       try {
         return coercePathParamSchema.parse(pathParam);
       } catch (e) {
-        throw new ArgParseError(
-          `Error parsing path parameter=${pathParamName}:
-${fromError(e).message}`,
-        );
+        /* istanbul ignore else */
+        if (e instanceof ZodError) {
+          throw new ArgParseError(
+            `Error parsing path parameter=${pathParamName}:
+${z.prettifyError(e)}`,
+          );
+        } else {
+          throw e;
+        }
       }
     };
   }
@@ -190,14 +179,18 @@ ${fromError(e).message}`,
     headerSchema: ZodType<string | undefined>,
   ): (input: AsyncHttpRequestProviderInput) => string | undefined {
     return ({ request }): string | undefined => {
-      const headerElöement = request.headers.get(headerItemName) ?? undefined;
+      const headerElement = request.headers.get(headerItemName) ?? undefined;
       try {
-        return headerSchema.parse(headerElöement);
+        return headerSchema.parse(headerElement);
       } catch (e) {
-        throw new ArgParseError(
-          `Error parsing header item=${headerItemName}:
-${fromError(e).message}`,
-        );
+        if (e instanceof ZodError) {
+          throw new ArgParseError(
+            `Error parsing header item=${headerItemName}:
+${z.prettifyError(e)}`,
+          );
+        } else {
+          throw e;
+        }
       }
     };
   }
@@ -206,8 +199,8 @@ ${fromError(e).message}`,
     arg: OperationQueryArgMetadata,
   ): (input: AsyncHttpRequestProviderInput) => QueryItemType {
     const querySchema = arg.schema ?? optionalStringSchema;
-    const isArray = zodTypeName(querySchema) === ZodFirstPartyTypeKind.ZodArray;
-    const coercedQuerySchema = this.getCoercedSchema(querySchema, isArray);
+    const isArray = querySchema instanceof ZodArray;
+    const coercedQuerySchema = this.getCoercedSchema(querySchema);
     const queryItemName = arg.name;
     return ({ queryItems }): QueryItemType => {
       let queryItemValue: unknown;
@@ -219,52 +212,49 @@ ${fromError(e).message}`,
       try {
         return coercedQuerySchema.parse(queryItemValue);
       } catch (e) {
-        throw new ArgParseError(
-          `Error parsing query item=${queryItemName}:
-${fromError(e).message}`,
-        );
+        if (e instanceof ZodError) {
+          throw new ArgParseError(
+            `Error parsing query item=${queryItemName}:
+${z.prettifyError(e)}`,
+          );
+        } else {
+          throw e;
+        }
       }
     };
   }
 
-  private getCoercedSchema<T extends ZodType>(schema: T, isArray = false): ZodPipeline<ZodType, T> {
-    let singleSchema = isArray ? (schema._def as ZodArrayDef).type : schema;
+  private getCoercedSchema<T extends ZodType>(schema: T): ZodPipe<ZodType, T> {
+    const isArray = schema instanceof ZodArray;
+    let singleSchema = isArray ? (schema.unwrap() as ZodType) : schema;
     singleSchema =
-      zodTypeName(singleSchema) === ZodFirstPartyTypeKind.ZodOptional
-        ? (singleSchema._def as ZodOptionalDef).innerType
-        : singleSchema;
+      singleSchema.type === 'optional' ? ((singleSchema as ZodOptional).unwrap() as ZodType) : singleSchema;
     singleSchema =
-      zodTypeName(singleSchema) === ZodFirstPartyTypeKind.ZodNullable
-        ? (singleSchema._def as ZodNullableDef).innerType
-        : singleSchema;
-    const singleTypeName = zodTypeName(singleSchema);
-    let coercedSchema = this.getCoercedSingleSchema(singleTypeName);
+      singleSchema.type === 'nullable' ? ((singleSchema as ZodNullable).unwrap() as ZodType) : singleSchema;
+    let coercedSchema = this.getCoercedSingleSchema(singleSchema);
     if (isArray) {
       coercedSchema = coercedSchema.array();
     }
     return coercedSchema.pipe(schema);
   }
 
-  private getCoercedSingleSchema(singleTypeName: ZodFirstPartyTypeKind): ZodType {
+  private getCoercedSingleSchema(singleType: ZodType): ZodType {
     return z
       .string()
       .optional()
       .transform(val => {
-        if (singleTypeName === ZodFirstPartyTypeKind.ZodBoolean) {
-          {
-            if (val === 'true') {
-              return true;
-            } else if (val === 'false') {
-              return false;
-            } else {
-              return val;
-            }
+        const singleTypeName = singleType.type;
+        if (singleTypeName === 'boolean') {
+          if (val === 'true') {
+            return true;
+          } else if (val === 'false') {
+            return false;
+          } else {
+            return val;
           }
-        } else if (singleTypeName === ZodFirstPartyTypeKind.ZodNumber) {
-          {
-            const numVal = Number(val).valueOf();
-            return Number.isNaN(numVal) ? val : numVal;
-          }
+        } else if (singleTypeName === 'number') {
+          const numVal = Number(val).valueOf();
+          return Number.isNaN(numVal) ? val : numVal;
         } else {
           return val;
         }

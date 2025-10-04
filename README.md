@@ -118,7 +118,7 @@ platformContainer.bind(STARTUP_SERVICE).to(AzStartupService);
 ## HTTP Trigger
 ```typescript
 // src/apis/users-management/users-management.application.ts
-import { RestApplication } from '@herrromich/az-functions';
+import { RestApplication, REST_APPLICATION } from '@herrromich/az-functions';
 import { platformContainer } from "src/platform-container";
 
 export const USERS_MANAGEMENT_API = 'users-management';
@@ -141,7 +141,7 @@ export const USERS_MANAGEMENT_APPLICATION: RestApplication = {
 };
 
 // API registration
-platformContainer.bind<RestApplication>(REST_APPLICATION).toConstantValue(USERS_MANAGEMENT_APPLICATION);
+platformContainer.bind(REST_APPLICATION).toConstantValue(USERS_MANAGEMENT_APPLICATION);
 ```
 ```typescript
 // src/apis/users-management/users-management.controller.ts

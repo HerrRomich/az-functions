@@ -1,7 +1,7 @@
-import { controller } from '../http-controller';
+import { httpController } from '../http-controller';
 import { PlatformComponentMetadataService } from './platform-component-metadata.service';
 
-@controller({
+@httpController({
   path: 'test-path',
   tags: ['tag1', 'tag2'],
   application: 'test-application',

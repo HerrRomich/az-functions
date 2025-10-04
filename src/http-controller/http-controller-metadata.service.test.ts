@@ -1,17 +1,17 @@
 import { z } from 'zod';
-import { body, controller, get } from './decorators';
+import { httpBody, httpController, httpGet } from './decorators';
 import { HttpControllerMetadataService } from './http-controller-metadata.service';
 
-@controller({
+@httpController({
   path: 'test-path',
   tags: ['tag1', 'tag2'],
   application: 'test-application',
 })
 class TestHttpController {
-  @get({
+  @httpGet({
     path: 'test-path',
   })
-  async getTestData(@body({ schema: z.object({ text: z.string() }) }) _body: never): Promise<string> {
+  async getTestData(@httpBody({ schema: z.object({ text: z.string() }) }) _body: never): Promise<string> {
     return 'test-value';
   }
 }

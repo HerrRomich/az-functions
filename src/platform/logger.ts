@@ -1,12 +1,19 @@
 import { InvocationContext } from '@azure/functions';
-import { LoggerOptions } from 'winston';
+import * as winston from 'winston';
 import * as Transport from 'winston-transport';
-import { PlatformContextLocalStorage } from '../shared/platform-context-local-storage';
+import { PlatformContextLocalStorage } from 'shared';
 
 type ILogger = Pick<InvocationContext, 'log' | 'trace' | 'debug' | 'info' | 'warn' | 'error'>;
 
+const SPLAT_SYMBOL = Symbol.for('splat');
+const LEVEL_SYMBOL = Symbol.for('level');
+
 export const LOGGER_SETTINGS = Symbol.for('LOGGER_SETTINGS');
-export type LoggerSettings = Pick<LoggerOptions, 'level' | 'format'>;
+export const LOGGER_FACTORY = Symbol.for('LOGGER_FACTORY');
+export type LoggerSettings = Pick<winston.LoggerOptions, 'level' | 'format'>;
+
+export type Logger = Pick<winston.Logger, 'error' | 'warn' | 'info' | 'debug' | 'verbose'>;
+export type LoggerFactory = (service?: string) => Logger;
 
 export class AzureLogTransporter extends Transport {
   private getLogger(): ILogger {
@@ -17,38 +24,43 @@ export class AzureLogTransporter extends Transport {
     private readonly contextStorage: PlatformContextLocalStorage,
     opt?: Transport.TransportStreamOptions,
   ) {
-    super(opt);
+    super({ ...opt });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   log(info: any, next: () => void): any {
     const logger = this.getLogger();
-    const { level, ...logData } = Object.entries(info).reduce((prev, [key, value]) => {
-      prev[key] = value;
-      return prev;
-    }, {} as any);
+    const { [LEVEL_SYMBOL]: level, message, stack, [SPLAT_SYMBOL]: splat } = info;
     setImmediate(() => {
       this.emit('logged', info);
     });
+    let combinedMessage: string = message;
+    if (stack) {
+      combinedMessage = combinedMessage.concat('\n', stack);
+    }
+    const args = Array.isArray(splat) ? [...splat] : [];
     switch (level) {
       case 'error':
-        logger.error(logData);
+        logger.error(combinedMessage, ...args);
         break;
       case 'warn':
-        logger.warn(logData);
+        logger.warn(combinedMessage, ...args);
         break;
       case 'info':
-        logger.info(logData);
+        logger.info(combinedMessage, ...args);
         break;
       case 'debug':
-        logger.debug(logData);
+        logger.debug(combinedMessage, ...args);
         break;
       case 'trace':
-        logger.trace(logData);
+        logger.trace(combinedMessage, ...args);
         break;
       default:
-        logger.log(logData);
+        logger.log(combinedMessage, ...args);
         break;
     }
-    next();
+    if (next) {
+      next();
+    }
   }
 }

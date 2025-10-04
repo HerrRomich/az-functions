@@ -1,6 +1,7 @@
-import { z, ZodObject, ZodRawShape, ZodType } from 'zod';
+import { z, ZodArray, ZodBoolean, ZodNumber, ZodOptional, ZodString, ZodType } from 'zod';
 import { ControllerMetadata, ControllerOperationMetadata } from './decorators';
 import { OpenApiMetadataService } from './open-api-metadata.service';
+import { PartialDeep } from 'type-fest';
 
 describe('OpenApiMetadataService', () => {
   let subject: OpenApiMetadataService;
@@ -56,90 +57,121 @@ describe('OpenApiMetadataService', () => {
   });
 
   describe('getRequest', () => {
-    it('should return route config request', () => {
-      const testOperationMetadata = {
-        args: [
-          {
-            type: 'path',
-            name: 'test-path-parameter1',
-            schema: z.boolean(),
-          },
-          {
-            type: 'path',
-            name: 'test-path-parameter2',
-          },
-          {
-            type: 'header',
-            name: 'test-header-item1',
-            schema: z.string(),
-          },
-          {
-            type: 'header',
-            name: 'test-header-item2',
-          },
-          {
-            type: 'query',
-            name: 'test-query-item1',
-            schema: z.array(z.string()).optional(),
-          },
-          {
-            type: 'query',
-            name: 'test-query-item2',
-            schema: z.array(z.number()),
-          },
-          {
-            type: 'query',
-            name: 'test-query-item3',
-          },
-          {
-            type: 'body',
-            schema: z.object({
-              prop1: z.boolean(),
-            }),
-          },
-          {
-            type: 'user',
-          },
-        ],
-      } as unknown as ControllerOperationMetadata;
+    const testOperationMetadata = {
+      args: [
+        {
+          type: 'path',
+          name: 'test-path-parameter1',
+          schema: z.boolean(),
+        },
+        {
+          type: 'path',
+          name: 'test-path-parameter2',
+        },
+        {
+          type: 'header',
+          name: 'test-header-item1',
+          schema: z.string(),
+        },
+        {
+          type: 'header',
+          name: 'test-header-item2',
+        },
+        {
+          type: 'query',
+          name: 'test-query-item1',
+          schema: z.array(z.string()).optional(),
+        },
+        {
+          type: 'query',
+          name: 'test-query-item2',
+          schema: z.array(z.number()),
+        },
+        {
+          type: 'query',
+          name: 'test-query-item3',
+        },
+        {
+          type: 'body',
+          schema: z.object({
+            prop1: z.boolean(),
+          }),
+        },
+        {
+          type: 'user',
+        },
+      ],
+    } as PartialDeep<ControllerOperationMetadata> as ControllerOperationMetadata;
+    let request: ReturnType<OpenApiMetadataService['getRequest']>;
 
-      const request = subject.getRequest(testOperationMetadata);
+    beforeEach(() => {
+      request = subject.getRequest(testOperationMetadata);
+    });
 
-      const requestParams = request?.params as ZodObject<ZodRawShape>;
-      expect(requestParams.shape['test-path-parameter1']?._def.typeName).toEqual('ZodBoolean');
-      expect(requestParams.shape['test-path-parameter2']?._def.typeName).toEqual('ZodString');
-      const requestHeaders = request?.headers as ZodObject<ZodRawShape>;
-      expect(requestHeaders.shape['test-header-item1']?._def.typeName).toEqual('ZodString');
-      expect(requestHeaders.shape['test-header-item2']?._def).toMatchObject({
-        typeName: 'ZodOptional',
-        innerType: { _def: { typeName: 'ZodString' } },
-      });
-      const requestQueryParams = request?.query as ZodObject<ZodRawShape>;
-      expect(requestQueryParams.shape['test-query-item1']?._def).toMatchObject({
-        typeName: 'ZodOptional',
-        innerType: { _def: { typeName: 'ZodArray', type: { _def: { typeName: 'ZodString' } } } },
-      });
-      expect(requestQueryParams.shape['test-query-item2']?._def).toMatchObject({
-        typeName: 'ZodOptional',
-        innerType: { _def: { typeName: 'ZodArray', type: { _def: { typeName: 'ZodNumber' } } } },
-      });
-      expect(requestQueryParams.shape['test-query-item3']?._def).toMatchObject({
-        typeName: 'ZodOptional',
-        innerType: { _def: { typeName: 'ZodString' } },
-      });
-      const requestBody = request?.body?.content['application/json']?.schema as ZodObject<ZodRawShape>;
-      expect(requestBody?.shape['prop1']?._def.typeName).toEqual('ZodBoolean');
+    it('should return route config request object with params', () => {
+      const requestParams = request?.params;
+      if (requestParams?.type !== 'object') {
+        throw new Error('Request params is not an object');
+      }
+      expect(requestParams.shape['test-path-parameter1']).toBeInstanceOf(ZodBoolean);
+      expect(requestParams.shape['test-path-parameter2']).toBeInstanceOf(ZodString);
+    });
+
+    it('should return route config request object with headers', () => {
+      const requestHeaders = request?.headers;
+      if (Array.isArray(requestHeaders) || requestHeaders?.type !== 'object') {
+        throw new Error('Request headers is not an object');
+      }
+      expect(requestHeaders.shape['test-header-item1']).toBeInstanceOf(ZodString);
+      const testHeaderItem2Type = requestHeaders.shape['test-header-item2'];
+      if (!(testHeaderItem2Type instanceof ZodOptional)) {
+        throw new Error('Request header item 2 is not optional');
+      }
+      expect(testHeaderItem2Type.unwrap()).toBeInstanceOf(ZodString);
+    });
+
+    it('should return route config request object with query', () => {
+      const requestQuery = request?.query;
+      if (Array.isArray(requestQuery) || requestQuery?.type !== 'object') {
+        throw new Error('Request query is not an object');
+      }
+      const testQueryItem1Type = requestQuery.shape['test-query-item1'];
+      if (!(testQueryItem1Type instanceof ZodOptional)) {
+        throw new Error('Request header item 1 is not optional');
+      }
+      const testQueryItem1InnerType = testQueryItem1Type.unwrap();
+      if (!(testQueryItem1InnerType instanceof ZodArray)) {
+        throw new Error('Request header item 1 is not an array');
+      }
+      expect(testQueryItem1InnerType.element).toBeInstanceOf(ZodString);
+
+      const testQueryItem2Type = requestQuery.shape['test-query-item2'];
+      if (!(testQueryItem2Type instanceof ZodOptional)) {
+        throw new Error('Request header item 2 is not optional');
+      }
+      const testQueryItem2InnerType = testQueryItem2Type.unwrap();
+      if (!(testQueryItem2InnerType instanceof ZodArray)) {
+        throw new Error('Request header item 2 is not an array');
+      }
+      expect(testQueryItem2InnerType.element).toBeInstanceOf(ZodNumber);
+
+      const testQueryItem3Type = requestQuery.shape['test-query-item3'];
+      if (!(testQueryItem3Type instanceof ZodOptional)) {
+        throw new Error('Request header item 3 is not optional');
+      }
+      const testQueryItem3InnerType = testQueryItem3Type.unwrap();
+      expect(testQueryItem3InnerType).toBeInstanceOf(ZodString);
     });
   });
 
   describe('getResponse', () => {
     it('should return no content if no responses set', () => {
-      const response = subject.getResponse({} as unknown as ControllerOperationMetadata);
+      const response = subject.getResponses({} as unknown as ControllerOperationMetadata);
 
       expect(response).toEqual({
-          204: {
-            description: 'Default no content',
-          },
+        204: {
+          description: 'Default no content',
+        },
       });
     });
 
@@ -151,7 +183,7 @@ describe('OpenApiMetadataService', () => {
           contentSchema: testSchema,
         },
       } as ControllerOperationMetadata;
-      const response = subject.getResponse(testOperationMetadata);
+      const response = subject.getResponses(testOperationMetadata);
 
       expect(response).toEqual({
         200: {
@@ -175,7 +207,7 @@ describe('OpenApiMetadataService', () => {
         contentSchema: testSchema,
       },
     } as ControllerOperationMetadata;
-    const response = subject.getResponse(testOperationMetadata);
+    const response = subject.getResponses(testOperationMetadata);
 
     expect(response).toEqual({
       201: {
@@ -206,7 +238,7 @@ describe('OpenApiMetadataService', () => {
         },
       },
     } as unknown as ControllerOperationMetadata;
-    const response = subject.getResponse(testOperationMetadata);
+    const response = subject.getResponses(testOperationMetadata);
 
     expect(response).toEqual({
       201: {

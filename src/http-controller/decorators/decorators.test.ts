@@ -2,18 +2,18 @@ import { HttpRequest, InvocationContext } from '@azure/functions';
 import { AZURE_FUNCTION_METADATA_KEY, UserAccount } from 'shared';
 import { z } from 'zod';
 import {
-  body,
-  controller,
-  _delete,
-  get,
-  head,
-  headerParam,
-  patch,
-  pathParam,
-  post,
-  put,
-  queryParam,
-  request,
+  httpBody,
+  httpController,
+  httpDelete,
+  httpGet,
+  httpHead,
+  httpHeaderParam,
+  httpPatch,
+  httpPathParam,
+  httpPost,
+  httpPut,
+  httpQueryParam,
+  httpRequest,
   user,
 } from './decorators';
 import {
@@ -44,36 +44,36 @@ const testControllerRequestBodyOperationConfig: ControllerRequestBodyOperationCo
   },
 };
 
-@controller(testControllerConfig)
+@httpController(testControllerConfig)
 class TestController {
-  @get(testControllerOperationConfig)
+  @httpGet(testControllerOperationConfig)
   async testGetRequest(@user() _1: UserAccount, _2: number, _3: HttpRequest, _4: InvocationContext) {
     console.log('get-request');
   }
 
-  @head(testControllerOperationConfig)
-  async testHeadRequest(@headerParam({ name: 'test-header', schema: z.string() }) _1: string, _2: string) {
+  @httpHead(testControllerOperationConfig)
+  async testHeadRequest(@httpHeaderParam({ name: 'test-header', schema: z.string() }) _1: string, _2: string) {
     console.log('head-request');
   }
 
-  @_delete(testControllerOperationConfig)
-  async testDeleteRequest(@request() _1: HttpRequest, _2: { param: string }) {
+  @httpDelete(testControllerOperationConfig)
+  async testDeleteRequest(@httpRequest() _1: HttpRequest, _2: { param: string }) {
     console.log('delete-request');
   }
 
-  @post(testControllerRequestBodyOperationConfig)
-  async testPostRequest(@user() _1: UserAccount, @body({ schema: z.string() }) _2: string) {
+  @httpPost(testControllerRequestBodyOperationConfig)
+  async testPostRequest(@user() _1: UserAccount, @httpBody({ schema: z.string() }) _2: string) {
     console.log('post-request');
   }
 
-  @put(testControllerRequestBodyOperationConfig)
-  async testPutRequest(@pathParam({ name: 'test-path', schema: z.string() }) _1: string, @user() _2: UserAccount) {
+  @httpPut(testControllerRequestBodyOperationConfig)
+  async testPutRequest(@httpPathParam({ name: 'test-path', schema: z.string() }) _1: string, @user() _2: UserAccount) {
     console.log('put-request');
   }
 
-  @patch(testControllerRequestBodyOperationConfig)
+  @httpPatch(testControllerRequestBodyOperationConfig)
   async testPatchRequest(
-    @queryParam({ name: 'test-query', schema: z.string().array() }) _1: HttpRequest,
+    @httpQueryParam({ name: 'test-query', schema: z.string().array() }) _1: HttpRequest,
     _2: { param: string },
   ) {
     console.log('patch-request');

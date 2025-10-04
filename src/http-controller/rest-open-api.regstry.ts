@@ -27,31 +27,30 @@ export function buildRestOpenApiRegistry(context: ResolutionContext): RestOpenAp
   const restApplications = platformContainer.getAll<RestApplication>(REST_APPLICATION);
   return restApplications.reduce<RestOpenApiEntries>((data, application) => {
     const registry = new OpenAPIRegistry();
-    application.openApiConfig.security?.forEach(requirement => {
+    const securityRequirementObjects = application.openApiConfig.security ?? [];
+    for (const requirement of securityRequirementObjects) {
       for (const scheme in requirement) {
         const securityScheme = authorizationServiceFactory.getSecurityScheme(scheme);
-        if (!securityScheme) {
+        if (securityScheme === undefined) {
           throw new HttpControllerDefinitionError(
             `Unknown security scheme ${scheme}. Check OpenAPI definition ${application.name}.`,
           );
         }
         registry.registerComponent('securitySchemes', scheme, securityScheme);
       }
-    });
-    platformContainer
-      .getAll<ApiSchema>(API_SCHEMA, { tag: { key: REST_APPLICATION, value: application.name } })
-      .forEach(({ name, schema }) => {
-        if (schema instanceof ZodType) {
-          registry.register(name, schema);
-        } else {
-          registry.registerComponent('schemas', name, schema);
-        }
-      });
-    platformContainer
-      .getAll<ApiResponse>(API_RESPONSE, { tag: { key: REST_APPLICATION, value: application.name } })
-      .forEach(({ name, response }) => {
-        registry.registerComponent('responses', name, response);
-      });
+    }
+    const apiSchemas = platformContainer.getAll<ApiSchema>(API_SCHEMA, { name: application.name });
+    for (const { name, schema } of apiSchemas) {
+      if (schema instanceof ZodType) {
+        registry.register(name, schema);
+      } else {
+        registry.registerComponent('schemas', name, schema);
+      }
+    }
+    const apiResponses = platformContainer.getAll<ApiResponse>(API_RESPONSE, { name: application.name });
+    for (const { name, response } of apiResponses) {
+      registry.registerComponent('responses', name, response);
+    }
     return {
       ...data,
       [application.name]: { application, registry },

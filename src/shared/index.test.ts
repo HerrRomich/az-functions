@@ -7,7 +7,7 @@ describe('shared module', () => {
 
   beforeEach(() => {
     container = new Container({ defaultScope: 'Singleton' });
-    container.load(sharedModule);
+    container.loadSync(sharedModule);
   });
 
   describe('BASE_DIR', () => {

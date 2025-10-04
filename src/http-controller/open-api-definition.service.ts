@@ -90,7 +90,7 @@ export class OpenApiDefinitionService {
       route,
     } = registrationData;
     const tags = this.openApiMetadataService.getTags(controllerMetadata, operationMetadata);
-    const responses = this.openApiMetadataService.getResponse(operationMetadata);
+    const responses = this.openApiMetadataService.getResponses(operationMetadata);
     const request = this.openApiMetadataService.getRequest(operationMetadata);
     const openAPIRegistry = this.getRegistry(applicationName);
     openAPIRegistry.registerPath({

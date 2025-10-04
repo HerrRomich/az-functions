@@ -1,7 +1,6 @@
 import { InvocationContext } from '@azure/functions';
 import { injectable } from 'inversify';
-import { z } from 'zod';
-import { fromError } from 'zod-validation-error';
+import { z, ZodError } from 'zod';
 import {
   EventHubHandlerArgMetadata,
   EventHubHandlerCardinality,
@@ -23,7 +22,7 @@ const triggerMetadataOneSchema = z.object({
     consumerGroupName: z.string(),
     eventHubPath: z.string(),
   }),
-  enqueuedTimeUtc: z.string().datetime(),
+  enqueuedTimeUtc: z.iso.datetime(),
   offset: z.string(),
   partitionKey: z.string(),
   sequenceNumber: z.number().int(),
@@ -37,7 +36,7 @@ const triggerMetadataManySchema = z.object({
     consumerGroupName: z.string(),
     eventHubPath: z.string(),
   }),
-  enqueuedTimeUtcArray: z.string().datetime().array(),
+  enqueuedTimeUtcArray: z.iso.datetime().array(),
   offsetArray: z.string().array(),
   partitionKeyArray: z.string().array(),
   sequenceNumberArray: z.number().int().array(),
@@ -68,7 +67,7 @@ ${e.stack}`,
     cardinality?: EventHubHandlerCardinality,
   ): EventHubAsyncArgsProvider {
     const argProviders: EventHubArgProvider[] = [];
-    args.forEach(arg => {
+    for (const arg of args) {
       switch (arg.type) {
         case 'context':
           argProviders.push(({ context }) => context);
@@ -89,7 +88,7 @@ ${e.stack}`,
           argProviders.push(() => undefined);
           break;
       }
-    });
+    }
     return this.getArgsProvider(argProviders);
   }
 
@@ -113,7 +112,7 @@ ${e.stack}`,
             }
             return aggregator;
           },
-          { fulfilled: Array<unknown>(), rejected: Array(0) },
+          { fulfilled: new Array<unknown>(), rejected: new Array(0) },
         );
         if (splittedResults.rejected.length === 0) {
           return splittedResults.fulfilled;
@@ -133,10 +132,10 @@ ${e.stack}`,
       let triggerMetadata: TriggerMetadataOne;
       try {
         triggerMetadata = triggerMetadataOneSchema.parse(context.triggerMetadata);
-      } catch (e: unknown) {
+      } catch (e) {
         throw new HandlerArgsParseError(
-          `Error parsing trigger metadata:
-${fromError(e).message}`,
+          `Error parsing trigger metadata: ${e instanceof ZodError ? z.prettifyError(e) : ''}`,
+          { cause: e },
         );
       }
       const extendedMessage: EventHubMessageWrapper<unknown, unknown, unknown> & { eventData: EventHubEventData } = {
@@ -148,10 +147,15 @@ ${fromError(e).message}`,
       try {
         return extendedMessageSchema.parse(extendedMessage);
       } catch (e: unknown) {
-        throw new HandlerArgsParseError(
-          `Error parsing extended message:
-${fromError(e).message}`,
-        );
+        /* istanbul ignore else */
+        if (e instanceof z.ZodError) {
+          throw new HandlerArgsParseError(
+            `Error parsing extended message:
+${z.prettifyError(e)}`,
+          );
+        } else {
+          throw e;
+        }
       }
     };
   }
@@ -169,8 +173,8 @@ ${fromError(e).message}`,
         triggerMetadata = triggerMetadataManySchema.parse(context.triggerMetadata);
       } catch (e: unknown) {
         throw new HandlerArgsParseError(
-          `Error parsing trigger metadata:
-${fromError(e).message}`,
+          `Error parsing trigger metadata:${e instanceof ZodError ? z.prettifyError(e) : ''}`,
+          { cause: e },
         );
       }
       try {
@@ -191,8 +195,8 @@ ${fromError(e).message}`,
         return extendedMessagesSchema.parse(extendedMessages);
       } catch (e: unknown) {
         throw new HandlerArgsParseError(
-          `Error parsing extended message:
-${fromError(e).message}`,
+          `Error parsing extended message:${e instanceof ZodError ? z.prettifyError(e) : ''}`,
+          { cause: e },
         );
       }
     };

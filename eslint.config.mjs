@@ -6,10 +6,10 @@ import eslintPluginJson from 'eslint-plugin-json';
 import eslintPluginPrettier from 'eslint-plugin-prettier/recommended';
 import eslintPluginSonar from 'eslint-plugin-sonarjs';
 import eslintGoogleConfig from 'gts';
-import * as path from 'path';
+import * as path from 'node:path';
 import { loadConfig } from 'tsconfig-paths';
 import eslintTypescript from 'typescript-eslint';
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from 'node:url';
 
 export function provideConfig(rootName) {
   const compat = new FlatCompat({
@@ -164,7 +164,7 @@ export function provideConfig(rootName) {
   ];
 
   const tsConfig = loadConfig(rootName);
-  const paths = Object.keys(tsConfig.paths ?? {}).map((path) => path.replace(/\/\*$/, ''));
+  const paths = Object.keys(tsConfig.paths ?? {}).map(path => path.replace(/\/\*$/, ''));
 
   const typescriptConfig = [
     {
@@ -212,7 +212,7 @@ export function provideConfig(rootName) {
       // set all sonar rules as warning by default for tests
       files: testFiles,
       rules: {
-        ...Object.fromEntries(Object.keys(sonarjsRecommended.rules).map((rule) => [rule, 'warn'])),
+        ...Object.fromEntries(Object.keys(sonarjsRecommended.rules).map(rule => [rule, 'warn'])),
         ...sonarjsUnusedRules,
       },
     },

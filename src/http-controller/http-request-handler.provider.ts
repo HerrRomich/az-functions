@@ -2,7 +2,13 @@ import { HttpRequest, InvocationContext } from '@azure/functions';
 import { HttpResponseInit } from '@azure/functions/types/http';
 import { StatusCodes } from 'http-status-codes';
 import { Container, inject, injectable } from 'inversify';
-import { PLATFORM_CONTAINER, PlatformContextLocalStorage, SYSTEM_USER_ACCOUNT, UserAccount } from 'shared';
+import {
+  PLATFORM_CONTAINER,
+  PlatformContextLocalStorage,
+  PlatformError,
+  SYSTEM_USER_ACCOUNT,
+  UserAccount,
+} from 'shared';
 import { AzureHttpTriggerService } from './azure-http-trigger.service';
 import { HttpOperationRegistrationData } from './http-controller-registration.service';
 import { AuthenticationError, AuthenticationSchemeService, AuthenticationServiceFactory } from './security';
@@ -15,7 +21,6 @@ export class HttpRequestHandlerProvider {
     private readonly httpTriggerService: AzureHttpTriggerService,
     @inject(PLATFORM_CONTAINER) private readonly platformContainer: Container,
     private readonly authenticationServiceFactory: AuthenticationServiceFactory,
-    @inject(SYSTEM_USER_ACCOUNT) private readonly systemUserAccount: UserAccount,
   ) {}
 
   getHttpRequestHandler(
@@ -72,7 +77,15 @@ export class HttpRequestHandlerProvider {
     context: InvocationContext,
   ): Promise<UserAccount> {
     if (authenticationServices.length === 0) {
-      return this.systemUserAccount;
+      const systemUserAccount = this.platformContainer.get(SYSTEM_USER_ACCOUNT, { optional: true });
+      if (systemUserAccount === undefined) {
+        const platformError = new PlatformError(
+          `No system user account provided for unauthenticated access. Inject it over ${SYSTEM_USER_ACCOUNT.toString()}.`,
+        );
+        context.error(platformError);
+        throw platformError;
+      }
+      return systemUserAccount;
     }
     const errors = new Array<string>();
     for (const { securityScheme, authenticationService } of authenticationServices) {

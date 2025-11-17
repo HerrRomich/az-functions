@@ -1,8 +1,8 @@
 import { HttpResponseInit, InvocationContext } from '@azure/functions';
 import { StatusCodes } from 'http-status-codes';
 import { injectable } from 'inversify';
-import { AzureFunctionError, optionalStringSchema, stringSchema } from 'shared';
-import { z, ZodArray, ZodError, ZodNullable, ZodOptional, ZodPipe, ZodType } from 'zod';
+import { AzureFunctionError, errorToString } from 'shared';
+import { z, ZodArray, ZodError, ZodOptional, ZodPipe, ZodType } from 'zod';
 import {
   ControllerOperationMetadata,
   OperationPathArgMetadata,
@@ -14,7 +14,7 @@ import {
   AsyncHttpRequestProvider,
   AsyncHttpRequestProviderInput,
 } from './http-controller-platform.model';
-import { BadRequestError, HttpTriggerError } from './http-controller.model';
+import { BadRequestError, HttpTriggerError, optionalStringSchema, stringSchema } from './http-controller.model';
 
 class ArgParseError extends AzureFunctionError {}
 
@@ -125,7 +125,7 @@ ${e.stack}`,
         if (splittedResults.rejected.length === 0) {
           return splittedResults.fulfilled;
         } else {
-          const message = splittedResults.rejected.map(reason => reason.message ?? String(reason)).join('\n\n');
+          const message = splittedResults.rejected.map(reason => errorToString(reason)).join('\n\n');
           throw new BadRequestError(message);
         }
       });
@@ -183,6 +183,7 @@ ${z.prettifyError(e)}`,
       try {
         return headerSchema.parse(headerElement);
       } catch (e) {
+        /* istanbul ignore else */
         if (e instanceof ZodError) {
           throw new ArgParseError(
             `Error parsing header item=${headerItemName}:
@@ -212,6 +213,7 @@ ${z.prettifyError(e)}`,
       try {
         return coercedQuerySchema.parse(queryItemValue);
       } catch (e) {
+        /* istanbul ignore else */
         if (e instanceof ZodError) {
           throw new ArgParseError(
             `Error parsing query item=${queryItemName}:
@@ -229,8 +231,6 @@ ${z.prettifyError(e)}`,
     let singleSchema = isArray ? (schema.unwrap() as ZodType) : schema;
     singleSchema =
       singleSchema.type === 'optional' ? ((singleSchema as ZodOptional).unwrap() as ZodType) : singleSchema;
-    singleSchema =
-      singleSchema.type === 'nullable' ? ((singleSchema as ZodNullable).unwrap() as ZodType) : singleSchema;
     let coercedSchema = this.getCoercedSingleSchema(singleSchema);
     if (isArray) {
       coercedSchema = coercedSchema.array();

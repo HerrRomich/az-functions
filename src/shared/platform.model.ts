@@ -1,4 +1,5 @@
 import { InvocationContext } from '@azure/functions';
+import * as util from 'node:util';
 import { UserAccount } from './security.model';
 
 export const BASE_DIR = Symbol.for('BASE_DIR');
@@ -17,11 +18,59 @@ export class AzureFunctionError extends Error {
   }
 }
 
+export function errorToString(err: unknown): string {
+  if (err instanceof Error) {
+    return err.message;
+  }
+  if (typeof err === 'string') {
+    return err;
+  }
+  if (typeof err === 'object' && err !== null) {
+    try {
+      return util.inspect(err, { depth: null });
+    } catch {
+      return String(err);
+    }
+  }
+  return String(err);
+}
+
 export class AzureFunctionRegistrationError extends AzureFunctionError {}
 
+/**
+ * Token to register Azure Functions in the DI container.
+ *
+ * @example
+ * ```typescript
+ * @httpController({
+ *   path: '/users',
+ * })
+ * export class UserController {
+ *  constructor(private readonly adUsersService: AdUsersService
+ *    private readonly usersMapper: UsersMapper) {}
+ *
+ *    @httpGet({
+ *      response: {
+ *        contentSchema: usersResponseDtoSchema,
+ *      },
+ *    })
+ *    async handle(
+ *      @queryParam({ name: 'filter', schema: z.string().optional() }) filter: string | undefined,
+ *      @queryParam({ name: 'top', schema: z.coerce.number().min(1).max(100).default(10) }) top: number,
+ *      @context context: InvocationContext
+ *    ): Promise<UsersResponseDto> {
+ *      context.log.info(`Received request to fetch users with filter: ${filter} and top: ${top}`);
+ *      const adUsers = await this.adUsersService.getUsers(filter, top);
+ *      return this.usersMapper.toUsersResponseDto(adUsers);
+ *    }
+ * }
+ *
+ * iocContainer.bind<AzureFunction>(AZURE_FUNCTION).to(UserController);
+ * ```
+ */
 export const AZURE_FUNCTION = Symbol.for('AZURE_FUNCTION');
 
-export type AzureFunctions = object;
+export type AzureFunction = object;
 
 export interface PlatformContext {
   readonly invocationContext?: InvocationContext;

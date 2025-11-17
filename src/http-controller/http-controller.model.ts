@@ -1,9 +1,9 @@
 import { HttpResponseInit } from '@azure/functions';
 import { StatusCodes } from 'http-status-codes';
-import type { OpenAPIObject, ResponseObject, SchemaObject } from 'openapi3-ts/oas30';
-import { ZodType } from 'zod';
 import { ServiceIdentifier } from 'inversify';
+import type { OpenAPIObject, ResponseObject, SchemaObject } from 'openapi3-ts/oas30';
 import { AzureFunctionError } from 'shared';
+import { z, ZodType } from 'zod';
 
 export const REST_APPLICATION: ServiceIdentifier<RestApplication> = Symbol.for('REST_APPLICATION');
 
@@ -71,3 +71,7 @@ export class InternalServerError extends HttpTriggerError {
     super(message, { ...options, response: { ...options?.response, status: StatusCodes.INTERNAL_SERVER_ERROR } });
   }
 }
+
+export const stringSchema = z.string();
+export const optionalStringSchema = stringSchema.optional();
+export const numberSchema = z.number();

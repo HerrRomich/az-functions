@@ -1,9 +1,9 @@
 import { Container } from 'inversify';
-import { eventHubHandlersModule } from './index';
 import { AzureEventHubTriggerService } from './azure-event-hub-trigger.service';
 import { EventHubHandleMethodArgsMetadataService } from './event-hub-handle-method-args-metadata.service';
-import { EventHubHandlerProvider } from './event-hub-handler.provider';
 import { EventHubHandlerRegistrationService } from './event-hub-handler-registration.service';
+import { EventHubHandlerProvider } from './event-hub-handler.provider';
+import { eventHubHandlersModule } from './index';
 
 describe('event-hub-handler', () => {
   let iocContainer: Container;

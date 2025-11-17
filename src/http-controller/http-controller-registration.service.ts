@@ -1,6 +1,6 @@
 import { app } from '@azure/functions';
 import { inject, injectable } from 'inversify';
-import { AzureFunctions, PLATFORM_MODE, PlatformMode } from 'shared';
+import { AzureFunction, PLATFORM_MODE, PlatformMode } from 'shared';
 import { FunctionsRegistrationService } from '../platform';
 import { ControllerMetadata, ControllerOperationMetadata, HttpControllerMetadataService } from './decorators';
 import { httpMethodMap } from './http-controller-platform.model';
@@ -9,7 +9,7 @@ import { HttpRequestHandlerProvider } from './http-request-handler.provider';
 import { OpenApiDefinitionService } from './open-api-definition.service';
 
 export interface HttpOperationRegistrationData {
-  controller: AzureFunctions;
+  controller: AzureFunction;
   operation: string;
   controllerMetadata: ControllerMetadata;
   operationMetadata: ControllerOperationMetadata;
@@ -26,7 +26,7 @@ export class HttpControllerRegistrationService implements FunctionsRegistrationS
     private readonly httpRequestHandlerProvider: HttpRequestHandlerProvider,
   ) {}
 
-  register(functions: AzureFunctions, controllerMetadata: ControllerMetadata) {
+  register(functions: AzureFunction, controllerMetadata: ControllerMetadata) {
     const prototype = functions.constructor.prototype;
     const application = this.openApiDefinitionService.getApplication(controllerMetadata.application);
     for (const member of Object.getOwnPropertyNames(prototype)) {
@@ -72,6 +72,9 @@ export class HttpControllerRegistrationService implements FunctionsRegistrationS
   }
 
   private getRoute(controllerMetadata: ControllerMetadata, operationMetadata: ControllerOperationMetadata) {
-    return (controllerMetadata.path + '/' + (operationMetadata.path ?? '')).replace(/^\/*/, '').replace(/\/{2,}/, '/');
+    return (controllerMetadata.path + '/' + (operationMetadata.path ?? ''))
+      .replace(/^\/*/, '')
+      .replace(/\/{2,}/, '/')
+      .replace(/\/$/, '');
   }
 }

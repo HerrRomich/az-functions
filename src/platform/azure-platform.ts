@@ -5,33 +5,39 @@ import * as path from 'path';
 import * as process from 'process';
 import {
   AZURE_FUNCTION,
+  AzureFunction,
   AzureFunctionRegistrationError,
-  AzureFunctions,
   PLATFORM_CONTAINER,
   PLATFORM_MODE,
   PlatformMode,
 } from 'shared';
 import * as YAML from 'yaml';
 import { OpenApiDefinitionService, SwaggerHandlingService } from '../http-controller';
+import { Logger, LOGGER_FACTORY, LoggerFactory } from '../logger';
 import { PlatformComponentMetadataService } from './platform-component-metadata.service';
-import { REGISTER_FUNCTIONS_FACTORY, RegisterFunctionFactory } from './register-functions.factory';
+import { REGISTER_FUNCTION_FACTORY, RegisterFunctionFactory } from './register-function.factory';
 
 @injectable()
 export class AzurePlatform {
+  private readonly logger: Logger;
+
   constructor(
     @inject(PLATFORM_MODE) private readonly platformMode: PlatformMode,
     @inject(PLATFORM_CONTAINER) private readonly platformContainer: Container,
-    @inject(REGISTER_FUNCTIONS_FACTORY) private readonly registerFunctionsFactory: RegisterFunctionFactory,
+    @inject(REGISTER_FUNCTION_FACTORY) private readonly registerFunctionsFactory: RegisterFunctionFactory,
     private readonly swaggerHandlingService: SwaggerHandlingService,
     private readonly metadataService: PlatformComponentMetadataService,
     private readonly openApiDefinitionService: OpenApiDefinitionService,
-  ) {}
+    @inject(LOGGER_FACTORY) loggerFactory: LoggerFactory,
+  ) {
+    this.logger = loggerFactory();
+  }
 
   async start() {
     if (this.openApiDefinitionService.getApplications().length > 0 && this.platformMode === 'start') {
       this.registerSwaggerUi();
     }
-    const azureFunctions = await this.platformContainer.getAllAsync<AzureFunctions>(AZURE_FUNCTION);
+    const azureFunctions = await this.platformContainer.getAllAsync<AzureFunction>(AZURE_FUNCTION);
     azureFunctions.forEach(azureFunction => this.registerFunctions(azureFunction));
     if (this.platformMode === 'print-open-api') {
       await this.printOpenApi();
@@ -49,7 +55,7 @@ export class AzurePlatform {
     });
   }
 
-  private registerFunctions(azureFunctions: AzureFunctions) {
+  private registerFunctions(azureFunctions: AzureFunction) {
     const metadata = this.metadataService.getMetadata(azureFunctions.constructor);
     const triggerType = metadata?.type;
     if (!triggerType) {
@@ -68,10 +74,8 @@ export class AzurePlatform {
         await fs.writeFile(filePath, JSON.stringify(definition, null, 2));
         filePath = path.resolve(printPath, `${application}.yaml`);
         await fs.writeFile(filePath, YAML.stringify(definition));
-      } catch (e: unknown) {
-        if (e instanceof Error) {
-          console.error(e.stack);
-        }
+      } catch (e) {
+        this.logger.error(`Failed to print OpenAPI definition for application=${application}.`, e);
       }
     }
   }

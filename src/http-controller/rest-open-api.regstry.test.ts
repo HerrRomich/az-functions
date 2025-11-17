@@ -80,12 +80,12 @@ describe('buildRestOpenApiRegistry', () => {
 
     mockPlatformContainer.getAll.calledWith(API_SCHEMA, expect.anything()).mockReturnValue([]);
     mockPlatformContainer.getAll
-      .calledWith(API_SCHEMA, expect.objectContaining({ tag: { key: REST_APPLICATION, value: 'test-application1' } }))
+      .calledWith(API_SCHEMA, expect.objectContaining({ name: 'test-application1' }))
       .mockReturnValue(testSchemaEntries);
 
     mockPlatformContainer.getAll.calledWith(API_RESPONSE, expect.anything()).mockReturnValue([]);
     mockPlatformContainer.getAll
-      .calledWith(API_RESPONSE, expect.objectContaining({ tag: { key: REST_APPLICATION, value: 'test-application2' } }))
+      .calledWith(API_RESPONSE, expect.objectContaining({ name: 'test-application2' }))
       .mockReturnValue(testResponseEntries);
 
     mockContext = mock();
@@ -125,14 +125,14 @@ describe('buildRestOpenApiRegistry', () => {
       },
     });
 
-    expect(entries['test-application1']?.registry.definitions).toContainAllValues([
+    expect(entries['test-application1']?.registry.definitions).toIncludeAllMembers([
       {
         type: 'schema',
         schema: expect.anything(),
       },
       { type: 'component', componentType: 'schemas', name: 'schema2', component: { type: 'string' } },
     ]);
-    expect(entries['test-application2']?.registry.definitions).toContainAllValues([
+    expect(entries['test-application2']?.registry.definitions).toIncludeAllMembers([
       { component: { type: 'oauth2' }, componentType: 'securitySchemes', name: 'OAuth2', type: 'component' },
       {
         type: 'component',

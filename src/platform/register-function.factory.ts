@@ -1,13 +1,14 @@
-import { Factory, ResolutionContext } from 'inversify';
+import { ResolutionContext, ServiceIdentifier } from 'inversify';
 import { EventHubHandlerRegistrationService } from '../event-hub-handler/event-hub-handler-registration.service';
 import { HttpControllerRegistrationService } from '../http-controller';
 import { ComponentMetadata, FunctionsRegistrationService } from './model';
 
-export const REGISTER_FUNCTIONS_FACTORY = Symbol.for('REGISTER_FUNCTIONS_FACTORY');
+export const REGISTER_FUNCTION_FACTORY: ServiceIdentifier<RegisterFunctionFactory> =
+  Symbol.for('REGISTER_FUNCTION_FACTORY');
 
-export type RegisterFunctionFactory = Factory<FunctionsRegistrationService, [functionsType: ComponentMetadata['type']]>;
+export type RegisterFunctionFactory = (functionsType: ComponentMetadata['type']) => FunctionsRegistrationService;
 
-export function registerFunctionsFactory(context: ResolutionContext): RegisterFunctionFactory {
+export function registerFunctionFactory(context: ResolutionContext): RegisterFunctionFactory {
   return (functionsType: ComponentMetadata['type']): FunctionsRegistrationService => {
     switch (functionsType) {
       case 'http-controller':

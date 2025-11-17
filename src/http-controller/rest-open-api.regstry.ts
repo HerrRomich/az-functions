@@ -1,6 +1,7 @@
 import { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 import { Container, ResolutionContext } from 'inversify';
 import { PLATFORM_CONTAINER } from 'shared';
+import { ZodType } from 'zod';
 import { HttpControllerDefinitionError } from './http-controller-platform.model';
 import {
   API_RESPONSE,
@@ -11,7 +12,6 @@ import {
   RestApplication,
 } from './http-controller.model';
 import { AuthenticationServiceFactory } from './security';
-import { ZodType } from 'zod';
 
 export interface RestOpenApiEntry {
   application: RestApplication;

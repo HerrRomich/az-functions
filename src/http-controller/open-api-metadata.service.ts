@@ -1,6 +1,5 @@
 import { ResponseConfig, RouteConfig, ZodRequestBody } from '@asteasolutions/zod-to-openapi';
 import { injectable } from 'inversify';
-import { optionalStringSchema, stringSchema } from 'shared';
 import { z, ZodArray, ZodType } from 'zod';
 import {
   ControllerMetadata,
@@ -8,6 +7,7 @@ import {
   OperationQueryArgMetadata,
   QueryItemType,
 } from './decorators';
+import { optionalStringSchema, stringSchema } from './http-controller.model';
 
 type RouteConfigRequest = RouteConfig['request'];
 

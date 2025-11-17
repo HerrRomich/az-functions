@@ -2,10 +2,10 @@ import { InvocationContext } from '@azure/functions';
 import { Container } from 'inversify';
 import { mock, MockProxy } from 'jest-mock-extended';
 import { PlatformContextLocalStorage } from 'shared';
-import { AzureEventHubTriggerService } from './azure-event-hub-trigger.service';
-import { EventHubHandlerProvider } from './event-hub-handler.provider';
-import { EventHubTriggerRegistrationData } from './event-hub-handler-registration.service';
 import { PartialDeep } from 'type-fest';
+import { AzureEventHubTriggerService } from './azure-event-hub-trigger.service';
+import { EventHubTriggerRegistrationData } from './event-hub-handler-registration.service';
+import { EventHubHandlerProvider } from './event-hub-handler.provider';
 
 describe('EventHubHandlerProvider', () => {
   const storage = new PlatformContextLocalStorage();
@@ -40,11 +40,15 @@ describe('EventHubHandlerProvider', () => {
     const mockContext = {} as InvocationContext;
 
     it('should handle trigger', async () => {
+      let handled = false;
+
       const handler = subject.getEventHubTriggerHandler(testRegistrationData, async () => {
-        // no implementation
+        handled = true;
       });
 
       await handler(mockMessage, mockContext);
+
+      expect(handled).toBeTruthy();
     });
   });
 });

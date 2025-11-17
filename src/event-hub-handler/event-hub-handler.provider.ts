@@ -1,7 +1,6 @@
 import { InvocationContext } from '@azure/functions';
 import { Container, inject, injectable } from 'inversify';
-import { PLATFORM_CONTAINER } from 'shared';
-import { PlatformContextLocalStorage } from '../shared';
+import { PLATFORM_CONTAINER, PlatformContextLocalStorage } from 'shared';
 import { AzureEventHubTriggerService } from './azure-event-hub-trigger.service';
 import { EventHubTriggerRegistrationData } from './event-hub-handler-registration.service';
 

@@ -1,5 +1,3 @@
-import { z } from 'zod';
-
 export interface ArgMetadata {
   type: string;
 }
@@ -13,7 +11,3 @@ export interface ArgsMetadata<T extends ArgMetadata> {
 }
 
 export type ArgMetadataProvider<T extends ArgMetadata> = (paramType: unknown) => T;
-
-export const stringSchema = z.string();
-export const optionalStringSchema = stringSchema.optional();
-export const numberSchema = z.number();

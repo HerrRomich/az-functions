@@ -1,5 +1,10 @@
 # az-functions
-**az-functions**  extends the Azure Functions programming model for Node.js (v4) by introducing a powerful structure for building scalable and maintainable serverless applications. It integrates several key concepts:
+**az-functions** extension for Azure Functions in Node.js
+
+[![npm version](https://badge.fury.io/js/%40herrromich%2Faz-functions.svg)](https://badge.fury.io/js/%40herrromich%2Faz-functions) [![npm downloads](https://img.shields.io/npm/dm/%40herrromich%2Faz-functions.svg)](https://www.npmjs.com/package/@herrromich/az-functions) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+# Overview
+**az-functions** extends the Azure Functions programming model for Node.js (v4) by introducing a powerful structure for building scalable and maintainable serverless applications. It integrates several key concepts:
 
  * **Inversion of Control (IoC) Container:** Using InversifyJS, a lightweight and flexible IoC container, to manage dependencies and ensure proper decoupling of components.
  * **TypeScript Decorators:** Making use of TypeScript decorators to declaratively define Azure Function components and services.
@@ -10,13 +15,13 @@ This package aims to provide a more structured approach to Azure Functions devel
 
 # Installation
 ```bash
-npm install @@herrromich/az-functions inversify reflect-metadata zod @asteasolutions/zod-to-openapi --save
+npm install @herrromich/az-functions inversify reflect-metadata zod @asteasolutions/zod-to-openapi --save
 ```
 ```bash
-yarn add @@herrromich/az-functions inversify reflect-metadata zod @asteasolutions/zod-to-openapi
+yarn add @herrromich/az-functions inversify reflect-metadata zod @asteasolutions/zod-to-openapi
 ```
 ```bash
-pnpm add @@herrromich/az-functions inversify reflect-metadata zod @asteasolutions/zod-to-openapi
+pnpm add @herrromich/az-functions inversify reflect-metadata zod @asteasolutions/zod-to-openapi
 ```
 > Packages zod  and @asteasolutions/zod-to-openapi are optional
 
@@ -64,10 +69,11 @@ import { platformContainer } from './platform-container';
 import { DeviceCommandHandler } from './device.handlers';
 
 // Registering of handlers
-platformContainer.bind(AZURE_FUNCTION).to(DeviceHandlers);
+platformContainer.bind(AZURE_FUNCTION).to(DeviceCommandHandler);
 ```
 
 Or they could be registered in **InversifyJS** module and loaded before platform starts.
+This is the preferred way, when there are many components to register.
 ```typescript
 // src/message-handlers/index.ts
 import { ContainerModule } from 'inversify';
@@ -87,22 +93,28 @@ import './init';
 
 import { platform } from '@herrromich/az-functions';
 import { platformContainer } from './platform-container';
-import { deviceHandlersModule } from 'src/message-handlers';
+import { deviceHandlersModule } from ',/message-handlers';
 
 platformContainer.load(deviceHandlersModule);
 
 await platform(platformContainer);
 
 ```
-> :warning: **Important!** If you use a bundler like **webpack** import initialization on top of your module.
+> [!WARNING] **Important!** If you use a bundler like **webpack** import initialization on top of your module.
 
 # Supported Azure Functions trigger types
 ## Startup Hook
+A startup hook registers a handler that will be executed on Azure functions startup.
+
+### Definition of Startup Service
+A startup service should implement **StartupService** interface.
+
 ```typescript
 // src/shared/startup.ts
 
-import { StartupService } from '@herrromich/az-functions';
-import { injectable } from 'inversify';
+import {StartupService} from '@herrromich/az-functions';
+import {injectable} from 'inversify';
+import {STARTUP_SERVICE} from "./startup.service";
 
 @injectable()
 export class AzStartupService implements StartupService {
@@ -110,12 +122,28 @@ export class AzStartupService implements StartupService {
     // migration
   }
 }
+````
+
+### Registration of Startup Service
+Startup service should be registered in IoC container with **STARTUP_SERVICE** service identifier.
+
+```typescript
+// src/shared/index.ts
+import { ContainerModule } from 'inversify';
+import { STARTUP_SERVICE } from '@herrromich/az-functions';
+import { AzStartupService } from './startup';
 
 // Registering of handlers
-platformContainer.bind(STARTUP_SERVICE).to(AzStartupService);
+export const startupModule = new ContainerModule(loadOptions => {
+  loadOptions.bind(STARTUP_SERVICE).to(AzStartupService);
+});
 ```
 
 ## HTTP Trigger
+### OpenAPI definition of REST Interface (optional)
+Optionally, REST interface could be defined with OpenAPI definition.
+If it is not defined, the platform will generate a default OpenAPI definition with available endpoints.
+
 ```typescript
 // src/apis/users-management/users-management.application.ts
 import { RestApplication, REST_APPLICATION } from '@herrromich/az-functions';
@@ -139,13 +167,13 @@ export const USERS_MANAGEMENT_APPLICATION: RestApplication = {
     ],
   },
 };
-
-// API registration
-platformContainer.bind(REST_APPLICATION).toConstantValue(USERS_MANAGEMENT_APPLICATION);
 ```
+
+### Definition of REST Controller
+
 ```typescript
 // src/apis/users-management/users-management.controller.ts
-import { controller, get, Logger } from '@@herrromich/az-functions';
+import { controller, get, Logger } from '@herrromich/az-functions';
 import { USERS_MANAGEMENT_API } from './users-management.application';
 import { z } from 'zod';
 
@@ -196,14 +224,28 @@ export class UsersController {
     return { items };
   }
 }
+```
 
-// Registering of controller
-platformContainer.bind(AZURE_FUNCTION).to(UsersController);
+### Registration of REST Application and Controller
+```typescript
+// src/apis/users-management/index.ts
+import { ContainerModule } from 'inversify';
+import { AZURE_FUNCTION } from '@herrromich/az-functions';
+import { UsersController } from './users-management.controller';
+import { USERS_MANAGEMENT_APPLICATION } from './users-management.application';
+
+// Registering of handlers
+export const usersManagementModule = new ContainerModule(loadOptions => {
+  loadOptions.bind(REST_APPLICATION).toConstantValue(USERS_MANAGEMENT_APPLICATION);
+  loadOptions.bind(AZURE_FUNCTION).to(UsersController);
+});
 ```
 
 ## Event-Hub Trigger
+### Definition of EventHub Handler
+
 ```typescript
-// src/message-handlers/device.handlers.ts
+// src/message-handlers/device.handler.ts
 import { z } from 'zod';
 import { telemetrySchema } from './telemetry.model';
 import {
@@ -215,7 +257,7 @@ import {
   Logger
 } from '@herrromich/az-functions';
 import { InvocationContext } from "@azure/functions";
-import { platformContainer } from "src/platform-container";
+import { platformContainer } from "/src/platform-container";
 
 const deviceMessagePayloadSchema = z
   .object({
@@ -237,13 +279,13 @@ type DeviceProperties = z.infer<typeof devicePropertiesSchema>;
   consumerGroup: 'handlerTelemetry',
   cardinality: 'many',
 })
-export class DeviceHandlers implements EventHubHandler {
+export class DeviceCommandHandler implements EventHubHandler {
   constructor(private readonly logger: Logger) {
   }
 
   async handle(
     context: InvocationContext,
-    @message({
+    @messages({
       withPayload: deviceMessageSchema,
       withProperties: devicePropertiesSchema,
       withEventData: true
@@ -252,13 +294,23 @@ export class DeviceHandlers implements EventHubHandler {
   ): Promise<void> {
     this.logger.info(`Processing telemetry bundle`);
     for (const message of messages) {
-      this.logger.info(`Telemetry, enqued at ${message.eventData.enqueuedTimeUtc} is processing.`);
+      this.logger.info(`Telemetry, enqued at ${message.eventData.enqueuedTimeUtc} from device ${message.properties.deviceId} (${message.properties.deviceSerialNumber}) with payload ${JSON.stringify(message.payload)}`);
     }
   }
 }
+```
+
+### Registration of EventHub Handler
+```typescript
+// src/message-handlers/index.ts
+import { ContainerModule } from 'inversify';
+import { AZURE_FUNCTION } from '@herrromich/az-functions';
+import { DeviceCommandHandler } from './device-command.handler';
 
 // Registering of handlers
-platformContainer.bind(AZURE_FUNCTION).to(DeviceHandlers);
+export const deviceHandlersModule = new ContainerModule(loadOptions => {
+  loadOptions.bind(AZURE_FUNCTION).to(DeviceCommandHandler);
+});
 ```
 
 # Generation of OpenAPI definition
@@ -269,8 +321,10 @@ PLATFORM_MODE=print-open-api node dist/index.js
 
 # Registration of Unsupported Azure Functions Trigger
 ```typescript
+// src/cosmos-handlers/index.ts
+
 import { app } from '@azure/functions';
-import { PLATFORM_MODE, PlatformMode } from '@@herrromich/az-functions';
+import { PLATFORM_MODE, PlatformMode } from '@herrromich/az-functions';
 import { platformContainer } from './platform-container';
 
 // It should be checked, that platform runs in operating mode

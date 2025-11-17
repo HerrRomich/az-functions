@@ -29,6 +29,13 @@ class TestEventHubHandler implements EventHubHandler {
   }
 }
 
+@eventHubHandler(testHandlerMetadata)
+class TestEventHubHandlerWithoutArgs implements EventHubHandler {
+  async handle(): Promise<void> {
+    handlerBody();
+  }
+}
+
 const testFailureHandlerMetadata = {
   triggerId: 'test-failure-handler',
   connection: 'test-connection',
@@ -96,6 +103,17 @@ describe('EventHubHandlerRegistrationService', () => {
       handler(mock(), mock());
       handler(mock(), mock());
       expect(handlerBody).toHaveBeenCalledTimes(2);
+    });
+
+    it('should register event hub trigger handler without args metadata', () => {
+      const testEventHubHandlerWithoutArgs = new TestEventHubHandlerWithoutArgs();
+      mockHandleMethodArgsMetadataService.getMethodArgsMetadata
+        .calledWith(testEventHubHandlerWithoutArgs)
+        .mockReturnValue(undefined);
+
+      subject.register(testEventHubHandlerWithoutArgs, { ...testHandlerMetadata, type: 'event-hub-handler' });
+
+      expect(app.eventHub).toHaveBeenCalled();
     });
 
     it('should fail, if no handle method is registered', () => {

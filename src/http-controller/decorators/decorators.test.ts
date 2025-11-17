@@ -78,6 +78,11 @@ class TestController {
   ) {
     console.log('patch-request');
   }
+
+  @httpGet(testControllerOperationConfig)
+  async TestInvalidMethodName() {
+    console.log('invalid-method-name');
+  }
 }
 
 describe('decorators', () => {

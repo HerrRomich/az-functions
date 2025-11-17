@@ -1,13 +1,16 @@
 import { InvocationContext } from '@azure/functions';
-import { AZURE_FUNCTION_METADATA_KEY, AzureFunctions, PlatformError } from '../platform.model';
+import { AZURE_FUNCTION_METADATA_KEY, AzureFunction, PlatformError } from '../platform.model';
 import { ArgMetadata, ArgMetadataProvider, ArgsMetadata, CommonArgMetadata } from './decorators.model';
 
 export function adjustMetadata<T extends ArgMetadata>(
   metadataKey: unknown,
   operationArg: T,
   argMetadaProvider: ArgMetadataProvider<T>,
-): (target: AzureFunctions, propertyKey: string | symbol, parameterIndex: number) => void {
-  return function (target: AzureFunctions, propertyKey: string | symbol, parameterIndex: number) {
+): ParameterDecorator {
+  return (target, propertyKey, parameterIndex) => {
+    if (propertyKey === undefined) {
+      throw new PlatformError(`The decorator can only be used on method parameters.`);
+    }
     const metadata: ArgsMetadata<T> =
       Reflect.getOwnMetadata(metadataKey, target, propertyKey) ??
       initializeMetadata(target, propertyKey, argMetadaProvider);
@@ -17,7 +20,7 @@ export function adjustMetadata<T extends ArgMetadata>(
 }
 
 export function initializeMetadata<T extends ArgMetadata>(
-  target: AzureFunctions,
+  target: AzureFunction,
   propertyKey: string | symbol,
   argMetadaProvider: ArgMetadataProvider<T>,
 ): ArgsMetadata<T> {
@@ -40,7 +43,39 @@ export function getCommonArg(paramType: unknown): CommonArgMetadata {
   }
 }
 
-export function Context() {
+/**
+ * Parameter decorator to inject the Azure Functions `InvocationContext` into a function parameter.
+ *
+ * @example
+ * ```typescript
+ * @HttpController({
+ *  path: '/users',
+ *  })
+ *  export class UserController {
+ *  constructor(private readonly adUsersService: AdUsersService
+ *   private readonly usersMapper: UsersMapper) {}
+ *
+ *  @HttpGet({
+ *   response: {
+ *    contentSchema: usersResponseDtoSchema,
+ *    description: 'Returns a list of users',
+ *   },
+ *  })
+ *  async getUsers(@Context() context: InvocationContext): Promise<UsersResponseDto> {
+ *   context.log.info('Requesting users.');
+ *
+ *   const adUsers = await this.adUsersService.getUsers();
+ *   const items = this.usersMapper.fromAdUsers(adUsers);
+ *
+ *   context.log.info('Responding users.');
+ *   context.log.debug('Responding %n users.', items.length);
+ *
+ *   return { items };
+ *  }
+ * }
+ * ```
+ */
+export function context() {
   return adjustMetadata(
     AZURE_FUNCTION_METADATA_KEY,
     {

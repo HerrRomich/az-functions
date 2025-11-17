@@ -3,11 +3,11 @@ import { BindInWhenOnFluentSyntax, BindToFluentSyntax, Container } from 'inversi
 import { DeepMockProxy, mock, mockDeep, MockProxy } from 'jest-mock-extended';
 import * as process from 'process';
 import { PLATFORM_CONTAINER, PLATFORM_MODE, sharedModule } from 'shared';
+import { loggerModule } from '../logger';
 import { AzurePlatform } from './azure-platform';
 import { eventHubHandlersModule, httpControllerModule, platform, STARTUP_SERVICE } from './index';
 import { PlatformComponentMetadataService } from './platform-component-metadata.service';
-import { REGISTER_FUNCTIONS_FACTORY } from './register-functions.factory';
-import * as winston from 'winston';
+import { REGISTER_FUNCTION_FACTORY } from './register-function.factory';
 
 jest.mock('inversify', () => {
   const original = jest.requireActual('inversify');
@@ -17,7 +17,7 @@ jest.mock('inversify', () => {
   };
 });
 jest.mock('@azure/functions');
-jest.mock('./register-functions.factory');
+jest.mock('./register-function.factory');
 
 describe('test platform', () => {
   let mockSystemContainer: MockProxy<Container>;
@@ -38,6 +38,7 @@ describe('test platform', () => {
     app.hook.appStart = mockAppStart;
 
     mockBindingTo = mock();
+    mockBindingTo.toSelf.mockReturnValue(mock());
     mockBindingInWhenOn = mock();
     mockPlatformModeBinding = mock();
     mockSystemContainer.bind.mockImplementation(serviceIdentifier => {
@@ -76,12 +77,16 @@ describe('test platform', () => {
     await platform(mockPlatformContainer);
 
     expect(mockSystemContainer.bind).toHaveBeenCalledWith(AzurePlatform);
-    expect(mockPlatformContainer.bind).toHaveBeenCalledWith(winston.Logger);
     expect(mockSystemContainer.bind).toHaveBeenCalledWith(PLATFORM_CONTAINER);
     expect(mockSystemContainer.bind).toHaveBeenCalledWith(PlatformComponentMetadataService);
     expect(mockSystemContainer.bind).toHaveBeenCalledWith(PLATFORM_MODE);
-    expect(mockSystemContainer.bind).toHaveBeenCalledWith(REGISTER_FUNCTIONS_FACTORY);
-    expect(mockSystemContainer.load).toHaveBeenCalledWith(sharedModule, httpControllerModule, eventHubHandlersModule);
+    expect(mockSystemContainer.bind).toHaveBeenCalledWith(REGISTER_FUNCTION_FACTORY);
+    expect(mockSystemContainer.load).toHaveBeenCalledWith(
+      sharedModule,
+      httpControllerModule,
+      eventHubHandlersModule,
+      loggerModule,
+    );
     expect(mockPlatformModeBinding.toConstantValue).toHaveBeenCalledWith('start');
     expect(mockAppStart).toHaveBeenCalled();
     const startupMethod = mockAppStart.mock.calls[0][0];

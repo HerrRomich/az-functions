@@ -1,7 +1,7 @@
+import { PartialDeep } from 'type-fest';
 import { z, ZodArray, ZodBoolean, ZodNumber, ZodOptional, ZodString, ZodType } from 'zod';
 import { ControllerMetadata, ControllerOperationMetadata } from './decorators';
 import { OpenApiMetadataService } from './open-api-metadata.service';
-import { PartialDeep } from 'type-fest';
 
 describe('OpenApiMetadataService', () => {
   let subject: OpenApiMetadataService;

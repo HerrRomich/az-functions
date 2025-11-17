@@ -44,6 +44,60 @@ describe('AzureHttpTriggerService', () => {
       expect(method).toHaveBeenCalled();
     });
 
+    it('should handle request with direct response without content schema', async () => {
+      const method = jest.fn();
+      method.mockResolvedValue('test-value');
+      const result = await subject.handleHttpRequest(
+        mockContext,
+        {
+          response: {
+            status: 200,
+            description: 'Test description',
+          },
+        } as unknown as ControllerOperationMetadata,
+        method,
+      );
+
+      expect(result).toEqual({
+        status: 200,
+        jsonBody: 'test-value',
+      });
+      expect(method).toHaveBeenCalled();
+    });
+
+    it('should handle request with direct response without status as 200', async () => {
+      const method = jest.fn();
+      method.mockResolvedValue({
+        testProp: 'test-value',
+      });
+      const result = await subject.handleHttpRequest(
+        mockContext,
+        {
+          response: {
+            description: 'Test description',
+            contentSchema: z.object({ testProp: z.string() }),
+          },
+        } as unknown as ControllerOperationMetadata,
+        method,
+      );
+      expect(result).toEqual({
+        status: 200,
+        jsonBody: {
+          testProp: 'test-value',
+        },
+      });
+      expect(method).toHaveBeenCalled();
+    });
+
+    it('should handle request with direct response without response definition', async () => {
+      const method = jest.fn();
+      method.mockResolvedValue('test-value');
+      const result = await subject.handleHttpRequest(mockContext, {} as unknown as ControllerOperationMetadata, method);
+
+      expect(result).toEqual('test-value');
+      expect(method).toHaveBeenCalled();
+    });
+
     it('should handle request with indirect response', async () => {
       const method = jest.fn();
       method.mockResolvedValue({

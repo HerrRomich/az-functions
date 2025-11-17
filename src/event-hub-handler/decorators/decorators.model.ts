@@ -1,9 +1,19 @@
 import { EventHubFunctionOptions, EventHubTriggerOptions } from '@azure/functions';
-import { CommonArgMetadata } from 'shared';
+import { ArgMetadata, CommonArgMetadata } from 'shared';
 import { ZodType } from 'zod';
 
 export type EventHubHandlerCardinality = EventHubTriggerOptions['cardinality'];
 
+/**
+ * Configuration for an Event Hub handler.
+ * - `connection`: The name of the app setting that contains the Event Hub connection string.
+ * - `eventHubName`: The name of the Event Hub to connect to.
+ * - `triggerId`: A unique identifier for the trigger.
+ * - `consumerGroup`: (Optional) The consumer group to use. Defaults to `$Default`.
+ * - `cardinality`: (Optional) The cardinality of the messages, either 'one' or 'many'. Defaults to 'many'.
+ * - `extraInputs`: (Optional) Additional inputs for the function.
+ * - `extraOutputs`: (Optional) Additional outputs for the function.
+ */
 export type EventHubHandlerConfig = {
   connection: string;
   eventHubName: string;
@@ -34,7 +44,14 @@ export interface EventHubHandlerDataArgMetadata extends EventHubHandlerMessageAr
   type: 'message' | 'messages';
 }
 
-export type EventHubHandlerArgMetadata = CommonArgMetadata | EventHubHandlerDataArgMetadata;
+export interface EventHubHandlerRawDataArgMetadata extends ArgMetadata {
+  type: 'rawMessage' | 'rawMessages';
+}
+
+export type EventHubHandlerArgMetadata =
+  | CommonArgMetadata
+  | EventHubHandlerRawDataArgMetadata
+  | EventHubHandlerDataArgMetadata;
 
 export interface EventHubHandleMethodArgsMetadata {
   args: EventHubHandlerArgMetadata[];

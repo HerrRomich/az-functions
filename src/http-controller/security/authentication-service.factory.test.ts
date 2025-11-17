@@ -1,32 +1,38 @@
 import { Container } from 'inversify';
 import { mock, MockProxy } from 'jest-mock-extended';
-import { systemUserAccount } from 'shared';
 import { HttpControllerDefinitionError } from '../http-controller-platform.model';
 import { AuthenticationServiceFactory } from './authentication-service.factory';
 import { SECURITY_OBJECT, SecurityObject } from './model';
 
 describe('AuthorizationServiceFactory', () => {
+  const testUserAccount = {
+    id: 'test-user-id',
+    name: 'test-user-name',
+    isAdmin: false,
+    permissions: [],
+  };
+
   const testSecurityObjects: SecurityObject[] = [
     {
       name: 'test-security1',
       scheme: {
         type: 'apiKey',
       },
-      authenticate: () => Promise.resolve(systemUserAccount),
+      authenticate: () => Promise.resolve(testUserAccount),
     },
     {
       name: 'test-security2',
       scheme: {
         type: 'oauth2',
       },
-      authenticate: () => Promise.resolve(systemUserAccount),
+      authenticate: () => Promise.resolve(testUserAccount),
     },
     {
       name: 'test-security3',
       scheme: {
         type: 'openIdConnect',
       },
-      authenticate: () => Promise.resolve(systemUserAccount),
+      authenticate: () => Promise.resolve(testUserAccount),
     },
   ];
 
@@ -48,6 +54,14 @@ describe('AuthorizationServiceFactory', () => {
       expect(securityScheme).toEqual({
         type: 'apiKey',
       });
+    });
+
+    it('should return undefined if security object is not bound', () => {
+      mockPlatformContainer.isBound.calledWith(SECURITY_OBJECT).mockReturnValue(false);
+
+      const securityScheme = subject.getSecurityScheme('test-security1');
+
+      expect(securityScheme).toBeUndefined();
     });
 
     it('should return undefined, if requested security scheme is unknown', () => {
@@ -127,6 +141,12 @@ describe('AuthorizationServiceFactory', () => {
         HttpControllerDefinitionError,
         'Security context provider "unknown-security" is not registered.',
       );
+    });
+
+    it('should return empty array if no securities are defined', () => {
+      const services = subject.getAuthenticationServices({});
+
+      expect(services).toEqual([]);
     });
   });
 });

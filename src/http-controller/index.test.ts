@@ -1,4 +1,5 @@
 import { Container } from 'inversify';
+import { HttpRequestHandlerProvider } from './http-request-handler.provider';
 import {
   AzureHttpTriggerService,
   HttpControllerMetadataService,
@@ -7,10 +8,9 @@ import {
   OpenApiDefinitionService,
   SwaggerHandlingService,
 } from './index';
-import { HttpRequestHandlerProvider } from './http-request-handler.provider';
 import { OpenApiMetadataService } from './open-api-metadata.service';
-import { AuthenticationServiceFactory } from './security';
 import { REST_OPEN_API_REGISTRY } from './rest-open-api.regstry';
+import { AuthenticationServiceFactory } from './security';
 
 describe('http-controller', () => {
   let iocContainer: Container;

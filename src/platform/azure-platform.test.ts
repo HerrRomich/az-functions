@@ -4,12 +4,13 @@ import { Container } from 'inversify';
 import { anyFunction, mock, MockProxy } from 'jest-mock-extended';
 import * as path from 'path';
 import * as process from 'process';
-import { AZURE_FUNCTION, AzureFunctionRegistrationError, AzureFunctions, PlatformMode } from 'shared';
+import { AZURE_FUNCTION, AzureFunction, AzureFunctionRegistrationError, PlatformMode } from 'shared';
 import { OpenApiDefinitionService, SwaggerHandlingService } from '../http-controller';
+import { Logger } from '../logger';
 import { AzurePlatform } from './azure-platform';
 import { ComponentMetadata, FunctionsRegistrationService } from './model';
 import { PlatformComponentMetadataService } from './platform-component-metadata.service';
-import { RegisterFunctionFactory } from './register-functions.factory';
+import { RegisterFunctionFactory } from './register-function.factory';
 
 jest.mock('@azure/functions');
 jest.mock('fs/promises');
@@ -28,6 +29,7 @@ describe('test AzureContainer', () => {
       mockSwaggerHandlingService,
       mockMetadataService,
       mockApiDefinitionService,
+      mockLoggerFactory,
     );
   };
 
@@ -37,6 +39,8 @@ describe('test AzureContainer', () => {
   let mockSwaggerHandlingService: MockProxy<SwaggerHandlingService>;
   let mockMetadataService: MockProxy<PlatformComponentMetadataService>;
   let mockApiDefinitionService: MockProxy<OpenApiDefinitionService>;
+  let mockLoggerFactory: jest.MockedFn<() => Logger>;
+  let mockLogger: MockProxy<Logger>;
 
   beforeEach(() => {
     mockPlatformContainer = mock();
@@ -45,6 +49,8 @@ describe('test AzureContainer', () => {
     mockMetadataService = mock();
     mockApiDefinitionService = mock();
     mockPlatformContainer.getAllAsync.calledWith(AZURE_FUNCTION).mockResolvedValue([]);
+    mockLogger = mock();
+    mockLoggerFactory = jest.fn().mockReturnValue(mockLogger);
   });
 
   it('should not register swagger UI if no app config', async () => {
@@ -129,7 +135,7 @@ describe('test AzureContainer', () => {
 
   it('should fail registration if meets unknow type', async () => {
     initSubject();
-    const mockedComponent = mock<AzureFunctions>();
+    const mockedComponent = mock<AzureFunction>();
     mockMetadataService.getMetadata.calledWith(mockedComponent).mockReturnValue(undefined);
     mockPlatformContainer.isBound.calledWith(AZURE_FUNCTION).mockReturnValue(true);
     mockPlatformContainer.getAllAsync.calledWith(AZURE_FUNCTION).mockResolvedValue([mockedComponent]);
@@ -156,8 +162,8 @@ describe('test AzureContainer', () => {
   it('should print error, if generation fails', async () => {
     jest.spyOn(process, 'cwd').mockReturnValue('test-dir');
     jest.mocked(fs.stat).mockRejectedValue(new Error("Dir doesn't exist."));
-    jest.mocked(fs.writeFile).mockRejectedValue(new Error('Cannot write file'));
-    const spyConsoleError = jest.spyOn(console, 'error');
+    const error = new Error('Cannot write file');
+    jest.mocked(fs.writeFile).mockRejectedValue(error);
     initSubject('print-open-api');
     mockApiDefinitionService.getApplications.mockReturnValue(['app1', 'app2']);
 
@@ -167,6 +173,7 @@ describe('test AzureContainer', () => {
     expect(fs.mkdir).toHaveBeenCalledWith(path.resolve('test-dir', 'dist/open-api-definitions'));
     expect(mockApiDefinitionService.generateDocument).toHaveBeenNthCalledWith(1, 'app1');
     expect(mockApiDefinitionService.generateDocument).toHaveBeenNthCalledWith(2, 'app2');
-    expect(spyConsoleError).toHaveBeenCalledWith(expect.toStartWith('Error: Cannot write file'));
+    expect(mockLogger.error).toHaveBeenCalledWith(`Failed to print OpenAPI definition for application=app2.`, error);
+    expect(mockLogger.error).toHaveBeenCalledWith(`Failed to print OpenAPI definition for application=app2.`, error);
   });
 });

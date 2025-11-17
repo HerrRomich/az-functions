@@ -5,11 +5,12 @@ import eslintPluginJest from 'eslint-plugin-jest';
 import eslintPluginJson from 'eslint-plugin-json';
 import eslintPluginPrettier from 'eslint-plugin-prettier/recommended';
 import eslintPluginSonar from 'eslint-plugin-sonarjs';
+import globals from 'globals';
 import eslintGoogleConfig from 'gts';
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { loadConfig } from 'tsconfig-paths';
 import eslintTypescript from 'typescript-eslint';
-import { fileURLToPath } from 'node:url';
 
 export function provideConfig(rootName) {
   const compat = new FlatCompat({
@@ -257,14 +258,14 @@ export function provideConfig(rootName) {
 
   const javascriptConfig = [
     {
-      files: ['**/*.js'],
+      files: ['**/*.js', '**/*.mjs'],
       ...eslintJavascript.configs.recommended,
-    },
-    {
-      files: ['**/*.js'],
-      rules: {
-        'no-magic-numbers': 'off',
-        'no-undef': 'warn',
+      languageOptions: {
+        globals: {
+          ...globals.browser,
+          ...globals.node,
+          ...globals.jest,
+        },
       },
     },
   ];

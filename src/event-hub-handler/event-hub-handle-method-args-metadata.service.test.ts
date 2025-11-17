@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { EventHubHandleMethodArgsMetadataService } from './event-hub-handle-method-args-metadata.service';
 import { eventHubHandler, message } from './decorators';
+import { EventHubHandleMethodArgsMetadataService } from './event-hub-handle-method-args-metadata.service';
 import { EventHubHandler } from './event-hub-handler.model';
 
 @eventHubHandler({

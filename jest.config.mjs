@@ -25,5 +25,5 @@ export default {
     ],
     '^.+\\.mjs$': 'babel-jest',
   },
-  setupFilesAfterEnv: ['jest-extended/all'],
+  setupFilesAfterEnv: ['jest-extended/all', '<rootDir>/jest.setup.mjs'],
 };

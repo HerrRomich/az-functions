@@ -1,6 +1,5 @@
 import { inject, injectable } from 'inversify';
-import { SYSTEM_USER_ACCOUNT, UserAccount } from 'shared';
-import { PlatformContextLocalStorage } from '../shared/platform-context-local-storage';
+import { PlatformContextLocalStorage, SYSTEM_USER_ACCOUNT, UserAccount } from 'shared';
 
 @injectable()
 export class SecurityContext {

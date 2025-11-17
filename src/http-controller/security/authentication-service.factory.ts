@@ -44,7 +44,7 @@ export class AuthenticationServiceFactory {
   getAuthenticationServices(operationSecurityData: OperationSecurityData): AuthenticationSchemeService[] {
     const { operationSecurities, applicationSecurities } = operationSecurityData;
     let securitySchemes: string[] = [];
-    if (operationSecurities && operationSecurities.length > 0) {
+    if (operationSecurities?.length) {
       securitySchemes = operationSecurities.flatMap(security => Object.keys(security));
     } else if (applicationSecurities?.length) {
       securitySchemes = applicationSecurities.flatMap(security => Object.keys(security));

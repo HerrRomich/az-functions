@@ -1,4 +1,5 @@
 export default {
+  plugins: ['prettier-plugin-organize-imports'],
   bracketSpacing: true,
   singleQuote: true,
   trailingComma: 'all',

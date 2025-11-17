@@ -9,8 +9,14 @@ import { OpenApiDefinitionService } from './open-api-definition.service';
 jest.mock('@azure/functions');
 
 class TestController {
+  get staticResponse(): string {
+    return this._staticResponse;
+  }
+
+  constructor(private _staticResponse: string) {}
+
   testGetRequest(): string {
-    return 'get-response';
+    return this.staticResponse;
   }
 
   async testPostRequest() {
@@ -28,7 +34,6 @@ describe('HttpControllerPlatformService', () => {
 
   const testGetRequestOperationMetadata: ControllerOperationMetadata = {
     operationId: 'my-test-get-operation',
-    path: 'test-get-request-path',
     method: 'get',
     args: [],
   };
@@ -44,7 +49,7 @@ describe('HttpControllerPlatformService', () => {
     application: 'test-application',
   };
 
-  const testController = new TestController();
+  const testController = new TestController('test-response');
 
   let getOperationRegistrationData: unknown;
   let mockGetRequest: MockProxy<RequestHandler>;
@@ -79,7 +84,7 @@ describe('HttpControllerPlatformService', () => {
       controllerMetadata: testControllerMetadata,
       operationMetadata: testGetRequestOperationMetadata,
       application: testRestApplication,
-      route: 'test-path/test-get-request-path',
+      route: 'test-path',
     };
     mockGetRequest = mock();
     mockRequestHandlerProvider.getHttpRequestHandler
@@ -128,7 +133,7 @@ describe('HttpControllerPlatformService', () => {
         expect.anything(),
       );
       const getMethod = mockRequestHandlerProvider.getHttpRequestHandler.mock.calls[0]?.[1];
-      expect(await getMethod?.()).toEqual('get-response');
+      expect(await getMethod?.()).toEqual('test-response');
       const postMethod = mockRequestHandlerProvider.getHttpRequestHandler.mock.calls[1]?.[1];
       expect(await postMethod?.()).toEqual('post-response');
 
@@ -136,7 +141,7 @@ describe('HttpControllerPlatformService', () => {
         1,
         'my-test-get-operation',
         expect.objectContaining({
-          route: 'rest-context/test-path/test-get-request-path',
+          route: 'rest-context/test-path',
           methods: ['GET'],
           handler: mockGetRequest,
         }),

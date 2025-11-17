@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 import { ContainerModule } from 'inversify';
 import { AzureHttpTriggerService } from './azure-http-trigger.service';
 import { HttpControllerMetadataService } from './decorators';

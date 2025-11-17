@@ -1,7 +1,14 @@
 import { AZURE_FUNCTION_METADATA_KEY } from 'shared';
 import { z } from 'zod';
 import { EventHubHandler } from '../event-hub-handler.model';
-import { EVENT_HUB_HANDLE_METHOD_METADATA_KEY, eventHubHandler, message, messages } from './decorators';
+import {
+  EVENT_HUB_HANDLE_METHOD_METADATA_KEY,
+  eventHubHandler,
+  message,
+  messages,
+  rawMessage,
+  rawMessages,
+} from './decorators';
 
 @eventHubHandler({
   triggerId: 'test-event-hub-handler1',
@@ -17,6 +24,7 @@ class TestEventHubHandler1 implements EventHubHandler {
       withProperties: z.object({ number: z.number() }),
     })
     _message: unknown,
+    @rawMessage() _rawMessage: unknown,
   ): Promise<void> {
     // test implementation
   }
@@ -37,6 +45,7 @@ class TestEventHubHandler2 implements EventHubHandler {
       withProperties: z.object({ number: z.number() }),
     })
     _messages: unknown,
+    @rawMessages() _rawMessages: unknown,
   ): Promise<void> {
     // test implementation
   }
@@ -70,6 +79,9 @@ describe('decorators', () => {
               isEventData: true,
               payloadSchema: expect.anything(),
               propertiesSchema: expect.anything(),
+            }),
+            expect.objectContaining({
+              type: 'rawMessage',
             }),
           ],
         });
@@ -105,6 +117,9 @@ describe('decorators', () => {
               isEventData: true,
               payloadSchema: expect.anything(),
               propertiesSchema: expect.anything(),
+            }),
+            expect.objectContaining({
+              type: 'rawMessages',
             }),
           ],
         });

@@ -1,11 +1,9 @@
 import { InvocationContext } from '@azure/functions';
 import { mock, MockProxy } from 'jest-mock-extended';
+import * as lodash from 'lodash';
 import { z } from 'zod';
-import {
-  AzureEventHubTriggerService,
-  TriggerMetadataMany,
-  TriggerMetadataOne,
-} from './azure-event-hub-trigger.service';
+import { TriggerMetadataMany, TriggerMetadataOne } from './azure-event-hub-trigger.model';
+import { AzureEventHubTriggerService } from './azure-event-hub-trigger.service';
 import { EventHubTriggerDefinitionError, HandlerArgsParseError } from './event-hub-handler.model';
 
 describe('AzureEventHubTriggerService', () => {
@@ -28,64 +26,73 @@ describe('AzureEventHubTriggerService', () => {
 
     it('should log error if method call fails with error', async () => {
       const method = jest.fn();
-      method.mockRejectedValue(new Error('Call failed.'));
+      const error = new Error('Call failed.');
+      method.mockRejectedValue(error);
 
       await subject.handleEventHubEvent(mockContext, method);
 
       expect(method).toHaveBeenCalled();
-      expect(mockContext.error).toHaveBeenCalledWith(
-        expect.toStartWith(`Internal error:
-Error: Call failed.`),
-      );
-    });
-
-    it('should log error if method call fails with unknown', async () => {
-      const method = jest.fn();
-      method.mockRejectedValue('Call failed.');
-
-      await subject.handleEventHubEvent(mockContext, method);
-
-      expect(method).toHaveBeenCalled();
-      expect(mockContext.error).toHaveBeenCalledWith(expect.toStartWith(`Internal error: Call failed.`));
+      expect(mockContext.error).toHaveBeenCalledWith('Error processing Event Hub event:', error);
     });
   });
 
   describe('buildArgProviders', () => {
-    it('should return parsed args in case of no parsing errors', async () => {
-      mockContext.triggerMetadata = {
-        partitionContext: {
-          consumerGroupName: 'consumer-group',
-          eventHubPath: 'event-hub-path',
+    const testPartitionContext = {
+      consumerGroupName: 'consumer-group',
+      eventHubPath: 'event-hub-path',
+    };
+    const testTriggerMetadataSingle: TriggerMetadataOne = {
+      partitionContext: testPartitionContext,
+      enqueuedTimeUtc: '2024-11-06T13:48:11.069Z',
+      offset: '3747f1b2-98af-40b6-8350-c10ebbd40e04',
+      sequenceNumber: 1,
+      partitionKey: 'partition-key',
+      properties: {
+        textProperty: 'text-property',
+        objProperty: {
+          text: 'text',
+          number: 1234,
         },
-        enqueuedTimeUtcArray: ['2024-11-06T13:48:11.069Z', '2024-11-06T13:48:13.069Z'],
-        offsetArray: ['3747f1b2-98af-40b6-8350-c10ebbd40e04', '13ea2df2-1814-4862-a586-fb69d09a48bd'],
-        sequenceNumberArray: [1, 2],
-        partitionKeyArray: ['partition-key', 'partition-key'],
-        propertiesArray: [
-          {
-            textProperty: 'text-property',
-            objProperty: {
-              text: 'text',
-              number: 1234,
-            },
+      },
+      systemProperties: {
+        textProperty: 'text-property',
+      },
+    };
+
+    const testTriggerMetadataMany: TriggerMetadataMany = {
+      partitionContext: testPartitionContext,
+      enqueuedTimeUtcArray: ['2024-11-06T13:48:11.069Z', '2024-11-06T13:48:13.069Z'],
+      offsetArray: ['3747f1b2-98af-40b6-8350-c10ebbd40e04', '13ea2df2-1814-4862-a586-fb69d09a48bd'],
+      sequenceNumberArray: [1, 2],
+      partitionKeyArray: ['partition-key', 'partition-key'],
+      propertiesArray: [
+        {
+          textProperty: 'text-property',
+          objProperty: {
+            text: 'text',
+            number: 1234,
           },
-          {
-            textProperty: 'text-property',
-            objProperty: {
-              text: 'text',
-              number: 1234,
-            },
+        },
+        {
+          textProperty: 'text-property',
+          objProperty: {
+            text: 'text',
+            number: 1234,
           },
-        ],
-        systemPropertiesArray: [
-          {
-            textProperty: 'text-property',
-          },
-          {
-            textProperty: 'text-property',
-          },
-        ],
-      } as TriggerMetadataMany;
+        },
+      ],
+      systemPropertiesArray: [
+        {
+          textProperty: 'text-property',
+        },
+        {
+          textProperty: 'text-property',
+        },
+      ],
+    };
+
+    it('should return parsed args in case of no parsing errors', async () => {
+      mockContext.triggerMetadata = testTriggerMetadataMany;
 
       const argsProvider = subject.buildArgProviders(
         [
@@ -96,6 +103,9 @@ Error: Call failed.`),
             type: 'messages',
             isEventData: true,
             payloadSchema: z.object({ text: z.string(), number: z.number().optional() }),
+          },
+          {
+            type: 'rawMessages',
           },
         ],
         'many',
@@ -112,7 +122,7 @@ Error: Call failed.`),
 
       const args = await argsProvider(testMessages, mockContext);
 
-      expect(args).toHaveLength(2);
+      expect(args).toHaveLength(3);
       expect(args[0]).toBe(mockContext);
       expect(args[1]).toEqual([
         {
@@ -147,6 +157,30 @@ Error: Call failed.`),
           },
         },
       ]);
+      expect(args[2]).toBe(testMessages);
+    });
+
+    it('should return parsed args in case of no payload schema', async () => {
+      mockContext.triggerMetadata = testTriggerMetadataSingle;
+
+      const argsProvider = subject.buildArgProviders([
+        {
+          type: 'context',
+        },
+        {
+          type: 'message',
+        },
+      ]);
+      const testMessage = {
+        text: 'text1',
+        number: 123,
+      };
+
+      const args = await argsProvider(testMessage, mockContext);
+
+      expect(args).toHaveLength(2);
+      expect(args[0]).toBe(mockContext);
+      expect(args[1]).toEqual({ payload: testMessage });
     });
 
     it('should fail in case of multiple parsing errors', async () => {
@@ -211,7 +245,7 @@ Error: Call failed.`),
         ),
       ).toThrowWithMessage(
         EventHubTriggerDefinitionError,
-        'Decorator "Message" is not allowed with cardinality "many".',
+        'Decorator "message" is not allowed with cardinality "many".',
       );
     });
 
@@ -231,7 +265,44 @@ Error: Call failed.`),
         ),
       ).toThrowWithMessage(
         EventHubTriggerDefinitionError,
-        'Decorator "Messages" is only allowed with cardinality "many".',
+        'Decorator "messages" is only allowed with cardinality "many".',
+      );
+    });
+    it('should fail, if singular cardinality combined with rawMessages', () => {
+      expect(() =>
+        subject.buildArgProviders(
+          [
+            {
+              type: 'context',
+            },
+            {
+              type: 'rawMessages',
+            },
+          ],
+          'one',
+        ),
+      ).toThrowWithMessage(
+        EventHubTriggerDefinitionError,
+        'Decorator "rawMessages" is only allowed with cardinality "many".',
+      );
+    });
+
+    it('should fail, if multiple cardinality combined with rawMessage', () => {
+      expect(() =>
+        subject.buildArgProviders(
+          [
+            {
+              type: 'context',
+            },
+            {
+              type: 'rawMessage',
+            },
+          ],
+          'many',
+        ),
+      ).toThrowWithMessage(
+        EventHubTriggerDefinitionError,
+        'Decorator "rawMessage" is not allowed with cardinality "many".',
       );
     });
 
@@ -250,26 +321,7 @@ Error: Call failed.`),
 
     describe('message', () => {
       beforeEach(() => {
-        mockContext.triggerMetadata = {
-          partitionContext: {
-            consumerGroupName: 'consumer-group',
-            eventHubPath: 'event-hub-path',
-          },
-          enqueuedTimeUtc: '2024-11-06T13:48:11.069Z',
-          offset: '3747f1b2-98af-40b6-8350-c10ebbd40e04',
-          sequenceNumber: 1,
-          partitionKey: 'partition-key',
-          properties: {
-            textProperty: 'text-property',
-            objProperty: {
-              text: 'text',
-              number: 1234,
-            },
-          },
-          systemProperties: {
-            textProperty: 'text-property',
-          },
-        } as TriggerMetadataOne;
+        mockContext.triggerMetadata = lodash.cloneDeep(testTriggerMetadataSingle);
       });
 
       it('should provide message', async () => {
@@ -543,17 +595,101 @@ Error: Call failed.`),
       });
     });
 
-    describe('context', () => {
-      it('should provide context', async () => {
+    describe('rawMessage', () => {
+      beforeEach(() => {
+        mockContext.triggerMetadata = lodash.cloneDeep(testTriggerMetadataSingle);
+      });
+
+      it('should provide raw message', async () => {
         const argsProvider = subject.buildArgProviders([
           {
-            type: 'context',
+            type: 'rawMessage',
           },
         ]);
-        const args = await argsProvider({}, mockContext);
+        const testMessage = {
+          text: 'text1',
+          number: 123,
+        };
 
-        expect(args[0]).toBe(mockContext);
+        const args = await argsProvider(testMessage, mockContext);
+
+        expect(args[0]).toBe(testMessage);
       });
+
+      it('should fail, if cardinality is many', async () => {
+        expect(() =>
+          subject.buildArgProviders(
+            [
+              {
+                type: 'rawMessage',
+              },
+            ],
+            'many',
+          ),
+        ).toThrowWithMessage(
+          EventHubTriggerDefinitionError,
+          'Decorator "rawMessage" is not allowed with cardinality "many".',
+        );
+      });
+    });
+
+    describe('rawMessages', () => {
+      beforeEach(() => {
+        mockContext.triggerMetadata = lodash.cloneDeep(testTriggerMetadataMany);
+      });
+
+      it('should provide raw messages', async () => {
+        const argsProvider = subject.buildArgProviders(
+          [
+            {
+              type: 'rawMessages',
+            },
+          ],
+          'many',
+        );
+        const testMessages = [
+          {
+            text: 'text1',
+            number: 123,
+          },
+          {
+            text: 'text2',
+          },
+        ];
+
+        const args = await argsProvider(testMessages, mockContext);
+
+        expect(args[0]).toBe(testMessages);
+      });
+
+      it('should fail, if cardinality is one', async () => {
+        expect(() =>
+          subject.buildArgProviders(
+            [
+              {
+                type: 'rawMessages',
+              },
+            ],
+            'one',
+          ),
+        ).toThrowWithMessage(
+          EventHubTriggerDefinitionError,
+          'Decorator "rawMessages" is only allowed with cardinality "many".',
+        );
+      });
+    });
+  });
+
+  describe('context', () => {
+    it('should provide context', async () => {
+      const argsProvider = subject.buildArgProviders([
+        {
+          type: 'context',
+        },
+      ]);
+      const args = await argsProvider({}, mockContext);
+
+      expect(args[0]).toBe(mockContext);
     });
   });
 });

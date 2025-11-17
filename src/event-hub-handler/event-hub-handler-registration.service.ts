@@ -1,6 +1,6 @@
 import { app } from '@azure/functions';
 import { inject, injectable } from 'inversify';
-import { AzureFunctions, PLATFORM_MODE, PlatformMode } from 'shared';
+import { AzureFunction, PLATFORM_MODE, PlatformMode } from 'shared';
 import { EventHubHandleMethodMetadata, FunctionsRegistrationService } from '../platform';
 import { EventHubHandlerMetadata } from './decorators';
 import { EventHubHandleMethodArgsMetadataService } from './event-hub-handle-method-args-metadata.service';
@@ -8,7 +8,7 @@ import { EventHubTriggerDefinitionError, HANDLE_METHOD_NAME } from './event-hub-
 import { EventHubHandlerProvider } from './event-hub-handler.provider';
 
 export interface EventHubTriggerRegistrationData {
-  handler: AzureFunctions;
+  handler: AzureFunction;
   handleMethodMetadata: EventHubHandleMethodMetadata;
 }
 
@@ -20,7 +20,7 @@ export class EventHubHandlerRegistrationService implements FunctionsRegistration
     private readonly eventHubHandlerProvider: EventHubHandlerProvider,
   ) {}
 
-  register(functions: AzureFunctions, functionMetadata: EventHubHandlerMetadata): void {
+  register(functions: AzureFunction, functionMetadata: EventHubHandlerMetadata): void {
     const prototype = functions.constructor.prototype;
     if (this.platformMode !== 'start') {
       return;

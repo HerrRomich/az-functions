@@ -1,6 +1,13 @@
 import { InvocationContext } from '@azure/functions';
 import { injectable } from 'inversify';
-import { z, ZodError } from 'zod';
+import { errorToString } from 'shared';
+import { z } from 'zod';
+import {
+  TriggerMetadataMany,
+  triggerMetadataManySchema,
+  TriggerMetadataOne,
+  triggerMetadataOneSchema,
+} from './azure-event-hub-trigger.model';
 import {
   EventHubHandlerArgMetadata,
   EventHubHandlerCardinality,
@@ -17,48 +24,13 @@ import {
   HandlerArgsParseError,
 } from './event-hub-handler.model';
 
-const triggerMetadataOneSchema = z.object({
-  partitionContext: z.object({
-    consumerGroupName: z.string(),
-    eventHubPath: z.string(),
-  }),
-  enqueuedTimeUtc: z.iso.datetime(),
-  offset: z.string(),
-  partitionKey: z.string(),
-  sequenceNumber: z.number().int(),
-  properties: z.record(z.string(), z.any()),
-  systemProperties: z.record(z.string(), z.any()),
-});
-export type TriggerMetadataOne = z.infer<typeof triggerMetadataOneSchema>;
-
-const triggerMetadataManySchema = z.object({
-  partitionContext: z.object({
-    consumerGroupName: z.string(),
-    eventHubPath: z.string(),
-  }),
-  enqueuedTimeUtcArray: z.iso.datetime().array(),
-  offsetArray: z.string().array(),
-  partitionKeyArray: z.string().array(),
-  sequenceNumberArray: z.number().int().array(),
-  propertiesArray: z.record(z.string(), z.any()).array(),
-  systemPropertiesArray: z.record(z.string(), z.any()).array(),
-});
-export type TriggerMetadataMany = z.infer<typeof triggerMetadataManySchema>;
-
 @injectable()
 export class AzureEventHubTriggerService {
   async handleEventHubEvent(context: InvocationContext, method: () => Promise<unknown>): Promise<void> {
     try {
       await method();
     } catch (e) {
-      if (e instanceof Error) {
-        context.error(
-          `Internal error:
-${e.stack}`,
-        );
-      } else {
-        context.error(`Internal error: ${String(e)}`);
-      }
+      context.error('Error processing Event Hub event:', e);
     }
   }
 
@@ -74,15 +46,29 @@ ${e.stack}`,
           break;
         case 'message':
           if (cardinality === 'many') {
-            throw new EventHubTriggerDefinitionError('Decorator "Message" is not allowed with cardinality "many".');
+            throw new EventHubTriggerDefinitionError('Decorator "message" is not allowed with cardinality "many".');
           }
           argProviders.push(this.getMessageProvider(arg));
           break;
         case 'messages':
           if (cardinality !== 'many') {
-            throw new EventHubTriggerDefinitionError('Decorator "Messages" is only allowed with cardinality "many".');
+            throw new EventHubTriggerDefinitionError('Decorator "messages" is only allowed with cardinality "many".');
           }
           argProviders.push(this.getMessagesProvider(arg));
+          break;
+        case 'rawMessage':
+          if (cardinality === 'many') {
+            throw new EventHubTriggerDefinitionError('Decorator "rawMessage" is not allowed with cardinality "many".');
+          }
+          argProviders.push(({ messages }) => messages);
+          break;
+        case 'rawMessages':
+          if (cardinality !== 'many') {
+            throw new EventHubTriggerDefinitionError(
+              'Decorator "rawMessages" is only allowed with cardinality "many".',
+            );
+          }
+          argProviders.push(({ messages }) => messages);
           break;
         case 'undefined':
           argProviders.push(() => undefined);
@@ -117,7 +103,7 @@ ${e.stack}`,
         if (splittedResults.rejected.length === 0) {
           return splittedResults.fulfilled;
         } else {
-          const message = splittedResults.rejected.map(reason => reason.message ?? String(reason)).join('\n\n');
+          const message = splittedResults.rejected.map(reason => errorToString(reason)).join('\n\n');
           throw new HandlerArgsParseError(message);
         }
       });
@@ -133,10 +119,16 @@ ${e.stack}`,
       try {
         triggerMetadata = triggerMetadataOneSchema.parse(context.triggerMetadata);
       } catch (e) {
-        throw new HandlerArgsParseError(
-          `Error parsing trigger metadata: ${e instanceof ZodError ? z.prettifyError(e) : ''}`,
-          { cause: e },
-        );
+        /* istanbul ignore else */
+        if (e instanceof z.ZodError) {
+          throw new HandlerArgsParseError(
+            `Error parsing trigger metadata:
+${z.prettifyError(e)}`,
+            { cause: e },
+          );
+        } else {
+          throw e;
+        }
       }
       const extendedMessage: EventHubMessageWrapper<unknown, unknown, unknown> & { eventData: EventHubEventData } = {
         eventData: triggerMetadata,
@@ -172,10 +164,15 @@ ${z.prettifyError(e)}`,
       try {
         triggerMetadata = triggerMetadataManySchema.parse(context.triggerMetadata);
       } catch (e: unknown) {
-        throw new HandlerArgsParseError(
-          `Error parsing trigger metadata:${e instanceof ZodError ? z.prettifyError(e) : ''}`,
-          { cause: e },
-        );
+        /* istanbul ignore else */
+        if (e instanceof z.ZodError) {
+          throw new HandlerArgsParseError(
+            `Error parsing trigger metadata:
+${z.prettifyError(e)}`,
+          );
+        } else {
+          throw e;
+        }
       }
       try {
         const extendedMessages = messages.map<
@@ -194,10 +191,15 @@ ${z.prettifyError(e)}`,
         }));
         return extendedMessagesSchema.parse(extendedMessages);
       } catch (e: unknown) {
-        throw new HandlerArgsParseError(
-          `Error parsing extended message:${e instanceof ZodError ? z.prettifyError(e) : ''}`,
-          { cause: e },
-        );
+        /* istanbul ignore else */
+        if (e instanceof z.ZodError) {
+          throw new HandlerArgsParseError(
+            `Error parsing extended message:
+${z.prettifyError(e)}`,
+          );
+        } else {
+          throw e;
+        }
       }
     };
   }
@@ -214,16 +216,14 @@ ${z.prettifyError(e)}`,
         properties: argMetadata.propertiesSchema,
       });
     }
-    if (argMetadata.systemPropertiesSchema) {
+    if (argMetadata.systemPropertiesSchema !== undefined) {
       extendedMessageSchema = extendedMessageSchema.extend({
         systemProperties: argMetadata.systemPropertiesSchema,
       });
     }
-    if (argMetadata.payloadSchema) {
-      extendedMessageSchema = extendedMessageSchema.extend({
-        payload: argMetadata.payloadSchema,
-      });
-    }
+    extendedMessageSchema = extendedMessageSchema.extend({
+      payload: argMetadata.payloadSchema ?? z.unknown(),
+    });
     return extendedMessageSchema;
   }
 }

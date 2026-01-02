@@ -1,0 +1,71 @@
+{
+  "name": "@herrromich/az-functions",
+  "description": "Extensions for NodeJS Azure Functions",
+  "version": "0.0.1",
+  "license": "MIT",
+  "main": "dist/index.cjs",
+  "types": "dist/src/index.d.ts",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://npm.pkg.github.com"
+  },
+  "scripts": {
+    "build": "webpack --mode=production",
+    "build:recursive": "pnpm -r --sort --filter .... run build",
+    "watch": "webpack --mode=development --watch",
+    "watch:recursive": "pnpm -r --sort --filter .... run watch",
+    "test": "jest --env=node --colors --coverage",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix --concurrency=auto",
+    "publish": "pnpm publish --access public"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "applicationinsights": "catalog:",
+    "http-status-codes": "catalog:",
+    "lodash": "catalog:",
+    "mime-types": "catalog:",
+    "openapi3-ts": "catalog:",
+    "reflect-metadata": "catalog:",
+    "swagger-ui-dist": "catalog:",
+    "triple-beam": "catalog:",
+    "yaml": "catalog:"
+  },
+  "devDependencies": {
+    "@babel/preset-env": "catalog:",
+    "@types/eslint": "catalog:",
+    "@types/jest": "catalog:",
+    "@types/lodash": "catalog:",
+    "@types/mime-types": "catalog:",
+    "@types/node": "catalog:",
+    "@types/triple-beam": "catalog:",
+    "copy-webpack-plugin": "catalog:",
+    "eslint": "catalog:",
+    "jest": "catalog:",
+    "jest-extended": "catalog:",
+    "jest-mock-extended": "catalog:",
+    "source-map-loader": "catalog:",
+    "syncpack": "catalog:",
+    "type-fest": "catalog:",
+    "typescript": "catalog:",
+    "webpack": "catalog:",
+    "webpack-bundle-analyzer": "catalog:",
+    "webpack-cli": "catalog:",
+    "webpack-node-externals": "catalog:"
+  },
+  "peerDependencies": {
+    "@asteasolutions/zod-to-openapi": "^8",
+    "@azure/functions": "^4",
+    "inversify": "^7",
+    "reflect-metadata": "0.2.2",
+    "winston": "^3",
+    "winston-transport": "^4",
+    "zod": "^4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:HerrRomich/az-functions.git"
+  }
+}

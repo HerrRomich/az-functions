@@ -1,15 +1,8 @@
-# Coverage directory used by istanbul
+.idea/**/*
+node_modules/
+/xchange.iml
+dist/
+.backups
 coverage
+/.yarn/install-state.gz
 
-# Dependency directory
-node_modules
-
-# Ignore built files
-dist
-output
-
-# IDE
-.vs
-.idea/
-*.iml
-/.yarn

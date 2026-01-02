@@ -1,0 +1,19 @@
+:host {
+  display: flex;
+  flex-direction: row;
+  flex: 1 1 0;
+  border: 1px solid #d3d3d3;
+  margin: 2px;
+  border-radius: 2px;
+  .truck-list {
+    display: flex;
+    flex-direction: column;
+    &.list {
+      width: 65vw;
+      min-width: 500px;
+    }
+    &.detail {
+      flex: 0 0 0;
+    }
+  }
+}

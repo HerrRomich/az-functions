@@ -1,0 +1,14 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "dist",
+    "baseUrl": ".",
+    "declaration": true,
+    "types": ["reflect-metadata", "node", "jest", "jest-extended", "jest-mock-extended"],
+    "paths": {
+      "shared/*": ["./src/shared/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist", "test"]
+}

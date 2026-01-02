@@ -1,0 +1,179 @@
+import { app, HttpHandler, HttpMethodFunctionOptions, HttpRequest, InvocationContext } from '@azure/functions';
+import * as fs from 'fs/promises';
+import { Container } from 'inversify';
+import { anyFunction, mock, MockProxy } from 'jest-mock-extended';
+import * as path from 'path';
+import * as process from 'process';
+import { AZURE_FUNCTION, AzureFunction, AzureFunctionRegistrationError, PlatformMode } from 'shared';
+import { OpenApiDefinitionService, SwaggerHandlingService } from '../http-controller';
+import { Logger } from '../logger';
+import { AzurePlatform } from './azure-platform';
+import { ComponentMetadata, FunctionsRegistrationService } from './model';
+import { PlatformComponentMetadataService } from './platform-component-metadata.service';
+import { RegisterFunctionFactory } from './register-function.factory';
+
+jest.mock('@azure/functions');
+jest.mock('fs/promises');
+
+class TestClass1 {}
+class TestClass2 {}
+
+describe('test AzureContainer', () => {
+  const initSubject = (platformMode: PlatformMode = 'start') => {
+    mockApiDefinitionService.getApplications.mockReturnValue(['rest']);
+    const registerFunctionFactory: RegisterFunctionFactory = () => mockFunctionsRegistrationService;
+    subject = new AzurePlatform(
+      platformMode,
+      mockPlatformContainer,
+      registerFunctionFactory,
+      mockSwaggerHandlingService,
+      mockMetadataService,
+      mockApiDefinitionService,
+      mockLoggerFactory,
+    );
+  };
+
+  let subject: AzurePlatform;
+  let mockPlatformContainer: MockProxy<Container>;
+  let mockFunctionsRegistrationService: MockProxy<FunctionsRegistrationService>;
+  let mockSwaggerHandlingService: MockProxy<SwaggerHandlingService>;
+  let mockMetadataService: MockProxy<PlatformComponentMetadataService>;
+  let mockApiDefinitionService: MockProxy<OpenApiDefinitionService>;
+  let mockLoggerFactory: jest.MockedFn<() => Logger>;
+  let mockLogger: MockProxy<Logger>;
+
+  beforeEach(() => {
+    mockPlatformContainer = mock();
+    mockFunctionsRegistrationService = mock();
+    mockSwaggerHandlingService = mock();
+    mockMetadataService = mock();
+    mockApiDefinitionService = mock();
+    mockPlatformContainer.getAllAsync.calledWith(AZURE_FUNCTION).mockResolvedValue([]);
+    mockLogger = mock();
+    mockLoggerFactory = jest.fn().mockReturnValue(mockLogger);
+  });
+
+  it('should not register swagger UI if no app config', async () => {
+    initSubject();
+    mockApiDefinitionService.getApplications.mockReturnValue([]);
+
+    await subject.start();
+
+    expect(app.get).not.toHaveBeenCalled();
+  });
+
+  it('should register swagger UI', async () => {
+    initSubject();
+    let swaggerUiHandler: HttpHandler | undefined = undefined;
+    let openApiDefinitionHandler: HttpHandler | undefined = undefined;
+    jest.mocked(app.get).mockImplementation((name, { handler }: HttpMethodFunctionOptions) => {
+      switch (name) {
+        case 'swaggerUi':
+          swaggerUiHandler = handler;
+          break;
+        case 'openApiDefinition':
+          openApiDefinitionHandler = handler;
+          break;
+      }
+    });
+    await subject.start();
+
+    expect(app.get).toHaveBeenNthCalledWith(1, 'swaggerUi', {
+      route: 'spec/{fileName?}',
+      handler: anyFunction(),
+    });
+
+    expect(app.get).toHaveBeenNthCalledWith(2, 'openApiDefinition', {
+      route: 'spec/definition/{definitionName}',
+      handler: anyFunction(),
+    });
+
+    const request = mock<HttpRequest>();
+    const context = mock<InvocationContext>();
+
+    expect(swaggerUiHandler).toBeDefined();
+    expect(mockSwaggerHandlingService.handleSwaggerContent).not.toHaveBeenCalled();
+    await swaggerUiHandler!(request, context);
+    expect(mockSwaggerHandlingService.handleSwaggerContent).toHaveBeenCalledWith(request);
+
+    expect(openApiDefinitionHandler).toBeDefined();
+    expect(mockSwaggerHandlingService.handleOpenApiDefinition).not.toHaveBeenCalled();
+    await openApiDefinitionHandler!(request, context);
+    expect(mockSwaggerHandlingService.handleOpenApiDefinition).toHaveBeenCalledWith(request);
+  });
+
+  it('should register functions', async () => {
+    initSubject();
+    const mockedComponent1 = new TestClass1();
+    const mockedComponent1Metadata1 = {
+      type: 'http-controller',
+    } as unknown as ComponentMetadata;
+    const mockedComponent2 = new TestClass2();
+    const mockedComponent1Metadata2 = {
+      type: 'event-hub-handlers',
+    } as unknown as ComponentMetadata;
+    mockMetadataService.getMetadata.calledWith(mockedComponent1.constructor).mockReturnValue(mockedComponent1Metadata1);
+    mockMetadataService.getMetadata.calledWith(mockedComponent2.constructor).mockReturnValue(mockedComponent1Metadata2);
+    mockPlatformContainer.getAllAsync
+      .calledWith(AZURE_FUNCTION)
+      .mockResolvedValue([mockedComponent1, mockedComponent2]);
+
+    await subject.start();
+
+    expect(mockMetadataService.getMetadata).toHaveBeenCalledTimes(2);
+    expect(mockFunctionsRegistrationService.register).toHaveBeenNthCalledWith(
+      1,
+      mockedComponent1,
+      mockedComponent1Metadata1,
+    );
+    expect(mockFunctionsRegistrationService.register).toHaveBeenNthCalledWith(
+      2,
+      mockedComponent2,
+      mockedComponent1Metadata2,
+    );
+  });
+
+  it('should fail registration if meets unknow type', async () => {
+    initSubject();
+    const mockedComponent = mock<AzureFunction>();
+    mockMetadataService.getMetadata.calledWith(mockedComponent).mockReturnValue(undefined);
+    mockPlatformContainer.isBound.calledWith(AZURE_FUNCTION).mockReturnValue(true);
+    mockPlatformContainer.getAllAsync.calledWith(AZURE_FUNCTION).mockResolvedValue([mockedComponent]);
+
+    await expect(subject.start()).rejects.toThrow(AzureFunctionRegistrationError);
+
+    expect(mockMetadataService.getMetadata).toHaveBeenCalledTimes(1);
+  });
+
+  it('should generate OpenAPI definition if startPlatform displayMode is "print-open-api"', async () => {
+    jest.spyOn(process, 'cwd').mockReturnValue('test-dir');
+    jest.mocked(fs.stat).mockRejectedValue(new Error("Dir doesn't exist."));
+    initSubject('print-open-api');
+    mockApiDefinitionService.getApplications.mockReturnValue(['app1', 'app2']);
+
+    await subject.start();
+
+    expect(fs.stat).toHaveBeenCalledWith(path.resolve('test-dir', 'dist/open-api-definitions'));
+    expect(fs.mkdir).toHaveBeenCalledWith(path.resolve('test-dir', 'dist/open-api-definitions'));
+    expect(mockApiDefinitionService.generateDocument).toHaveBeenNthCalledWith(1, 'app1');
+    expect(mockApiDefinitionService.generateDocument).toHaveBeenNthCalledWith(2, 'app2');
+  });
+
+  it('should print error, if generation fails', async () => {
+    jest.spyOn(process, 'cwd').mockReturnValue('test-dir');
+    jest.mocked(fs.stat).mockRejectedValue(new Error("Dir doesn't exist."));
+    const error = new Error('Cannot write file');
+    jest.mocked(fs.writeFile).mockRejectedValue(error);
+    initSubject('print-open-api');
+    mockApiDefinitionService.getApplications.mockReturnValue(['app1', 'app2']);
+
+    await subject.start();
+
+    expect(fs.stat).toHaveBeenCalledWith(path.resolve('test-dir', 'dist/open-api-definitions'));
+    expect(fs.mkdir).toHaveBeenCalledWith(path.resolve('test-dir', 'dist/open-api-definitions'));
+    expect(mockApiDefinitionService.generateDocument).toHaveBeenNthCalledWith(1, 'app1');
+    expect(mockApiDefinitionService.generateDocument).toHaveBeenNthCalledWith(2, 'app2');
+    expect(mockLogger.error).toHaveBeenCalledWith('Failed to print OpenAPI definition for application=app2.', error);
+    expect(mockLogger.error).toHaveBeenCalledWith('Failed to print OpenAPI definition for application=app2.', error);
+  });
+});

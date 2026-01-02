@@ -1,0 +1,39 @@
+{
+  "name": "@herrromich/transaction-manager",
+  "private": true,
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.cjs",
+  "types": "dist/src/index.d.ts",
+  "scripts": {
+    "build": "webpack --mode=production",
+    "build:recursive": "pnpm -r --sort --filter .... run build",
+    "watch": "webpack --mode=development --watch",
+    "watch:recursive": "pnpm -r --sort --filter .... run watch",
+    "test": "jest --env=node --colors --coverage",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix"
+  },
+  "dependencies": {
+    "reflect-metadata": "catalog:",
+    "uuid": "catalog:"
+  },
+  "devDependencies": {
+    "@babel/preset-env": "catalog:",
+    "@types/eslint": "catalog:",
+    "@types/jest": "catalog:",
+    "eslint": "catalog:",
+    "jest": "catalog:",
+    "jest-extended": "catalog:",
+    "jest-mock-extended": "catalog:",
+    "typescript": "catalog:",
+    "webpack": "catalog:",
+    "webpack-node-externals": "catalog:"
+  },
+  "peerDependencies": {
+    "kysely": "^0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,8 @@
+# Exclude tests and config files
+/**/*.test.ts
+.eslintrc.js
+eslint.config.mjs
+jest.config.mjs
+jest.setup.mjs
+webpack.config.mjs
+tsconfig.json

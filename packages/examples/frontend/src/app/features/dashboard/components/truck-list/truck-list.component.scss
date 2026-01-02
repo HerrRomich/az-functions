@@ -1,0 +1,83 @@
+@use 'variables' as var;
+
+:host {
+  display: flex;
+  flex-direction: column;
+
+  .truck-list-table {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    overflow-y: scroll;
+
+    .mat-column-license-plate {
+      flex: 0 0 18ch;
+    }
+
+    .mat-column-speed {
+      flex: 0 0 15ch;
+    }
+
+    .mat-column-driver {
+      flex: 1 1 0;
+    }
+
+    .mat-column-destination {
+      flex: 4 4 0;
+    }
+
+    .mat-column-state,
+    .mat-column-actions {
+      display: flex;
+      flex-direction: row;
+      flex: 0 0 0;
+      justify-content: center;
+      align-items: center;
+      button.mat-mdc-mini-fab {
+        width: 24px;
+        height: 24px;
+        padding-top: 10px;
+      }
+    }
+
+    .mat-column-state {
+      > span {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        font-size: 24px;
+        margin-top: 6px;
+      }
+      .state-blue {
+        color: var.$blue;
+      }
+      .state-green {
+        color: var.$green;
+      }
+      .state-red {
+        color: var.$red;
+      }
+      .state-orange {
+        color: var.$orange;
+      }
+      .state-gray {
+        color: var.$gray;
+      }
+      .state-brown {
+        color: var.$brown;
+      }
+    }
+
+    .mat-mdc-row {
+      &.selected-truck {
+        background-color: var.$selected-table-background !important;
+      }
+       &:nth-child(odd) {
+        background-color: var.$odd-table-background;
+      }
+      &:nth-child(even) {
+        background-color: var.$even-table-background;
+      }
+    }
+  }
+}

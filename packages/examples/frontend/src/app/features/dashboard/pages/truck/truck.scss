@@ -1,0 +1,15 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+
+  .top-bar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+    .divider {
+      flex: 1 1 0;
+    }
+  }
+}

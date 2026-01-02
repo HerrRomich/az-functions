@@ -1,0 +1,55 @@
+{
+  "name": "@herrromich/az-functionsexample-backend",
+  "version": "0.0.1",
+  "main": "dist/index.cjs",
+  "types": "dist/src/index.d.ts",
+  "scripts": {
+    "ttt": "tsc",
+    "build": "webpack --mode=production",
+    "build:recursive": "pnpm -r --sort --filter {.}... run build",
+    "watch": "webpack --mode=development --watch",
+    "watch:recursive": "pnpm -r --sort --filter {.}... --parallel --stream run watch",
+    "test": "jest --env=node --colors --coverage",
+    "lint": "eslint -c eslint.config.mjs src",
+    "lint:fix": "eslint -c eslint.config.mjs src --fix",
+    "start": "func start --verbose --javascript --watch",
+    "swa": "swa start http://localhost:4200 --api-location http://127.0.0.1:7071"
+  },
+  "dependencies": {
+    "@asteasolutions/zod-to-openapi": "catalog:",
+    "@forks/source-map-support": "workspace:*",
+    "@herrromich/az-functions": "workspace:*",
+    "@herrromich/transaction-manager": "workspace:*",
+    "@turf/turf": "catalog:",
+    "inversify": "catalog:",
+    "kysely": "catalog:",
+    "lodash": "catalog:",
+    "pg": "catalog:",
+    "pg-types": "catalog:",
+    "reflect-metadata": "catalog:",
+    "winston": "catalog:",
+    "wkx": "catalog:",
+    "zod": "catalog:",
+    "zod-geojson": "catalog:"
+  },
+  "devDependencies": {
+    "@types/pg": "catalog:",
+    "@types/geojson": "catalog:",
+    "@types/lodash": "catalog:",
+    "copy-webpack-plugin": "catalog:",
+    "eslint": "catalog:",
+    "jest": "catalog:",
+    "jest-extended": "catalog:",
+    "jest-mock-extended": "catalog:",
+    "source-map-loader": "catalog:",
+    "swagger-ui-dist": "catalog:",
+    "ts-jest": "catalog:",
+    "typescript": "catalog:",
+    "webpack": "catalog:",
+    "webpack-bundle-analyzer": "catalog:",
+    "webpack-node-externals": "catalog:"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

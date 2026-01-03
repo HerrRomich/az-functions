@@ -33,9 +33,14 @@
     "zod-geojson": "catalog:"
   },
   "devDependencies": {
-    "@types/pg": "catalog:",
+    "@babel/preset-env": "catalog:",
+    "@types/eslint": "catalog:",
     "@types/geojson": "catalog:",
+    "@types/jest": "catalog:",
     "@types/lodash": "catalog:",
+    "@types/mime-types": "catalog:",
+    "@types/node": "catalog:",
+    "@types/pg": "catalog:",
     "copy-webpack-plugin": "catalog:",
     "eslint": "catalog:",
     "jest": "catalog:",

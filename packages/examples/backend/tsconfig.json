@@ -5,10 +5,11 @@
     "outDir": "dist",
     "baseUrl": ".",
     "declaration": true,
-    "types": ["reflect-metadata", "node", "jest", "jest-extended", "jest-mock-extended"],
+    "types": ["node", "reflect-metadata"],
     "paths": {
       "shared/*": ["./src/shared/*"]
     }
   },
-  "exclude": ["node_modules", "dist", "test"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "test", "src/**/*.test.ts"]
 }

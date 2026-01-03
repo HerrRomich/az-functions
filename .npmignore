@@ -1,8 +1,9 @@
 # Exclude tests and config files
 /**/*.test.ts
-.eslintrc.js
+.prettierrc.mjs
+eslint.base.config.mjs
 eslint.config.mjs
-jest.config.mjs
-jest.setup.mjs
-webpack.config.mjs
+jest.base.setup.mjs
+babel.base.config.mjs
+webpack.base.config.mjs
 tsconfig.json

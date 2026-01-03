@@ -34,7 +34,6 @@
     "yaml": "catalog:"
   },
   "devDependencies": {
-    "@babel/preset-env": "catalog:",
     "@types/eslint": "catalog:",
     "@types/jest": "catalog:",
     "@types/lodash": "catalog:",

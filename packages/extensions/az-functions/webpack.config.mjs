@@ -30,7 +30,7 @@ export default (env, argv) => {
   }
 
   return {
-    extends: path.resolve(__dirname, '../../../webpack.config.base.mjs'),
+    extends: path.resolve(__dirname, '../../../webpack.base.config.mjs'),
     entry: {
       functions: './src/index.ts',
     },

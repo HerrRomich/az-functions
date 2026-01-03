@@ -14,7 +14,7 @@ const moduleNameMapper = tsConfigPaths
 export default {
   preset: 'ts-jest',
   coverageReporters: ['lcov', 'text', 'cobertura'],
-  testPathIgnorePatterns: ['/dist/'],
+  testPathIgnorePatterns: ['/dist/', '/src/shared/startup/migrations/'],
   ...moduleNameMapper,
   transform: {
     '^.+\\.ts$': [

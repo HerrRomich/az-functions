@@ -1,9 +1,0 @@
-{
-  "IsEncrypted": false,
-  "Values": {
-    "FUNCTIONS_WORKER_RUNTIME": "node",
-    "AzureWebJobsFeatureFlags": "EnableWorkerIndexing",
-    "PostgresConnectionString": "postgresql://postgres:welcome1@localhost/postgres",
-    "PostgresSchema": "fleet_sight"
-  }
-}

@@ -6,7 +6,7 @@ export function getModuleNameMapper(tsConfigPaths) {
   };
 }
 
-export function baseConfig(tsTestConfigName = 'tsconfig.test.json') {
+export function provideBaseConfig(tsTestConfigName = 'tsconfig.test.json') {
   return {
     clearMocks: true,
     resetMocks: true,
@@ -21,7 +21,6 @@ export function baseConfig(tsTestConfigName = 'tsconfig.test.json') {
           tsconfig: `<rootDir>/${tsTestConfigName}`,
         },
       ],
-      '^.+\\.mjs$': 'babel-jest',
     },
     setupFilesAfterEnv: ['jest-extended/all'],
   };

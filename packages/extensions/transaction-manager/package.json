@@ -19,7 +19,6 @@
     "uuid": "catalog:"
   },
   "devDependencies": {
-    "@babel/preset-env": "catalog:",
     "@types/eslint": "catalog:",
     "@types/jest": "catalog:",
     "eslint": "catalog:",

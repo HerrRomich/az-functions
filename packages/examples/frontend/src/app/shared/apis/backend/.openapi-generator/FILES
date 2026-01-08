@@ -1,13 +1,11 @@
 .gitignore
-.openapi-generator-ignore
 README.md
 api.base.service.ts
 api.module.ts
 api/api.ts
-api/dashboardService.service.ts
+api/dashboard.service.ts
 configuration.ts
 encoder.ts
-git_push.sh
 index.ts
 model/models.ts
 model/truck.ts
@@ -16,4 +14,6 @@ model/truckDriver.ts
 model/truckLocation.ts
 model/trucksResponseDto.ts
 param.ts
+provide-api.ts
+query.params.ts
 variables.ts

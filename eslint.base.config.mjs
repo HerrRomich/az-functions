@@ -1,10 +1,10 @@
-import { FlatCompat } from '@eslint/eslintrc';
 import eslintJavascript from '@eslint/js';
 import eslintPluginJson from 'eslint-plugin-json';
 import eslintPluginPrettier from 'eslint-plugin-prettier/recommended';
 import eslintPluginSonar from 'eslint-plugin-sonarjs';
 import globals from 'globals';
-import eslintGoogleConfig from 'gts';
+import gts from 'gts';
+import * as jsoncParser from 'jsonc-eslint-parser';
 
 import path from 'node:path';
 import { loadConfig } from 'tsconfig-paths';
@@ -37,14 +37,6 @@ export function getTypeScriptPathsRules(rootName) {
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     'sonarjs/function-return-type': 'off',
   };
-}
-
-export function getGoogleConfig(rootName) {
-  const compat = new FlatCompat({
-    baseDirectory: rootName,
-    recommendedConfig: eslintJavascript.configs.recommended,
-  });
-  return compat.config(eslintGoogleConfig);
 }
 
 export function getTypescriptConfig(rootName, tsConfigName = 'tsconfig.json', tsTestConfigName = 'tsconfig.test.json') {
@@ -81,12 +73,29 @@ export function getTypescriptConfig(rootName, tsConfigName = 'tsconfig.json', ts
   ];
 }
 
-export function provideBaseConfig() {
-  const jsonConfig = [eslintPluginJson.configs['recommended-with-comments']];
+export const jsonConfig = {
+  files: ['*.json'],
+  languageOptions: {
+    parser: jsoncParser,
+  },
+  plugins: {
+    json: eslintPluginJson,
+    prettier: eslintPluginPrettier.plugins.prettier,
+  },
+  rules: {
+    'prettier/prettier': 'error',
+    ...eslintPluginJson.configs['recommended-with-comments'].rules,
+    'quotes': 'off',
+    'quote-props': 'off',
+    'no-unused-expressions': 'off',
+    'no-irregular-whitespace': 'off',
+  },
+};
 
+export function provideBaseConfig() {
   const sonarConfigRecommended = {
-    ignores: ['**/*.json'],
+    ignores: ['*.json', '**/*.html'],
     ...eslintPluginSonar.configs.recommended,
   };
-  return [sonarConfigRecommended, eslintPluginPrettier, ...javascriptConfig, ...jsonConfig];
+  return [sonarConfigRecommended, eslintPluginPrettier, ...javascriptConfig, ...gts, jsonConfig];
 }

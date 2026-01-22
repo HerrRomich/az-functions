@@ -1,6 +1,3 @@
-import { Kysely } from 'kysely';
-
-export { transactional } from './decorators';
-export { registerDataSource, TransactionManagerError } from './transaction-manager.module';
-
-export class DataSource<DB> extends Kysely<DB> {}
+export { Isolation, Propagation, Transactional, TransactionalConfig } from './decorators';
+export { DataSource, TransactionManager, TransactionManagerError } from './transaction-manager.model';
+export { registerDataSource } from './transaction-manager.module';

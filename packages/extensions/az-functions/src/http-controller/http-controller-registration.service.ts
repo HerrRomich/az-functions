@@ -1,80 +1,52 @@
-import { app } from '@azure/functions';
-import { inject, injectable } from 'inversify';
-import { AzureFunction, PLATFORM_MODE, PlatformMode } from 'shared';
-import { FunctionsRegistrationService } from '../platform';
-import { ControllerMetadata, ControllerOperationMetadata, HttpControllerMetadataService } from './decorators';
-import { httpMethodMap } from './http-controller-platform.model';
-import { RestApplication } from './http-controller.model';
-import { HttpRequestHandlerProvider } from './http-request-handler.provider';
-import { OpenApiDefinitionService } from './open-api-definition.service';
+import { app, HttpMethod } from '@azure/functions';
+import { Container, inject, injectable } from 'inversify';
+import { PLATFORM_CONTAINER, TriggerHandlerClass, TriggerHandlerRegistrationService } from 'shared';
+import { OperationMethod } from './decorators';
+import { HttpHandlerFactory } from './http-handler.factory';
+import { HttpOperationRegistration, HttpOperationsRegistrationService } from './http-operations-registration.service';
 
-export interface HttpOperationRegistrationData {
-  controller: AzureFunction;
-  operation: string;
-  controllerMetadata: ControllerMetadata;
-  operationMetadata: ControllerOperationMetadata;
-  application: RestApplication;
-  route: string;
-}
+const httpMethodMap: Record<OperationMethod, HttpMethod> = {
+  get: 'GET',
+  head: 'HEAD',
+  delete: 'DELETE',
+  post: 'POST',
+  put: 'PUT',
+  patch: 'PATCH',
+};
 
 @injectable()
-export class HttpControllerRegistrationService implements FunctionsRegistrationService {
+export class HttpControllerRegistrationService implements TriggerHandlerRegistrationService {
   constructor(
-    @inject(PLATFORM_MODE) private readonly platformMode: PlatformMode,
-    private readonly controllerMetadataService: HttpControllerMetadataService,
-    private readonly openApiDefinitionService: OpenApiDefinitionService,
-    private readonly httpRequestHandlerProvider: HttpRequestHandlerProvider,
+    @inject(PLATFORM_CONTAINER) private readonly platformContainer: Container,
+    private readonly operationsRegistrationService: HttpOperationsRegistrationService,
+    private readonly handlerFactory: HttpHandlerFactory,
   ) {}
 
-  register(functions: AzureFunction, controllerMetadata: ControllerMetadata) {
-    const prototype = functions.constructor.prototype;
-    const application = this.openApiDefinitionService.getApplication(controllerMetadata.application);
-    for (const member of Object.getOwnPropertyNames(prototype)) {
-      if (typeof prototype[member] === 'function') {
-        const operationMetadata = this.controllerMetadataService.getOperationMetadata(functions, member);
-        if (!operationMetadata) {
-          continue;
-        }
-        const registrationData: HttpOperationRegistrationData = {
-          controller: functions,
-          operation: member,
-          controllerMetadata,
-          operationMetadata,
-          application,
-          route: this.getRoute(controllerMetadata, operationMetadata),
-        };
-        if (this.platformMode === 'start') {
-          this.registerTrigger(registrationData);
-        }
-        this.openApiDefinitionService.registerOperation(registrationData);
-      }
-    }
+  register(controllerClass: TriggerHandlerClass) {
+    this.platformContainer.bind(controllerClass).toSelf();
+    const controller = this.platformContainer.get(controllerClass);
+    this.operationsRegistrationService.registerOperations(controllerClass, registrationData => {
+      this.registerTrigger(controller, registrationData);
+    });
   }
 
-  private registerTrigger(registrationData: HttpOperationRegistrationData) {
-    const { controller, operation, operationMetadata } = registrationData;
+  private registerTrigger(controller: object, registrationData: HttpOperationRegistration) {
+    const { operationId, controllerMethod, operationMetadata } = registrationData;
 
     const controllerPrototype = controller.constructor.prototype;
     const route = registrationData.application.context + '/' + registrationData.route;
     const method = async (...args: unknown[]): Promise<unknown> => {
-      return await controllerPrototype[operation].call(controller, ...args);
+      return await controllerPrototype[controllerMethod].call(controller, ...args);
     };
-    const httpRequestHandler = this.httpRequestHandlerProvider.getHttpRequestHandler(registrationData, method);
-    const { operationId, method: httpMethod, authLevel, extraInputs, extraOutputs } = operationMetadata;
-    app.http(operationId ?? operation, {
+    const handler = this.handlerFactory.createHandler(registrationData, method);
+    const { method: httpMethod, authLevel, extraInputs, extraOutputs } = operationMetadata;
+    app.http(operationId, {
       route,
       methods: [httpMethodMap[httpMethod]],
-      handler: httpRequestHandler,
+      handler,
       authLevel,
       extraInputs,
       extraOutputs,
     });
-  }
-
-  private getRoute(controllerMetadata: ControllerMetadata, operationMetadata: ControllerOperationMetadata) {
-    return (controllerMetadata.path + '/' + (operationMetadata.path ?? ''))
-      .replace(/^\/*/, '')
-      .replace(/\/{2,}/, '/')
-      .replace(/\/$/, '');
   }
 }

@@ -1,65 +1,45 @@
 import { app } from '@azure/functions';
-import { inject, injectable } from 'inversify';
-import { AzureFunction, PLATFORM_MODE, PlatformMode } from 'shared';
-import { EventHubHandleMethodMetadata, FunctionsRegistrationService } from '../platform';
-import { EventHubHandlerMetadata } from './decorators';
-import { EventHubHandleMethodArgsMetadataService } from './event-hub-handle-method-args-metadata.service';
-import { EventHubTriggerDefinitionError, HANDLE_METHOD_NAME } from './event-hub-handler.model';
-import { EventHubHandlerProvider } from './event-hub-handler.provider';
-
-export interface EventHubTriggerRegistrationData {
-  handler: AzureFunction;
-  handleMethodMetadata: EventHubHandleMethodMetadata;
-}
+import { Container, inject, injectable } from 'inversify';
+import { PLATFORM_CONTAINER, TriggerHandlerClass, TriggerHandlerRegistrationService } from 'shared';
+import { EventHubHandlerFactory } from './event-hub-handler.factory';
+import {
+  EventhubTriggerRegistration,
+  EventHubTriggersRegistrationService,
+} from './event-hub-triggers-registration.service';
 
 @injectable()
-export class EventHubHandlerRegistrationService implements FunctionsRegistrationService {
+export class EventHubHandlerRegistrationService implements TriggerHandlerRegistrationService {
   constructor(
-    @inject(PLATFORM_MODE) private readonly platformMode: PlatformMode,
-    private readonly eventHubHandleMethodMetadataService: EventHubHandleMethodArgsMetadataService,
-    private readonly eventHubHandlerProvider: EventHubHandlerProvider,
+    @inject(PLATFORM_CONTAINER) private readonly platformContainer: Container,
+    private readonly eventHubHandlerProvider: EventHubHandlerFactory,
+    private readonly triggersRegistrationService: EventHubTriggersRegistrationService,
   ) {}
 
-  register(functions: AzureFunction, functionMetadata: EventHubHandlerMetadata): void {
-    const prototype = functions.constructor.prototype;
-    if (this.platformMode !== 'start') {
-      return;
-    }
-    for (const member of Object.getOwnPropertyNames(prototype)) {
-      if (member === HANDLE_METHOD_NAME && typeof prototype[member] === 'function') {
-        const handleMethodMetadata = this.eventHubHandleMethodMetadataService.getMethodArgsMetadata(functions);
-        const registrationData: EventHubTriggerRegistrationData = {
-          handler: functions,
-          handleMethodMetadata: {
-            ...functionMetadata,
-            args: handleMethodMetadata?.args ?? [],
-          },
-        };
-        this.registerTrigger(registrationData);
-        return;
-      }
-    }
-    throw new EventHubTriggerDefinitionError(
-      `Event hub handler service "${functions.constructor.name}" with triggerId=${functionMetadata.triggerId} has no "handle" method. Please, implement "EventHubHandler" interface.`,
+  register(eventHubHandlerClass: TriggerHandlerClass) {
+    this.platformContainer.bind(eventHubHandlerClass).toSelf();
+    const handler = this.platformContainer.get(eventHubHandlerClass);
+
+    this.triggersRegistrationService.registerTriggers(eventHubHandlerClass, triggerRegistration =>
+      this.registerTrigger(handler, triggerRegistration),
     );
   }
 
-  private registerTrigger(registrationData: EventHubTriggerRegistrationData) {
-    const { handler, handleMethodMetadata } = registrationData;
+  private registerTrigger(handler: object, triggerRegistration: EventhubTriggerRegistration) {
+    const { triggerId, triggerMethod, handlerMetadata, triggerMetadata } = triggerRegistration;
 
     const handlersPrototype = handler.constructor.prototype;
     const method = async (...args: unknown[]): Promise<unknown> => {
-      return await handlersPrototype[HANDLE_METHOD_NAME].call(handler, ...args);
+      return await handlersPrototype[triggerMethod].call(handler, ...args);
     };
-    const httpRequestHandler = this.eventHubHandlerProvider.getEventHubTriggerHandler(registrationData, method);
-    app.eventHub(handleMethodMetadata.triggerId, {
-      connection: handleMethodMetadata.connection,
-      eventHubName: handleMethodMetadata.eventHubName,
-      cardinality: handleMethodMetadata.cardinality,
-      consumerGroup: handleMethodMetadata.consumerGroup,
-      extraInputs: handleMethodMetadata.extraInputs,
-      extraOutputs: handleMethodMetadata.extraOutputs,
-      handler: (messages, context) => httpRequestHandler(messages, context),
+    const eventhubHandler = this.eventHubHandlerProvider.createHandler(triggerRegistration, method);
+    app.eventHub(triggerId, {
+      connection: handlerMetadata.connection,
+      eventHubName: handlerMetadata.eventHubName,
+      consumerGroup: triggerMetadata.consumerGroup,
+      cardinality: triggerMetadata.cardinality,
+      extraInputs: triggerMetadata.extraInputs,
+      extraOutputs: triggerMetadata.extraOutputs,
+      handler: eventhubHandler,
     });
   }
 }

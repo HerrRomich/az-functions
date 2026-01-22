@@ -1,28 +1,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Kysely } from 'kysely';
-import { DataSource } from '.';
 import { PlatformTransactionLocalStorage } from './platform-transaction.storage';
+import {
+  DataSource,
+  DEFAULT_DATA_SOURCE_NAME,
+  TransactionManager,
+  TransactionManagerError,
+} from './transaction-manager.model';
 
-export const DEFAULT_DATA_SOURCE_NAME = Symbol.for('DEFAULT_DATA_SOURCE');
-
-export interface TransactionManager {
-  kysely: Kysely<any>;
-  storage: PlatformTransactionLocalStorage<any>;
-}
-
-const _transactionManagers: Record<string | symbol, TransactionManager> = {};
-export const transactionManagers: Readonly<Record<string | symbol, Readonly<TransactionManager>>> =
+const _transactionManagers: Record<string | symbol, TransactionManager<any>> = {};
+export const transactionManagers: Readonly<Record<string | symbol, Readonly<TransactionManager<unknown>>>> =
   _transactionManagers;
 
-export class TransactionManagerError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'TransactionManagerError';
-    Object.setPrototypeOf(this, TransactionManagerError.prototype);
-  }
-}
-
-export function registerDataSource<DB>(kyselyProvider: () => Kysely<DB>, dataSourceName?: string | symbol) {
+export function registerDataSource<DB>(
+  kyselyProvider: () => Kysely<DB>,
+  dataSourceName?: string | symbol,
+): DataSource<DB> {
   const name = dataSourceName ?? DEFAULT_DATA_SOURCE_NAME;
   if (_transactionManagers[name]) {
     throw new TransactionManagerError(`Data source with name '${String(name)}' is already registered.`);

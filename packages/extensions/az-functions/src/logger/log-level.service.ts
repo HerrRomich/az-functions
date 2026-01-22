@@ -1,8 +1,14 @@
-import { serviceIdentifier } from 'shared';
-import { LogLevel } from './logger.model';
+import { inject, injectable, optional } from 'inversify';
+import { DEFAULT_LOG_LEVEL, LOG_LEVEL_PROVIDER, LogLevel, LogLevelProvider } from './logger.model';
 
-export const LOG_LEVEL_SERVICE = serviceIdentifier<ILogLevelService>('LOG_LEVEL_SERVICE');
+@injectable()
+export class LogLevelService {
+  constructor(
+    @inject(LOG_LEVEL_PROVIDER) @optional() private readonly logLevelsProvider: LogLevelProvider | undefined,
+    @inject(DEFAULT_LOG_LEVEL) private readonly defaultLogLevel: LogLevel,
+  ) {}
 
-export interface ILogLevelService {
-  getLogLevel(category: string | undefined): LogLevel;
+  getLogLevel(loggerName: string | undefined): LogLevel {
+    return this.logLevelsProvider?.getLogLevel(loggerName) ?? this.defaultLogLevel;
+  }
 }

@@ -1,128 +1,138 @@
-import * as appInsights from 'applicationinsights';
-import { TelemetryClient } from 'applicationinsights';
-import { Container } from 'inversify';
-import { DeepMockProxy, mock, mockDeep, MockProxy } from 'jest-mock-extended';
+import { BindToFluentSyntax, ContainerModuleLoadOptions, ResolutionContext } from 'inversify';
+import { mock, MockProxy } from 'jest-mock-extended';
 import * as winston from 'winston';
-import { AzureLogTransport } from './azure-log-transport.service';
-import { LOG_CATEGORY_PROVIDER, LOGGER_FACTORY, loggerModule } from './index';
-import { CLOUD_ROLE } from './logger.model';
+import { bindLoggerFactory, bindOtelLoggerProvider, bindWinstonLogger } from './bindings';
+import {
+  DEFAULT_LOG_LEVEL,
+  LOGGER_FACTORY,
+  LOGGER_PROVIDER,
+  LoggerConfiguration,
+  LoggerFactory,
+  provideLoggerModule,
+} from './index';
+import { LogLevelService } from './log-level.service';
+import { AzFunctionsTransport } from './log-transport.service';
+import { OtelLogger } from './otel.logger';
 
-jest.mock('./azure-log-transport.service');
-jest.mock('applicationinsights');
-jest.mock('winston');
-jest.mock('./platform.logger');
-jest.mock('./azure-log-transport.service');
+jest.mock('./bindings');
 
-describe('logger', () => {
-  let mockLoggerFormat: MockProxy<winston.Logform.Format>;
-  let mockLogger: MockProxy<winston.Logger>;
-  let mockChildLogger: MockProxy<winston.Logger>;
-  let mockTransport: MockProxy<AzureLogTransport>;
-  let mockTelemetryClient: DeepMockProxy<TelemetryClient>;
+describe('provideLoggerModule', () => {
+  const config: LoggerConfiguration = {
+    otelConfiguration: {
+      applicationInsightsConnectionString: 'test-connection-string',
+      serviceName: 'test-service',
+      serviceInstanceId: 'test-instance',
+      serviceVersion: '1.0.0',
+    },
+  };
 
-  let subject: Container;
+  let mockLoadOptions: MockProxy<ContainerModuleLoadOptions>;
 
   beforeEach(() => {
-    mockLoggerFormat = mock();
-    winston.format.splat = jest.fn().mockReturnValue(mockLoggerFormat);
+    mockLoadOptions = mock<ContainerModuleLoadOptions>();
 
-    mockLogger = mock();
-    jest.mocked(winston.createLogger).mockReturnValue(mockLogger);
-    mockChildLogger = mock();
-
-    mockTransport = mock();
-    jest.mocked(AzureLogTransport).mockReturnValue(mockTransport);
-
-    mockTelemetryClient = mockDeep();
-    (appInsights.defaultClient as unknown) = mockTelemetryClient;
-
-    subject = new Container();
-    subject.loadSync(loggerModule);
+    mockLoadOptions.bind.mockImplementation(() => mock<BindToFluentSyntax<any>>());
   });
 
-  it('should bind AzureLogTransport', () => {
-    const transport = subject.get(AzureLogTransport);
+  it('should bind 5 services when no otelConfiguration is provided', async () => {
+    await provideLoggerModule().load(mockLoadOptions);
 
-    expect(transport).toBe(mockTransport);
+    expect(mockLoadOptions.bind).toHaveBeenCalledTimes(5);
   });
 
-  it('should provide logger with category', () => {
-    mockLogger.child
-      .calledWith(expect.objectContaining({ category: 'test.category' }))
-      .mockReturnValue(mockChildLogger);
+  it('should bind 7 services when otelConfiguration is provided', async () => {
+    await provideLoggerModule(config).load(mockLoadOptions);
 
-    const loggerFactory = subject.get(LOGGER_FACTORY);
-    const logger = loggerFactory('test.category');
-
-    expect(logger).toBe(mockChildLogger);
-    expect(winston.createLogger).toHaveBeenCalledWith(
-      expect.objectContaining({
-        level: 'verbose',
-        format: mockLoggerFormat,
-        transports: [mockTransport],
-      }),
-    );
-    expect(mockLogger.child).toHaveBeenCalledWith({ category: 'test.category' });
+    expect(mockLoadOptions.bind).toHaveBeenCalledTimes(7);
   });
 
-  it('should provide logger without category', () => {
-    mockLogger.child.mockReturnValue(mockChildLogger);
+  it('should bind LogLevelService', async () => {
+    await provideLoggerModule().load(mockLoadOptions);
 
-    const loggerFactory = subject.get(LOGGER_FACTORY);
-    const logger = loggerFactory();
+    expect(mockLoadOptions.bind).toHaveBeenNthCalledWith(1, LogLevelService);
 
-    expect(logger).toBe(mockChildLogger);
-    expect(winston.createLogger).toHaveBeenCalledWith(
-      expect.objectContaining({
-        level: 'verbose',
-        format: mockLoggerFormat,
-        transports: [mockTransport],
-      }),
-    );
-    expect(mockLogger.child).toHaveBeenCalledWith({});
+    const result = mockLoadOptions.bind.mock.results[0]!.value as BindToFluentSyntax<LogLevelService>;
+    expect(result.toSelf).toHaveBeenCalled();
   });
 
-  it('should provide logger with provided category from LOG_CATEGORY_PROVIDER', () => {
-    subject.bind(LOG_CATEGORY_PROVIDER).toConstantValue(() => 'provided.category');
+  it('should bind LogTransportService', async () => {
+    await provideLoggerModule().load(mockLoadOptions);
 
-    mockLogger.child
-      .calledWith(expect.objectContaining({ category: 'provided.category' }))
-      .mockReturnValue(mockChildLogger);
+    expect(mockLoadOptions.bind).toHaveBeenNthCalledWith(2, AzFunctionsTransport);
 
-    const loggerFactory = subject.get(LOGGER_FACTORY);
-    const logger = loggerFactory();
-
-    expect(logger).toBe(mockChildLogger);
-    expect(winston.createLogger).toHaveBeenCalledWith(
-      expect.objectContaining({
-        level: 'verbose',
-        format: mockLoggerFormat,
-        transports: [mockTransport],
-      }),
-    );
-    expect(mockLogger.child).toHaveBeenCalledWith({ category: 'provided.category' });
+    const mockBindSyntax = mockLoadOptions.bind.mock.results[1]!.value as BindToFluentSyntax<AzFunctionsTransport>;
+    expect(mockBindSyntax.toSelf).toHaveBeenCalled();
   });
 
-  it('should not bind TelemetryClient when WEBSITE_INSTANCE_ID is not set', () => {
-    const telemetryClient = subject.get(appInsights.TelemetryClient, { optional: true });
+  it('should bind logger', async () => {
+    await provideLoggerModule().load(mockLoadOptions);
 
-    expect(telemetryClient).toBeUndefined();
-    expect(appInsights.setup).not.toHaveBeenCalled();
-    expect(appInsights.start).not.toHaveBeenCalled();
+    expect(mockLoadOptions.bind).toHaveBeenNthCalledWith(3, winston.Logger);
+
+    const mockBindSyntax = mockLoadOptions.bind.mock.results[2]!.value as jest.Mocked<
+      BindToFluentSyntax<winston.Logger>
+    >;
+    expect(mockBindSyntax.toDynamicValue).toHaveBeenCalledWith(expect.any(Function));
+    const mockDynamicBinding = mockBindSyntax.toDynamicValue.mock.calls[0]![0];
+    const mockContext = mock<ResolutionContext>();
+    await mockDynamicBinding(mockContext);
+    expect(bindWinstonLogger).toHaveBeenCalledWith(mockContext);
   });
 
-  it('should bind TelemetryClient when WEBSITE_INSTANCE_ID is set', () => {
-    subject.unloadSync(loggerModule);
-    process.env.WEBSITE_INSTANCE_ID = 'test-instance';
-    subject.loadSync(loggerModule);
+  it('should bind logger factory', async () => {
+    await provideLoggerModule().load(mockLoadOptions);
 
-    const telemetryClient = subject.get(appInsights.TelemetryClient);
+    expect(mockLoadOptions.bind).toHaveBeenNthCalledWith(4, LOGGER_FACTORY);
 
-    expect(telemetryClient).toBe(appInsights.defaultClient);
-    expect(mockTelemetryClient.context.tags[appInsights.defaultClient.context.keys.cloudRole]).toEqual(CLOUD_ROLE);
-    expect(appInsights.setup).toHaveBeenCalled();
-    expect(appInsights.start).toHaveBeenCalled();
+    const mockBindSyntax = mockLoadOptions.bind.mock.results[3]!.value as jest.Mocked<
+      BindToFluentSyntax<LoggerFactory>
+    >;
+    expect(mockBindSyntax.toFactory).toHaveBeenCalled();
+    const mockFactoryBinding = mockBindSyntax.toFactory.mock.calls[0]![0];
+    const mockContext = mock<ResolutionContext>();
+    await mockFactoryBinding(mockContext);
+    expect(bindLoggerFactory).toHaveBeenCalledWith(mockContext);
+  });
 
-    delete process.env.WEBSITE_INSTANCE_ID;
+  it('should bind default log level without config', async () => {
+    await provideLoggerModule().load(mockLoadOptions);
+
+    expect(mockLoadOptions.bind).toHaveBeenNthCalledWith(5, DEFAULT_LOG_LEVEL);
+
+    const mockBindSyntax = mockLoadOptions.bind.mock.results[4]!.value as jest.Mocked<BindToFluentSyntax<string>>;
+    expect(mockBindSyntax.toConstantValue).toHaveBeenCalledWith('info');
+  });
+
+  it('should bind default log level with config', async () => {
+    const config: LoggerConfiguration = { defaultLogLevel: 'debug' };
+    await provideLoggerModule(config).load(mockLoadOptions);
+
+    expect(mockLoadOptions.bind).toHaveBeenNthCalledWith(5, DEFAULT_LOG_LEVEL);
+
+    const mockBindSyntax = mockLoadOptions.bind.mock.results[4]!.value as jest.Mocked<BindToFluentSyntax<string>>;
+    expect(mockBindSyntax.toConstantValue).toHaveBeenCalledWith('debug');
+  });
+
+  it('should bind OtelLogger if configuration is provided', async () => {
+    await provideLoggerModule(config).load(mockLoadOptions);
+
+    expect(mockLoadOptions.bind).toHaveBeenNthCalledWith(6, OtelLogger);
+
+    const mockBindSyntax = mockLoadOptions.bind.mock.results[5]!.value as jest.Mocked<BindToFluentSyntax<OtelLogger>>;
+    expect(mockBindSyntax.toSelf).toHaveBeenCalled();
+  });
+
+  it('should bind LOGGER_PROVIDER if configuration is provided', async () => {
+    await provideLoggerModule(config).load(mockLoadOptions);
+
+    expect(mockLoadOptions.bind).toHaveBeenNthCalledWith(7, LOGGER_PROVIDER);
+
+    const mockBindSyntax = mockLoadOptions.bind.mock.results[6]!.value as jest.Mocked<BindToFluentSyntax<any>>;
+    expect(mockBindSyntax.toDynamicValue).toHaveBeenCalled();
+
+    const mockDynamicBinding = mockBindSyntax.toDynamicValue.mock.calls[0]![0];
+    const mockContext = mock<ResolutionContext>();
+    await mockDynamicBinding(mockContext);
+    expect(bindOtelLoggerProvider).toHaveBeenCalledWith(config.otelConfiguration);
   });
 });

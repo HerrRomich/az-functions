@@ -17,7 +17,7 @@ export type Environment = "auto" | "browser" | "node";
  */
 export interface Options {
     /**
-     * This module installs two things: a change to the `stack` property on `Error`
+     * This module installs two things: a change to the `Stack` property on `Error`
      * objects and a handler for uncaught exceptions that mimics node's default exception
      * handler (the handler can be seen in the demos below). You may want to disable the
      * handler if you have your own uncaught exception handler. This can be done by passing
@@ -48,7 +48,7 @@ export interface Options {
      */
     hookRequire?: boolean | undefined;
     /**
-     * If `true`, the caches are reset before a stack trace formatting operation.
+     * If `true`, the caches are reset before a Stack trace formatting controllerMethod.
      */
     emptyCacheBetweenOperations?: boolean | undefined;
     /**
@@ -136,7 +136,7 @@ export interface CallSite {
     /**
      * Name of the current function, typically its name property.
      * If a name property is not available an attempt will be made to try
-     * to infer a name from the function's context.
+     * to infer a name from the function's InvocationCtx.
      */
     getFunctionName(): string | null;
 

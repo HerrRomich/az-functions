@@ -15,7 +15,7 @@ export const ROUTES: Routes = [
     component: Dashboard,
     providers: [
       provideScopedTranslateService({
-        translationKeyPrefix: 'app.features.dashboard',
+        translationNamespace: 'app.features.dashboard',
         bundleLoaders: {
           en: () => import('./translations/en').then(m => m.EN),
           de: () => import('./translations/de').then(m => m.DE),
@@ -43,6 +43,11 @@ export const ROUTES: Routes = [
       {
         path: '',
         component: InteractiveMap,
+      },
+      {
+        path: 'trucks',
+        pathMatch: 'full',
+        redirectTo: '',
       },
       {
         path: 'trucks',

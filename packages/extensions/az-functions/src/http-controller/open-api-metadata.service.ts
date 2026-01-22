@@ -2,12 +2,12 @@ import { ResponseConfig, RouteConfig, ZodRequestBody } from '@asteasolutions/zod
 import { injectable } from 'inversify';
 import { z, ZodArray, ZodType } from 'zod';
 import {
-  ControllerMetadata,
   ControllerOperationMetadata,
-  OperationQueryArgMetadata,
+  ControllerOperationQueryArgMetadata,
+  HttpControllerMetadata,
   QueryItemType,
 } from './decorators';
-import { optionalStringSchema, stringSchema } from './http-controller.model';
+import { OptionalStringSchema, StringSchema } from './http-controller.model';
 
 type RouteConfigRequest = RouteConfig['request'];
 
@@ -16,7 +16,7 @@ type Responses = Record<string, ResponseConfig>;
 @injectable()
 export class OpenApiMetadataService {
   getTags(
-    controllerMetadata: ControllerMetadata,
+    controllerMetadata: HttpControllerMetadata,
     operationMetadata: ControllerOperationMetadata,
   ): string[] | undefined {
     const tags = [...new Set([...(controllerMetadata.tags ?? []), ...(operationMetadata.tags ?? [])])];
@@ -31,10 +31,10 @@ export class OpenApiMetadataService {
     for (const arg of operationMetadata.args) {
       switch (arg.type) {
         case 'path':
-          paramsShape[arg.name] = arg.schema ?? stringSchema;
+          paramsShape[arg.name] = arg.schema ?? StringSchema;
           break;
         case 'header':
-          headersShape[arg.name] = arg.schema ?? optionalStringSchema;
+          headersShape[arg.name] = arg.schema ?? OptionalStringSchema;
           break;
         case 'query':
           queriesShape[arg.name] = OpenApiMetadataService.getQueryType(arg);
@@ -52,8 +52,8 @@ export class OpenApiMetadataService {
           break;
         case 'undefined':
         case 'request':
-        case 'user':
-        case 'context':
+        case 'authContext':
+        case 'invocationContext':
           break;
       }
     }
@@ -68,34 +68,29 @@ export class OpenApiMetadataService {
 
   getResponses(operationMetadata: ControllerOperationMetadata): Responses {
     const responses = { ...operationMetadata.responses };
-    const directResponse = operationMetadata.response;
+    const directResponse = operationMetadata.directResponse;
     if (directResponse) {
       const customStatus = directResponse.status ?? 200;
       responses[customStatus] = {
         description: directResponse.description,
-        content: directResponse.contentSchema
-          ? {
-              ['application/json']: {
-                schema: directResponse.contentSchema,
-              },
-            }
-          : undefined,
+        content: directResponse.jsonContent ? { ['application/json']: directResponse.jsonContent } : undefined,
+        headers: directResponse.headers,
       };
     }
     return Object.getOwnPropertyNames(responses).length
       ? responses
       : {
           '204': {
-            description: 'Default no content',
+            description: 'Default no jsonContent',
           },
         };
   }
 
-  private static getQueryType(arg: OperationQueryArgMetadata): ZodType<QueryItemType> {
+  private static getQueryType(arg: ControllerOperationQueryArgMetadata): ZodType<QueryItemType> {
     let querySchema = arg.schema;
     if (querySchema instanceof ZodArray) {
       querySchema = (querySchema as ZodType<string[] | number[]>).optional();
     }
-    return querySchema ?? optionalStringSchema;
+    return querySchema ?? OptionalStringSchema;
   }
 }

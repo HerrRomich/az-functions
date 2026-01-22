@@ -13,14 +13,14 @@ import {
   TranslationObject,
 } from '@ngx-translate/core';
 import { Observable } from 'rxjs';
-import { SCOPED_TRANSLATION_KEY_PREFIX_TOKEN } from './scoped-translate.providers';
+import { TRANSLATION_NAMESPACE_TOKEN } from './scoped-translate.providers';
 @Injectable()
 export class ScopedTranslateService implements ITranslateService {
-  private readonly translationKeyPrefix = inject(SCOPED_TRANSLATION_KEY_PREFIX_TOKEN);
+  private readonly namespace = inject(TRANSLATION_NAMESPACE_TOKEN);
   private readonly translateService = inject(TranslateService);
 
-  getKeyPrefix() {
-    return this.translationKeyPrefix;
+  getNamespace() {
+    return this.namespace;
   }
 
   getTranslateService(): TranslateService {
@@ -74,17 +74,17 @@ export class ScopedTranslateService implements ITranslateService {
     return this.translateService.getParsedResult(this.toScopedKeys(key), interpolateParams);
   }
 
-  toScopedKeys(key: string | string[]) {
+  toScopedKeys(key: string | string[]): string | string[] {
     if (typeof key === 'string') {
       key = this.toScopedKey(key);
     } else if (Array.isArray(key)) {
-      key = key.map(k => `${this.translationKeyPrefix}.${k}`);
+      key = key.map(k => `${this.namespace}.${k}`);
     }
     return key;
   }
 
   toScopedKey(key: string) {
-    return this.translationKeyPrefix ? `${this.translationKeyPrefix}.${key}` : key;
+    return this.namespace ? `${this.namespace}.${key}` : key;
   }
 
   get(key: string | string[], interpolateParams?: InterpolationParameters): Observable<Translation> {

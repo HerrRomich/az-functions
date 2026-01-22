@@ -1,3 +1,4 @@
-import { provideBaseConfig } from './eslint.base.config.mjs';
+import { javascriptConfig, provideBaseConfig } from './eslint.base.config.mjs';
 
-export default provideBaseConfig();
+const config = [...javascriptConfig, ...provideBaseConfig()];
+export default config;

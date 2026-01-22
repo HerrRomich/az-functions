@@ -7,8 +7,8 @@ import { ScopedTranslateService } from './scoped-translate.service';
 export class TranslationHelperService {
   private readonly scopedTranslateService = inject(ScopedTranslateService);
 
-  getKeyPrefix(): string {
-    return this.scopedTranslateService.getKeyPrefix();
+  getNamespace(): string {
+    return this.scopedTranslateService.getNamespace();
   }
 
   getScopedTranslateService(): ScopedTranslateService {

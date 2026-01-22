@@ -1,12 +1,80 @@
 import './init';
 
-export { LOGGER_FACTORY, Logger, LoggerFactory } from './logger';
-export * from './platform';
 export {
-  AZURE_FUNCTION,
-  SYSTEM_USER_ACCOUNT,
+  EventHubHandler,
+  EventHubHandlerCardinality,
+  EventHubMessageWrapper,
+  EventHubTriggerMessageArgConfig,
+  Message,
+  Messages,
+  OnEventHubTrigger,
+  OnEventHubTriggerConfig,
+  RawMessage,
+  RawMessages,
+} from 'event-hub-handler';
+export {
+  PLATFORM_CONTEXT_MANAGER,
+  PLATFORM_CONTEXT_PROVIDER,
+  PlatformContext,
+  PlatformContextManager,
+  PlatformContextProvider,
+  PlatformContextValueKey,
+  createPlatformContextValueKey,
+} from './context';
+export {
+  AUTHENTICATION_SERVICE,
+  AuthCtx,
+  AuthenticationService,
+  BadRequestError,
+  Body,
+  ControllerConfig,
+  ControllerOperationConfig,
+  ControllerRequestBodyOperationConfig,
+  Delete,
+  DirectResponseObject,
+  Get,
+  Head,
+  HeaderParam,
+  HeaderParamConfig,
+  HttpController,
+  HttpDirectResponseBuilder,
+  InternalServerError,
+  NotFoundError,
+  NumberSchema,
+  OptionalStringSchema,
+  Patch,
+  PathParam,
+  PathParamConfig,
+  Post,
+  Put,
+  QueryParam,
+  QueryParamConfig,
+  Request,
+  RestApplication,
+  StringSchema,
+  UnauthorizedError,
+} from './http-controller';
+export {
+  DEFAULT_LOG_LEVEL,
+  LOGGER_FACTORY,
+  LOGGER_NAME_PROVIDER,
+  LOG_LEVEL_PROVIDER,
+  LogLevel,
+  LogLevelProvider,
+  Logger,
+  LoggerFactory,
+  LoggerNameProvider,
+  OtelConfiguration,
+  SYSTEM_LOGGER_NAME_PREFIX,
   TrieSearchService,
-  UserAccount,
-  context,
+} from './logger';
+export { startPlatform } from './middleware';
+export { IStartupService, STARTUP_SERVICE } from './platform';
+export { AUTHENTICATION_CONTEXT_KEY, AuthContext, AuthenticationError, Principal, SecurityContext } from './security';
+export {
+  AzFunctionsErrorOptions,
+  AzFunctionsRuntimeError,
+  InvocationCtx,
+  TriggerHandlerClass,
   serviceIdentifier,
 } from './shared';

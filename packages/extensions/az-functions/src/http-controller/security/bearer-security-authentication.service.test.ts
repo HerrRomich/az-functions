@@ -1,16 +1,17 @@
 import { HttpRequest } from '@azure/functions';
 import { DeepMockProxy, mock, mockDeep, MockProxy } from 'jest-mock-extended';
-import { UserAccount } from 'shared';
+import { AuthenticationError, Principal } from 'security';
 import { BearerSecurityAuthenticationService } from './bearer-security-authentication.service';
 import { BearerTokenService } from './bearer-token.service';
-import { AuthenticationError } from './model';
 
 describe('BearerSecurityAuthorizationService', () => {
   const testBearerToken = 'test-bearer-token';
-  const testUserAccountId = 'f5cafe6f-e065-46de-8b1c-00a2abcc9bf0';
-  const testUserAccount = {
-    id: testUserAccountId,
-  } as unknown as UserAccount;
+  const testPrincipal: Principal = {
+    subject: 'test-subject',
+    type: 'test-type',
+    scheme: 'test-scheme',
+    scopes: ['scope1', 'scope2'],
+  };
 
   let mockBearerTokenService: MockProxy<BearerTokenService>;
   let mockHttpRequest: DeepMockProxy<HttpRequest>;
@@ -19,7 +20,7 @@ describe('BearerSecurityAuthorizationService', () => {
 
   beforeEach(() => {
     mockBearerTokenService = mock();
-    mockBearerTokenService.getUserAccountFromToken.calledWith(testBearerToken).mockReturnValue(testUserAccount);
+    mockBearerTokenService.getPrincipalFromToken.calledWith(testBearerToken).mockReturnValue(testPrincipal);
 
     mockHttpRequest = mockDeep();
 
@@ -31,11 +32,11 @@ describe('BearerSecurityAuthorizationService', () => {
       mockHttpRequest.headers.get.calledWith('Authorization').mockReturnValue(`Bearer ${testBearerToken}`);
     });
 
-    it('should return user account for known bearer token', async () => {
-      const authorizedAccount = await subject.authenticate(mockHttpRequest);
+    it('should return AuthContext account for known bearer token', async () => {
+      const principal = await subject.authenticate(mockHttpRequest);
 
-      expect(authorizedAccount).toEqual(testUserAccount);
-      expect(mockBearerTokenService.getUserAccountFromToken).toHaveBeenCalledWith(testBearerToken);
+      expect(principal).toEqual(testPrincipal);
+      expect(mockBearerTokenService.getPrincipalFromToken).toHaveBeenCalledWith(testBearerToken);
     });
 
     it.each([
@@ -48,7 +49,7 @@ describe('BearerSecurityAuthorizationService', () => {
         'No Bearer token in Authorization header.',
       );
 
-      expect(mockBearerTokenService.getUserAccountFromToken).not.toHaveBeenCalled();
+      expect(mockBearerTokenService.getPrincipalFromToken).not.toHaveBeenCalled();
     });
   });
 });

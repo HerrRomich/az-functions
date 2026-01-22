@@ -5,7 +5,7 @@ class TestClass {}
 describe('IoC Container Utils', () => {
   describe('serviceIdentifier', () => {
     it('should return a Symbol for the given identifier', () => {
-      const identifier = 'TEST_IDENTIFIER';
+      const identifier = 'Test description';
       const result = serviceIdentifier<TestClass>(identifier);
 
       expect(typeof result).toBe('symbol');

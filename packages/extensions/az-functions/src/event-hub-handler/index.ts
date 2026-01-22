@@ -1,15 +1,19 @@
 import { ContainerModule } from 'inversify';
-import { AzureEventHubTriggerService } from './azure-event-hub-trigger.service';
-import { EventHubHandleMethodArgsMetadataService } from './event-hub-handle-method-args-metadata.service';
+import { TRIGGER_HANDLER_REGISTRATION_SERVICE } from 'shared';
+import { EVENT_HUB_HANDLER_TYPE } from './decorators';
+import { EventHubHandlerMetadataReader } from './event-hub-handler-metadata.reader';
 import { EventHubHandlerRegistrationService } from './event-hub-handler-registration.service';
-import { EventHubHandlerProvider } from './event-hub-handler.provider';
+import { EventHubHandlerFactory } from './event-hub-handler.factory';
+import { EventHubTriggerSupportFactory } from './event-hub-trigger-support.factory';
+import { EventHubTriggersRegistrationService } from './event-hub-triggers-registration.service';
 
 export * from './decorators';
-export { EventHubHandler, EventHubMessageWrapper } from './event-hub-handler.model';
+export { EventHubMessageWrapper } from './event-hub-handler.model';
 
-export const eventHubHandlersModule = new ContainerModule(({ bind }) => {
-  bind(AzureEventHubTriggerService).toSelf();
-  bind(EventHubHandleMethodArgsMetadataService).toSelf();
-  bind(EventHubHandlerProvider).toSelf();
-  bind(EventHubHandlerRegistrationService).toSelf();
+export const EventHubHandlersModule = new ContainerModule(({ bind }) => {
+  bind(EventHubTriggerSupportFactory).toSelf();
+  bind(EventHubHandlerMetadataReader).toSelf();
+  bind(EventHubHandlerFactory).toSelf();
+  bind(TRIGGER_HANDLER_REGISTRATION_SERVICE).to(EventHubHandlerRegistrationService).whenNamed(EVENT_HUB_HANDLER_TYPE);
+  bind(EventHubTriggersRegistrationService).toSelf();
 });

@@ -5,4 +5,4 @@ dist/
 .backups
 coverage
 /.yarn/install-state.gz
-
+/.debug/

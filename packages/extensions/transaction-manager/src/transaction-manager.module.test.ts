@@ -1,10 +1,9 @@
 import { Kysely } from 'kysely';
+import { DEFAULT_DATA_SOURCE_NAME, TransactionManagerError } from './transaction-manager.model';
 import {
-  DEFAULT_DATA_SOURCE_NAME,
   deleteTransactionManager,
   registerDataSource,
   resetTransactionManagers,
-  TransactionManagerError,
   transactionManagers,
 } from './transaction-manager.module';
 
@@ -21,6 +20,16 @@ class DummyKysely {
 
   set testProperty(value: string) {
     this._testProperty = value;
+  }
+
+  private _testReadOnlyProperty = 'dummy-kysely-test-readonly-property';
+
+  get testReadOnlyProperty() {
+    return this._testReadOnlyProperty;
+  }
+
+  set testWriteOnlyproperty(value: string) {
+    this._testReadOnlyProperty = value;
   }
 }
 
@@ -59,7 +68,7 @@ describe('TransactionManager Module', () => {
 
       const dataSource = registerDataSource(() => {
         // Mock Kysely instance
-        return dummyKysely as unknown as Kysely<any>;
+        return dummyKysely as Partial<Kysely<any>> as Kysely<any>;
       }) as unknown as DummyKysely;
 
       expect(dataSource).not.toBe(dummyKysely);
@@ -68,6 +77,11 @@ describe('TransactionManager Module', () => {
       expect(dataSource.testProperty).toBe('dummy-kysely-test-property');
       dataSource.testProperty = 'newValue';
       expect(dataSource.testProperty).toBe('newValue');
+
+      expect(dataSource.testReadOnlyProperty).toBe('dummy-kysely-test-readonly-property');
+
+      dataSource.testWriteOnlyproperty = 'newReadOnlyValue';
+      expect(dataSource.testReadOnlyProperty).toBe('newReadOnlyValue');
     });
 
     it('should throw an error when registering a data source with a duplicate name', () => {

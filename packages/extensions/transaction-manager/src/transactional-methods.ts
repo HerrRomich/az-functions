@@ -2,7 +2,7 @@ import { ControlledTransaction, IsolationLevel } from 'kysely';
 import { v4 } from 'uuid';
 import { Isolation, TransactionalConfig } from './decorators';
 import { PlatformTransactionLocalStorage } from './platform-transaction.storage';
-import { TransactionManager } from './transaction-manager.module';
+import { TransactionManager } from './transaction-manager.model';
 
 const isolationMap: Record<Exclude<Isolation, 'default'>, IsolationLevel> = {
   read_commited: 'read committed',
@@ -12,7 +12,7 @@ const isolationMap: Record<Exclude<Isolation, 'default'>, IsolationLevel> = {
 };
 
 export function getTransactionalMethod(
-  transactionManager: TransactionManager,
+  transactionManager: TransactionManager<unknown>,
   // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   originalMethod: Function,
   thisArg: unknown,

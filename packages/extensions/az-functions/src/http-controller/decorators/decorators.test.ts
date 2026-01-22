@@ -1,26 +1,27 @@
 import { HttpRequest, InvocationContext } from '@azure/functions';
-import { AZURE_FUNCTION_METADATA_KEY, UserAccount } from 'shared';
+import { AuthContext } from 'security';
+import { FUNCTION_HANDLER_METADATA, InvocationCtx } from 'shared';
 import { z } from 'zod';
 import {
-  httpBody,
-  httpController,
-  httpDelete,
-  httpGet,
-  httpHead,
-  httpHeaderParam,
-  httpPatch,
-  httpPathParam,
-  httpPost,
-  httpPut,
-  httpQueryParam,
-  httpRequest,
-  user,
+  AuthCtx,
+  Body,
+  Delete,
+  Get,
+  Head,
+  HeaderParam,
+  HttpController,
+  Patch,
+  PathParam,
+  Post,
+  Put,
+  QueryParam,
+  Request,
 } from './decorators';
 import {
   ControllerConfig,
   ControllerOperationConfig,
   ControllerRequestBodyOperationConfig,
-  HTTP_OPERATION_METADATA_KEY,
+  HTTP_CONTROLLER_TYPE,
 } from './decorators.model';
 
 const testControllerConfig: ControllerConfig = {
@@ -30,12 +31,12 @@ const testControllerConfig: ControllerConfig = {
 };
 
 const testControllerOperationConfig: ControllerOperationConfig = {
-  operationId: 'test-operation',
+  operationId: 'test-controllerMethod',
   path: 'test-path',
 };
 
 const testControllerRequestBodyOperationConfig: ControllerRequestBodyOperationConfig = {
-  operationId: 'test-operation',
+  operationId: 'test-controllerMethod',
   path: 'test-path',
   requestBody: {
     content: {
@@ -44,42 +45,47 @@ const testControllerRequestBodyOperationConfig: ControllerRequestBodyOperationCo
   },
 };
 
-@httpController(testControllerConfig)
+@HttpController(testControllerConfig)
 class TestController {
-  @httpGet(testControllerOperationConfig)
-  async testGetRequest(@user() _1: UserAccount, _2: number, _3: HttpRequest, _4: InvocationContext) {
+  @Get(testControllerOperationConfig)
+  async testGetRequest(
+    @AuthCtx() _1: AuthContext,
+    _2: number,
+    @Request() _3: HttpRequest,
+    @InvocationCtx() _4: InvocationContext,
+  ) {
     console.log('get-request');
   }
 
-  @httpHead(testControllerOperationConfig)
-  async testHeadRequest(@httpHeaderParam({ name: 'test-header', schema: z.string() }) _1: string, _2: string) {
+  @Head(testControllerOperationConfig)
+  async testHeadRequest(@HeaderParam({ name: 'test-header', schema: z.string() }) _1: string, _2: string) {
     console.log('head-request');
   }
 
-  @httpDelete(testControllerOperationConfig)
-  async testDeleteRequest(@httpRequest() _1: HttpRequest, _2: { param: string }) {
+  @Delete(testControllerOperationConfig)
+  async testDeleteRequest(@Request() _1: HttpRequest, _2: { param: string }) {
     console.log('delete-request');
   }
 
-  @httpPost(testControllerRequestBodyOperationConfig)
-  async testPostRequest(@user() _1: UserAccount, @httpBody({ schema: z.string() }) _2: string) {
+  @Post(testControllerRequestBodyOperationConfig)
+  async testPostRequest(@AuthCtx() _1: AuthContext, @Body({ schema: z.string() }) _2: string) {
     console.log('post-request');
   }
 
-  @httpPut(testControllerRequestBodyOperationConfig)
-  async testPutRequest(@httpPathParam({ name: 'test-path', schema: z.string() }) _1: string, @user() _2: UserAccount) {
+  @Put(testControllerRequestBodyOperationConfig)
+  async testPutRequest(@PathParam({ name: 'test-path', schema: z.string() }) _1: string, @AuthCtx() _2: AuthContext) {
     console.log('put-request');
   }
 
-  @httpPatch(testControllerRequestBodyOperationConfig)
+  @Patch(testControllerRequestBodyOperationConfig)
   async testPatchRequest(
-    @httpQueryParam({ name: 'test-query', schema: z.string().array() }) _1: HttpRequest,
+    @QueryParam({ name: 'test-query', schema: z.string().array() }) _1: HttpRequest,
     _2: { param: string },
   ) {
     console.log('patch-request');
   }
 
-  @httpGet(testControllerOperationConfig)
+  @Get(testControllerOperationConfig)
   async TestInvalidMethodName() {
     console.log('invalid-method-name');
   }
@@ -95,8 +101,8 @@ describe('decorators', () => {
   describe('Controller', () => {
     it('should provide controller with metadata', () => {
       const metadataKeys = Reflect.getMetadataKeys(TestController);
-      expect(metadataKeys).toEqual(['azure_function', '@inversifyjs/core/classIsInjectableFlagReflectKey']);
-      expect(Reflect.getMetadata(AZURE_FUNCTION_METADATA_KEY, TestController)).toEqual({
+      expect(metadataKeys).toEqual([FUNCTION_HANDLER_METADATA, '@inversifyjs/core/classIsInjectableFlagReflectKey']);
+      expect(Reflect.getMetadata(FUNCTION_HANDLER_METADATA, TestController)).toEqual({
         type: 'http-controller',
         path: 'test-path',
         tags: ['tag1', 'tag2'],
@@ -105,16 +111,19 @@ describe('decorators', () => {
     });
   });
 
-  describe('operation decorators without body', () => {
+  describe('controllerMethod decorators without body', () => {
     describe('Get', () => {
-      it('should provide operation with metadata', () => {
-        expect(Reflect.getMetadata(HTTP_OPERATION_METADATA_KEY, testController, 'testGetRequest')).toEqual({
-          operationId: 'test-operation',
+      it('should provide controllerMethod with metadata', () => {
+        const metadata = Reflect.getMetadata(FUNCTION_HANDLER_METADATA, testController, 'testGetRequest');
+
+        expect(metadata).toEqual({
+          type: HTTP_CONTROLLER_TYPE,
+          operationId: 'test-controllerMethod',
           path: 'test-path',
           method: 'get',
           args: [
             {
-              type: 'user',
+              type: 'authContext',
             },
             {
               type: 'undefined',
@@ -123,7 +132,7 @@ describe('decorators', () => {
               type: 'request',
             },
             {
-              type: 'context',
+              type: 'invocationContext',
             },
           ],
         });
@@ -131,9 +140,10 @@ describe('decorators', () => {
     });
 
     describe('Head', () => {
-      it('should provide operation with metadata', () => {
-        expect(Reflect.getMetadata(HTTP_OPERATION_METADATA_KEY, testController, 'testHeadRequest')).toEqual({
-          operationId: 'test-operation',
+      it('should provide controllerMethod with metadata', () => {
+        expect(Reflect.getMetadata(FUNCTION_HANDLER_METADATA, testController, 'testHeadRequest')).toEqual({
+          type: HTTP_CONTROLLER_TYPE,
+          operationId: 'test-controllerMethod',
           path: 'test-path',
           method: 'head',
           args: [
@@ -151,9 +161,10 @@ describe('decorators', () => {
     });
 
     describe('Delete', () => {
-      it('should provide operation with metadata', () => {
-        expect(Reflect.getMetadata(HTTP_OPERATION_METADATA_KEY, testController, 'testDeleteRequest')).toEqual({
-          operationId: 'test-operation',
+      it('should provide controllerMethod with metadata', () => {
+        expect(Reflect.getMetadata(FUNCTION_HANDLER_METADATA, testController, 'testDeleteRequest')).toEqual({
+          type: HTTP_CONTROLLER_TYPE,
+          operationId: 'test-controllerMethod',
           path: 'test-path',
           method: 'delete',
           args: [
@@ -169,11 +180,12 @@ describe('decorators', () => {
     });
   });
 
-  describe('operation decorators with body', () => {
+  describe('controllerMethod decorators with body', () => {
     describe('Post', () => {
-      it('should provide operation with metadata', () => {
-        expect(Reflect.getMetadata(HTTP_OPERATION_METADATA_KEY, testController, 'testPostRequest')).toEqual({
-          operationId: 'test-operation',
+      it('should provide controllerMethod with metadata', () => {
+        expect(Reflect.getMetadata(FUNCTION_HANDLER_METADATA, testController, 'testPostRequest')).toEqual({
+          type: HTTP_CONTROLLER_TYPE,
+          operationId: 'test-controllerMethod',
           path: 'test-path',
           method: 'post',
           requestBody: {
@@ -183,7 +195,7 @@ describe('decorators', () => {
           },
           args: [
             {
-              type: 'user',
+              type: 'authContext',
             },
             {
               type: 'body',
@@ -195,9 +207,10 @@ describe('decorators', () => {
     });
 
     describe('Put', () => {
-      it('should provide operation with metadata', () => {
-        expect(Reflect.getMetadata(HTTP_OPERATION_METADATA_KEY, testController, 'testPutRequest')).toEqual({
-          operationId: 'test-operation',
+      it('should provide controllerMethod with metadata', () => {
+        expect(Reflect.getMetadata(FUNCTION_HANDLER_METADATA, testController, 'testPutRequest')).toEqual({
+          type: HTTP_CONTROLLER_TYPE,
+          operationId: 'test-controllerMethod',
           path: 'test-path',
           method: 'put',
           requestBody: {
@@ -212,7 +225,7 @@ describe('decorators', () => {
               schema: expect.anything(),
             },
             {
-              type: 'user',
+              type: 'authContext',
             },
           ],
         });
@@ -220,9 +233,10 @@ describe('decorators', () => {
     });
 
     describe('Patch', () => {
-      it('should provide operation with metadata', () => {
-        expect(Reflect.getMetadata(HTTP_OPERATION_METADATA_KEY, testController, 'testPatchRequest')).toEqual({
-          operationId: 'test-operation',
+      it('should provide controllerMethod with metadata', () => {
+        expect(Reflect.getMetadata(FUNCTION_HANDLER_METADATA, testController, 'testPatchRequest')).toEqual({
+          type: HTTP_CONTROLLER_TYPE,
+          operationId: 'test-controllerMethod',
           path: 'test-path',
           method: 'patch',
           requestBody: {

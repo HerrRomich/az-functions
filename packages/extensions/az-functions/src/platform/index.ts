@@ -1,25 +1,18 @@
-import { Container } from 'inversify';
-import * as process from 'node:process';
-import { platformModeSchema } from 'shared';
+import { ContainerModule } from 'inversify';
+import { LOGGER_NAME_PROVIDER } from 'logger';
 import { AzurePlatform } from './azure-platform';
-import { registerStartupService } from './startup.service';
-import { extendPlatformContainer, getSystemContainer } from './system.container';
+import {
+  REGISTER_TRIGGER_HANDLER_FACTORY,
+  bindRegisterTriggerHandlerFactory,
+} from './register-trigger-handler.factory';
+import { systemLoggerNameProvider } from './system-logger-name.provider';
 
-export * from '../http-controller/security';
+export * from './azure-platform';
 export * from './model';
-export { SecurityContext } from './security-context';
 export { IStartupService, STARTUP_SERVICE } from './startup.service';
 
-export * from '../event-hub-handler';
-export * from '../http-controller';
-
-export async function startPlatform(platformContainer: Container): Promise<void> {
-  const platformMode = platformModeSchema.parse(process.env.PLATFORM_MODE);
-  extendPlatformContainer(platformContainer);
-  if (platformMode === 'start') {
-    registerStartupService(platformContainer);
-  }
-  const systemContainer = getSystemContainer(platformContainer, platformMode);
-  const azurePlatform = await systemContainer.getAsync(AzurePlatform);
-  await azurePlatform.start();
-}
+export const PlatformModule = new ContainerModule(options => {
+  options.bind(AzurePlatform).toSelf();
+  options.bind(REGISTER_TRIGGER_HANDLER_FACTORY).toFactory(bindRegisterTriggerHandlerFactory);
+  options.bind(LOGGER_NAME_PROVIDER).toFactory(() => systemLoggerNameProvider);
+});

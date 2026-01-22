@@ -1,4 +1,4 @@
-import { TransactionManager, TransactionManagerError } from './transaction-manager.module';
+import { TransactionManager, TransactionManagerError } from './transaction-manager.model';
 import {
   getNestedTransactionalMethod,
   getNonTransactionalMethod,
@@ -6,7 +6,7 @@ import {
 } from './transactional-methods';
 
 export async function callRequired(
-  transactionManager: TransactionManager,
+  transactionManager: TransactionManager<unknown>,
   originalMethod: (...args: unknown[]) => unknown,
   thisArg: unknown,
   args: unknown[],
@@ -20,7 +20,7 @@ export async function callRequired(
 }
 
 export async function callMandatory(
-  transactionManager: TransactionManager,
+  transactionManager: TransactionManager<unknown>,
   // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   originalMethod: Function,
   thisArg: unknown,
@@ -34,7 +34,7 @@ export async function callMandatory(
 }
 
 export async function callNever(
-  transactionManager: TransactionManager,
+  transactionManager: TransactionManager<unknown>,
   originalMethod: (...args: unknown[]) => unknown,
   thisArg: unknown,
   args: unknown[],
@@ -47,7 +47,7 @@ export async function callNever(
 }
 
 export async function callNotSupported(
-  transactionManager: TransactionManager,
+  transactionManager: TransactionManager<unknown>,
   originalMethod: (...args: unknown[]) => unknown,
   thisArg: unknown,
   args: unknown[],
@@ -62,7 +62,7 @@ export async function callNotSupported(
 }
 
 export async function callNested(
-  transactionManager: TransactionManager,
+  transactionManager: TransactionManager<unknown>,
   originalMethod: (...args: unknown[]) => unknown,
   thisArg: unknown,
   args: unknown[],

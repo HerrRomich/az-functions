@@ -1,14 +1,16 @@
 import { injectable } from 'inversify';
-import { Kysely, sql } from 'kysely';
-import { INITIAL_LOCATIONS } from 'shared/startup/migrations/2024-06-01T12_00_00-initial/locations.data';
-import { stringsToKey, stringToBucket, stringToHashString } from 'shared/utils';
+import { Kysely, QueryResult, sql } from 'kysely';
+import { HashUtilitiesService } from '../../../utils';
 import { IFleetSightMigration } from '../../migration.model';
 import { INITIAL_DRIVERS } from './drivers.data';
+import { INITIAL_LOCATIONS } from './locations.data';
 import { INITIAL_TRUCKS } from './trucks.data';
 
 @injectable()
 export class InitialMigration implements IFleetSightMigration {
   name = '2025-12-05T07:37:00.initial.migration';
+
+  constructor(private readonly hashUtilitiesService: HashUtilitiesService) {}
 
   async up(db: Kysely<unknown>): Promise<void> {
     // Fleet management initial migration
@@ -16,77 +18,75 @@ export class InitialMigration implements IFleetSightMigration {
     // Create 'truck' table
     await db.schema
       .createTable('truck')
-      .addColumn('id', 'serial', col => col.notNull())
+      .addColumn('id', 'uuid', col => col.notNull().defaultTo(sql`uuidv7()`))
       .addColumn('license_plate', 'varchar(25)', col => col.notNull())
       .addColumn('model', 'varchar(250)', col => col.notNull())
       .addColumn('location', sql`public.geometry(POINT,4326)`, col => col.notNull())
       .addColumn('speed', 'decimal', col => col.notNull())
       .addColumn('acceleration', 'decimal', col => col.notNull())
       .addColumn('fuel_level', 'decimal', col => col.notNull())
-      .addColumn('run', 'integer')
+      .addColumn('run_id', 'uuid')
       .addPrimaryKeyConstraint('truck_pk', ['id'])
       .addUniqueConstraint('truck_licence_plate_uk', ['license_plate'])
       .execute();
-    await db.schema.createIndex('idx_truck_location').on('truck').columns(['location']).execute();
-    await db.schema.createIndex('idx_truck_run').on('truck').columns(['run']).execute();
+    await db.schema.createIndex('truck_location_idx').on('truck').columns(['location']).execute();
+    await db.schema.createIndex('truck_run_idx').on('truck').columns(['run_id']).execute();
 
     // Create 'driver' table
     await db.schema
       .createTable('driver')
-      .addColumn('id', 'serial', col => col.notNull())
+      .addColumn('id', 'uuid', col => col.notNull().defaultTo(sql`uuidv7()`))
       .addColumn('name', 'varchar(100)', col => col.notNull())
       .addColumn('surname', 'varchar(100)', col => col.notNull())
       .addColumn('date_of_birth', 'date', col => col)
       .addColumn('license_number', 'varchar(50)', col => col.notNull())
       .addColumn('phone_number', 'varchar(20)', col => col.notNull())
       .addColumn('email', 'varchar(100)', col => col.notNull())
-      .addColumn('run', 'integer')
+      .addColumn('run_id', 'uuid')
       .addPrimaryKeyConstraint('driver_pk', ['id'])
       .addUniqueConstraint('driver_license_number_uk', ['license_number'])
       .addUniqueConstraint('driver_name_surname_birth_uk', ['name', 'surname', 'date_of_birth'])
       .addUniqueConstraint('driver_email_uk', ['email'])
       .execute();
-    await db.schema
-      .createIndex('idx_driver_run')
-      .on('driver')
-      .columns(['run'])
-
-      .execute();
+    await db.schema.createIndex('driver_run_idx').on('driver').columns(['run_id']).execute();
 
     // Create 'truck-run' table
     await db.schema
       .createTable('truck_run')
-      .addColumn('id', 'serial', col => col.notNull())
-      .addColumn('truck_id', 'integer', col => col.notNull())
-      .addColumn('driver_id', 'integer', col => col.notNull())
+      .addColumn('id', 'uuid', col => col.notNull().defaultTo(sql`uuidv7()`))
+      .addColumn('truck_id', 'uuid', col => col.notNull())
+      .addColumn('driver_id', 'uuid', col => col.notNull())
       .addColumn('destination_address', 'varchar(250)', col => col.notNull())
       .addColumn('destination_point', sql`public.geometry(POINT,4326)`, col => col.notNull())
       .addColumn('type', 'varchar(50)', col => col.notNull())
-      .addColumn('order_id', 'integer')
+      .addColumn('order_id', 'uuid')
       .addPrimaryKeyConstraint('truck_run_pk', ['id'])
       .execute();
-    await db.schema.createIndex('idx_truck_run_truck_id').on('truck_run').columns(['truck_id']).execute();
-    await db.schema.createIndex('idx_truck_run_driver_id').on('truck_run').columns(['driver_id']).execute();
+    await db.schema.createIndex('truck_run_truck_id_idx').on('truck_run').columns(['truck_id']).execute();
+    await db.schema.createIndex('truck_run_driver_id_idx').on('truck_run').columns(['driver_id']).execute();
 
     await db.schema
       .alterTable('truck_run')
-      .addForeignKeyConstraint('fk_truck_run_truck', ['truck_id'], 'truck', ['id'])
+      .addForeignKeyConstraint('truck_run_truck_fk', ['truck_id'], 'truck', ['id'])
       .execute();
     await db.schema
       .alterTable('truck_run')
-      .addForeignKeyConstraint('fk_truck_run_driver', ['driver_id'], 'driver', ['id'])
+      .addForeignKeyConstraint('truck_run_driver_fk', ['driver_id'], 'driver', ['id'])
       .execute();
-    await db.schema.alterTable('truck').addForeignKeyConstraint('fk_truck_run', ['run'], 'truck_run', ['id']).execute();
+    await db.schema
+      .alterTable('truck')
+      .addForeignKeyConstraint('truck_run_fk', ['run_id'], 'truck_run', ['id'])
+      .execute();
     await db.schema
       .alterTable('driver')
-      .addForeignKeyConstraint('fk_driver_run', ['run'], 'truck_run', ['id'])
+      .addForeignKeyConstraint('driver_run_fk', ['run_id'], 'truck_run', ['id'])
       .execute();
 
-    // Order management initial migration
+    // OrderWithCustomer management initial migration
     // Create 'customer' table
     await db.schema
       .createTable('customer')
-      .addColumn('id', 'serial', col => col.notNull())
+      .addColumn('id', 'uuid', col => col.notNull().defaultTo(sql`uuidv7()`))
       .addColumn('name', 'varchar(100)', col => col.notNull())
       .addColumn('email', 'varchar(100)', col => col.notNull())
       .addColumn('phone_number', 'varchar(20)', col => col.notNull())
@@ -96,28 +96,34 @@ export class InitialMigration implements IFleetSightMigration {
     // Create 'order' table
     await db.schema
       .createTable('order')
-      .addColumn('id', 'serial', col => col.notNull())
-      .addColumn('customer_id', 'integer', col => col.notNull())
+      .addColumn('id', 'uuid', col => col.notNull().defaultTo(sql`uuidv7()`))
+      .addColumn('customer_id', 'uuid', col => col.notNull())
       .addColumn('source_address', 'varchar(250)', col => col.notNull())
       .addColumn('source_point', sql`public.geometry(POINT,4326)`, col => col.notNull())
       .addColumn('destination_address', 'varchar(250)', col => col.notNull())
       .addColumn('destination_point', sql`public.geometry(POINT,4326)`, col => col.notNull())
       .addColumn('weight', 'decimal', col => col.notNull())
-      .addColumn('capacity', 'decimal', col => col.notNull())
+      .addColumn('volume', 'decimal', col => col.notNull())
+      .addColumn('scheduled_at', 'timestamp')
       .addColumn('status', 'varchar(50)', col => col.notNull())
+      .addColumn('truck_run_id', 'uuid')
       .addPrimaryKeyConstraint('order_pk', ['id'])
       .execute();
-    await db.schema.createIndex('idx_order_customer_id').on('order').columns(['customer_id']).execute();
+    await db.schema.createIndex('order_customer_id_idx').on('order').columns(['customer_id']).execute();
 
     await db.schema
       .alterTable('order')
-      .addForeignKeyConstraint('fk_order_customer', ['customer_id'], 'customer', ['id'])
+      .addForeignKeyConstraint('order_customer_fk', ['customer_id'], 'customer', ['id'])
+      .execute();
+    await db.schema
+      .alterTable('order')
+      .addForeignKeyConstraint('order_truck_run_fk', ['truck_run_id'], 'truck_run', ['id'])
       .execute();
 
     await db.schema
       .createTable('locations')
-      .addColumn('id', 'serial', col => col.notNull())
-      .addColumn('customer_id', 'integer', col => col.notNull())
+      .addColumn('id', 'uuid', col => col.notNull().defaultTo(sql`uuidv7()`))
+      .addColumn('customer_id', 'uuid', col => col.notNull())
       .addColumn('post_code', 'varchar(250)', col => col.notNull())
       .addColumn('city', 'varchar(250)', col => col.notNull())
       .addColumn('street', 'varchar(250)', col => col.notNull())
@@ -125,12 +131,12 @@ export class InitialMigration implements IFleetSightMigration {
       .addColumn('point', sql`public.geometry(POINT,4326)`, col => col.notNull())
       .addPrimaryKeyConstraint('locations_pk', ['id'])
       .execute();
-    await db.schema.createIndex('idx_locations_customer_id').on('locations').columns(['customer_id']).execute();
-    await db.schema.createIndex('idx_locations_point').on('locations').columns(['point']).execute();
+    await db.schema.createIndex('locations_customer_id_idx').on('locations').columns(['customer_id']).execute();
+    await db.schema.createIndex('locations_point_idx').on('locations').columns(['point']).execute();
 
     await db.schema
       .alterTable('locations')
-      .addForeignKeyConstraint('fk_locations_customer', ['customer_id'], 'customer', ['id'])
+      .addForeignKeyConstraint('locations_customer', ['customer_id'], 'customer', ['id'])
       .execute();
 
     // Insert initial data
@@ -147,16 +153,18 @@ export class InitialMigration implements IFleetSightMigration {
 
     const startBirthDate = new Date('1970-01-01').getTime();
     const endBirthDate = new Date('2000-01-01').getTime();
-    const milisBetween = endBirthDate - startBirthDate;
+    const millisBetween = endBirthDate - startBirthDate;
 
     // insert initial drivers
     const drivers = INITIAL_DRIVERS.map(driver => {
-      const driverKey = stringsToKey(driver.name, driver.surname);
-      const birthDate = new Date(startBirthDate + stringToBucket(driverKey, milisBetween, 'birthdate'))
+      const driverKey = this.hashUtilitiesService.stringsToKey(driver.name, driver.surname);
+      const birthDate = new Date(
+        startBirthDate + this.hashUtilitiesService.stringToBucket(driverKey, millisBetween, 'birthdate'),
+      )
         .toISOString()
         .split('T')[0];
-      const license = `LN${stringToHashString(driverKey, 12, 'license')}`;
-      const phoneNumber = `+49${stringToHashString(driverKey, 10, 'phone_number')}`;
+      const license = `LN${this.hashUtilitiesService.stringToHashString(driverKey, 12, 'license')}`;
+      const phoneNumber = `+49${this.hashUtilitiesService.stringToHashString(driverKey, 10, 'phone_number')}`;
       const email = `${driver.name.toLowerCase()}.${driver.surname.toLowerCase().replace("'", '_')}@@logi-fleet.de`;
       return `('${driver.name}', '${driver.surname.replace("'", "''")}', '${birthDate}', '${license}', '${phoneNumber}', '${email}')`;
     }).join(',');
@@ -176,19 +184,25 @@ export class InitialMigration implements IFleetSightMigration {
       ('${customer.name}', '${customer.email}', '${customer.phone_number}')`,
       )
       .join(',');
-    await db.executeQuery(
-      sql`insert into customer (name, email, phone_number) values ${sql.raw(customers)};`.compile(db),
-    );
+    const { rows: customerIds } = (await db.executeQuery(
+      sql`insert into customer (name, email, phone_number) values ${sql.raw(customers)} returning id;`.compile(db),
+    )) as QueryResult<{ id: string }>;
 
     // insert initial locations
     const locations = INITIAL_LOCATIONS.features
       .map(location => {
         const props = location.properties;
-        const adressKey = stringsToKey(props.postcode, props.city, props.street, props.housenumber);
-        const customerId = stringToBucket(adressKey, 20, 'customer_id') + 1;
+        const adressKey = this.hashUtilitiesService.stringsToKey(
+          props.postcode,
+          props.city,
+          props.street,
+          props.housenumber,
+        );
+        const customerPosition = this.hashUtilitiesService.stringToBucket(adressKey, 20, 'customer_id');
+        const customerId = customerIds[customerPosition]!.id;
         const [longitude, latitude] = location.geometry.coordinates;
         return `
-        (${customerId}, '${props.postcode}', '${props.city}', '${props.street}', '${props.housenumber}',
+        ('${customerId}', '${props.postcode}', '${props.city}', '${props.street}', '${props.housenumber}',
         public.ST_SetSRID(public.ST_MakePoint(${longitude}, ${latitude}), 4326))`;
       })
       .join(',');

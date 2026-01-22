@@ -1,7 +1,6 @@
-import { Directive, ElementRef, HostListener, inject, OnDestroy, Renderer2 } from '@angular/core';
+import { Directive, DOCUMENT, ElementRef, HostListener, inject, OnDestroy, Renderer2 } from '@angular/core';
 
 @Directive({
-  standalone: true,
   selector: '[fsEllipsis]',
 })
 export class EllipsisWithTooltipDirective implements OnDestroy {
@@ -23,7 +22,7 @@ export class EllipsisWithTooltipDirective implements OnDestroy {
     this.target.style.textOverflow = 'ellipsis';
     this.target.style.whiteSpace = 'nowrap';
     this.target.style.overflow = 'hidden';
-    this.body = document.querySelector('body')!;
+    this.body = inject(DOCUMENT).querySelector('body')!;
   }
 
   ngOnDestroy(): void {

@@ -14,9 +14,9 @@ export default {
 
   overrides: [
     {
-      files: ['*.json', '*.yaml'],
+      files: ['*.yaml'],
       options: {
-        singleQuote: false,
+        singleQuote: true,
       },
     },
   ],

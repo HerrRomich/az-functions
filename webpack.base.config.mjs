@@ -1,11 +1,14 @@
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import TerserPlugin from 'terser-webpack-plugin';
 import { TsconfigPathsPlugin } from 'tsconfig-paths-webpack-plugin';
 import webpack from 'webpack';
 
+const require = createRequire(import.meta.url);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
 export default {
   target: 'node',
   devtool: false,
@@ -49,7 +52,7 @@ export default {
       'utf-8-validate': false,
     },
     alias: {
-      zod: path.resolve(__dirname, 'node_modules/zod'),
+      zod: require.resolve('zod'),
     },
     extensions: ['.ts', '.js'],
     plugins: [new TsconfigPathsPlugin()],

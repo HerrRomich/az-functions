@@ -1,7 +1,7 @@
-var SourceMapConsumer = require('source-map').SourceMapConsumer;
-var path = require('path');
+const SourceMapConsumer = require('source-map').SourceMapConsumer;
+const path = require('path');
 
-var fs;
+let fs;
 try {
   fs = require('fs');
   if (!fs.existsSync || !fs.readFileSync) {
@@ -12,7 +12,7 @@ try {
   /* nop */
 }
 
-var bufferFrom = require('buffer-from');
+const bufferFrom = require('buffer-from');
 
 /**
  * Requires a module which is protected against bundler minification.
@@ -25,42 +25,44 @@ function dynamicRequire(mod, request) {
 }
 
 // Only install once if called multiple times
-var errorFormatterInstalled = false;
-var uncaughtShimInstalled = false;
+let errorFormatterInstalled = false;
+let uncaughtShimInstalled = false;
 
-// If true, the caches are reset before a stack trace formatting operation
-var emptyCacheBetweenOperations = false;
+// If true, the caches are reset before a Stack trace formatting controllerMethod
+let emptyCacheBetweenOperations = false;
 
 // Supports {browser, node, auto}
-var environment = "auto";
+let environment = 'auto';
 
 // Maps a file path to a string containing the file contents
-var fileContentsCache = {};
+let fileContentsCache = {};
 
 // Maps a file path to a source map for that file
-var sourceMapCache = {};
+let sourceMapCache = {};
 
 // Regex for detecting source maps
-var reSourceMap = /^data:application\/json[^,]+base64,/;
+const reSourceMap = /^data:application\/json[^,]+base64,/;
 
 // Priority list of retrieve handlers
-var retrieveFileHandlers = [];
-var retrieveMapHandlers = [];
+let retrieveFileHandlers = [];
+let retrieveMapHandlers = [];
 
 function isInBrowser() {
-  if (environment === "browser")
-    return true;
-  if (environment === "node")
-    return false;
-  return ((typeof window !== 'undefined') && (typeof XMLHttpRequest === 'function') && !(window.require && window.module && window.process && window.process.type === "renderer"));
+  if (environment === 'browser') return true;
+  if (environment === 'node') return false;
+  return (
+    typeof window !== 'undefined' &&
+    typeof XMLHttpRequest === 'function' &&
+    !(window.require && window.module && window.process && window.process.type === 'renderer')
+  );
 }
 
 function hasGlobalProcessEventEmitter() {
-  return ((typeof process === 'object') && (process !== null) && (typeof process.on === 'function'));
+  return typeof process === 'object' && process !== null && typeof process.on === 'function';
 }
 
 function globalProcessVersion() {
-  if ((typeof process === 'object') && (process !== null)) {
+  if (typeof process === 'object' && process !== null) {
     return process.version;
   } else {
     return '';
@@ -68,21 +70,21 @@ function globalProcessVersion() {
 }
 
 function globalProcessStderr() {
-  if ((typeof process === 'object') && (process !== null)) {
+  if (typeof process === 'object' && process !== null) {
     return process.stderr;
   }
 }
 
 function globalProcessExit(code) {
-  if ((typeof process === 'object') && (process !== null) && (typeof process.exit === 'function')) {
+  if (typeof process === 'object' && process !== null && typeof process.exit === 'function') {
     return process.exit(code);
   }
 }
 
 function handlerExec(list) {
-  return function(arg) {
-    for (var i = 0; i < list.length; i++) {
-      var ret = list[i](arg);
+  return function (arg) {
+    for (let i = 0; i < list.length; i++) {
+      const ret = list[i](arg);
       if (ret) {
         return ret;
       }
@@ -91,28 +93,28 @@ function handlerExec(list) {
   };
 }
 
-var retrieveFile = handlerExec(retrieveFileHandlers);
+let retrieveFile = handlerExec(retrieveFileHandlers);
 
-retrieveFileHandlers.push(function(path) {
+retrieveFileHandlers.push(path => {
   // Trim the path to make sure there is no extra whitespace.
   path = path.trim();
   if (/^file:/.test(path)) {
     // existsSync/readFileSync can't handle file protocol, but once stripped, it works
-    path = path.replace(/file:\/\/\/(\w:)?/, function(protocol, drive) {
-      return drive ?
-        '' : // file:///C:/dir/file -> C:/dir/file
-        '/'; // file:///root-dir/file -> /root-dir/file
+    path = path.replace(/file:\/\/\/(\w:)?/, (protocol, drive) => {
+      return drive
+        ? '' // file:///C:/dir/file -> C:/dir/file
+        : '/'; // file:///root-dir/file -> /root-dir/file
     });
   }
   if (path in fileContentsCache) {
     return fileContentsCache[path];
   }
 
-  var contents = '';
+  let contents = '';
   try {
     if (!fs) {
       // Use SJAX if we are in the browser
-      var xhr = new XMLHttpRequest();
+      const xhr = new XMLHttpRequest();
       xhr.open('GET', path, /** async */ false);
       xhr.send(null);
       if (xhr.readyState === 4 && xhr.status === 200) {
@@ -126,7 +128,7 @@ retrieveFileHandlers.push(function(path) {
     /* ignore any errors */
   }
 
-  return fileContentsCache[path] = contents;
+  return (fileContentsCache[path] = contents);
 });
 
 // Support URLs relative to a directory, but be careful about a protocol prefix
@@ -136,52 +138,51 @@ function supportRelativeURL(file, url) {
 }
 
 function retrieveSourceMapURL(source) {
-  var fileData;
+  let fileData;
 
   if (isInBrowser()) {
-     try {
-       var xhr = new XMLHttpRequest();
-       xhr.open('GET', source, false);
-       xhr.send(null);
-       fileData = xhr.readyState === 4 ? xhr.responseText : null;
+    try {
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', source, false);
+      xhr.send(null);
+      fileData = xhr.readyState === 4 ? xhr.responseText : null;
 
-       // Support providing a sourceMappingURL via the SourceMap header
-       var sourceMapHeader = xhr.getResponseHeader("SourceMap") ||
-                             xhr.getResponseHeader("X-SourceMap");
-       if (sourceMapHeader) {
-         return sourceMapHeader;
-       }
-     } catch (e) {
-     }
+      // Support providing a sourceMappingURL via the SourceMap header
+      const sourceMapHeader = xhr.getResponseHeader('SourceMap') || xhr.getResponseHeader('X-SourceMap');
+      if (sourceMapHeader) {
+        return sourceMapHeader;
+      }
+    } catch (e) {}
   }
 
   // Get the URL of the source map
   fileData = retrieveFile(source);
-  var re = /(?:\/\/[@#][\s]*sourceMappingURL=([^\s'"]+)[\s]*$)|(?:\/\*[@#][\s]*sourceMappingURL=([^\s*'"]+)[\s]*(?:\*\/)[\s]*$)/mg;
+  const re =
+    /(?:\/\/[@#][\s]*sourceMappingURL=([^\s'"]+)[\s]*$)|(?:\/\*[@#][\s]*sourceMappingURL=([^\s*'"]+)[\s]*(?:\*\/)[\s]*$)/gm;
   // Keep executing the search to find the *last* sourceMappingURL to avoid
   // picking up sourceMappingURLs from comments, strings, etc.
-  var lastMatch, match;
-  while (match = re.exec(fileData)) lastMatch = match;
+  let lastMatch, match;
+  while ((match = re.exec(fileData))) lastMatch = match;
   if (!lastMatch) return null;
   return lastMatch[1];
-};
+}
 
 // Can be overridden by the retrieveSourceMap option to install. Takes a
 // generated source filename; returns a {map, optional url} object, or null if
 // there is no source map.  The map field may be either a string or the parsed
 // JSON object (ie, it must be a valid argument to the SourceMapConsumer
 // constructor).
-var retrieveSourceMap = handlerExec(retrieveMapHandlers);
-retrieveMapHandlers.push(function(source) {
-  var sourceMappingURL = retrieveSourceMapURL(source);
+let retrieveSourceMap = handlerExec(retrieveMapHandlers);
+retrieveMapHandlers.push(source => {
+  let sourceMappingURL = retrieveSourceMapURL(source);
   if (!sourceMappingURL) return null;
 
   // Read the contents of the source map
-  var sourceMapData;
+  let sourceMapData;
   if (reSourceMap.test(sourceMappingURL)) {
     // Support source map URL as a data url
-    var rawData = sourceMappingURL.slice(sourceMappingURL.indexOf(',') + 1);
-    sourceMapData = bufferFrom(rawData, "base64").toString();
+    const rawData = sourceMappingURL.slice(sourceMappingURL.indexOf(',') + 1);
+    sourceMapData = bufferFrom(rawData, 'base64').toString();
     sourceMappingURL = source;
   } else {
     // Support source map URLs relative to the source URL
@@ -195,28 +196,28 @@ retrieveMapHandlers.push(function(source) {
 
   return {
     url: sourceMappingURL,
-    map: sourceMapData
+    map: sourceMapData,
   };
 });
 
 function mapSourcePosition(position) {
-  var sourceMap = sourceMapCache[position.source];
+  let sourceMap = sourceMapCache[position.source];
   if (!sourceMap) {
     // Call the (overrideable) retrieveSourceMap function to get the source map.
-    var urlAndMap = retrieveSourceMap(position.source);
+    const urlAndMap = retrieveSourceMap(position.source);
     if (urlAndMap) {
       sourceMap = sourceMapCache[position.source] = {
         url: urlAndMap.url,
-        map: new SourceMapConsumer(urlAndMap.map)
+        map: new SourceMapConsumer(urlAndMap.map),
       };
 
       // Load all sources stored inline with the source map into the file cache
       // to pretend like they are already loaded. They may not exist on disk.
       if (sourceMap.map.sourcesContent) {
-        sourceMap.map.sources.forEach(function(source, i) {
-          var contents = sourceMap.map.sourcesContent[i];
+        sourceMap.map.sources.forEach((source, i) => {
+          const contents = sourceMap.map.sourcesContent[i];
           if (contents) {
-            var url = supportRelativeURL(sourceMap.url, source);
+            const url = supportRelativeURL(sourceMap.url, source);
             fileContentsCache[url] = contents;
           }
         });
@@ -224,23 +225,22 @@ function mapSourcePosition(position) {
     } else {
       sourceMap = sourceMapCache[position.source] = {
         url: null,
-        map: null
+        map: null,
       };
     }
   }
 
   // Resolve the source URL relative to the URL of the source map
   if (sourceMap && sourceMap.map && typeof sourceMap.map.originalPositionFor === 'function') {
-    var originalPosition = sourceMap.map.originalPositionFor(position);
+    const originalPosition = sourceMap.map.originalPositionFor(position);
 
     // Only return the original position if a matching line was found. If no
     // matching line is found then we return position instead, which will cause
-    // the stack trace to print the path and line for the compiled file. It is
+    // the Stack trace to print the path and line for the compiled file. It is
     // better to give a precise location in the compiled file than a vague
     // location in the original file.
     if (originalPosition.source !== null) {
-      originalPosition.source = supportRelativeURL(
-        sourceMap.url, originalPosition.source);
+      originalPosition.source = supportRelativeURL(sourceMap.url, originalPosition.source);
       return originalPosition;
     }
   }
@@ -252,15 +252,14 @@ function mapSourcePosition(position) {
 // https://code.google.com/p/v8/source/browse/trunk/src/messages.js
 function mapEvalOrigin(origin) {
   // Most eval() calls are in this format
-  var match = /^eval at ([^(]+) \((.+):(\d+):(\d+)\)$/.exec(origin);
+  let match = /^eval at ([^(]+) \((.+):(\d+):(\d+)\)$/.exec(origin);
   if (match) {
-    var position = mapSourcePosition({
+    const position = mapSourcePosition({
       source: match[2],
       line: +match[3],
-      column: match[4] - 1
+      column: match[4] - 1,
     });
-    return 'eval at ' + match[1] + ' (' + position.source + ':' +
-      position.line + ':' + (position.column + 1) + ')';
+    return 'eval at ' + match[1] + ' (' + position.source + ':' + position.line + ':' + (position.column + 1) + ')';
   }
 
   // Parse nested eval() calls using recursion
@@ -280,15 +279,15 @@ function mapEvalOrigin(origin) {
 // did something to the prototype chain and broke the shim. The only fix I
 // could find was copy/paste.
 function CallSiteToString() {
-  var fileName;
-  var fileLocation = "";
+  let fileName;
+  let fileLocation = '';
   if (this.isNative()) {
-    fileLocation = "native";
+    fileLocation = 'native';
   } else {
     fileName = this.getScriptNameOrSourceURL();
     if (!fileName && this.isEval()) {
       fileLocation = this.getEvalOrigin();
-      fileLocation += ", ";  // Expecting source position to follow.
+      fileLocation += ', '; // Expecting source position to follow.
     }
 
     if (fileName) {
@@ -297,43 +296,43 @@ function CallSiteToString() {
       // Source code does not originate from a file and is not native, but we
       // can still get the source position inside the source string, e.g. in
       // an eval string.
-      fileLocation += "<anonymous>";
+      fileLocation += '<anonymous>';
     }
-    var lineNumber = this.getLineNumber();
+    const lineNumber = this.getLineNumber();
     if (lineNumber != null) {
-      fileLocation += ":" + lineNumber;
-      var columnNumber = this.getColumnNumber();
+      fileLocation += ':' + lineNumber;
+      const columnNumber = this.getColumnNumber();
       if (columnNumber) {
-        fileLocation += ":" + columnNumber;
+        fileLocation += ':' + columnNumber;
       }
     }
   }
 
-  var line = "";
-  var functionName = this.getFunctionName();
-  var addSuffix = true;
-  var isConstructor = this.isConstructor();
-  var isMethodCall = !(this.isToplevel() || isConstructor);
+  let line = '';
+  const functionName = this.getFunctionName();
+  let addSuffix = true;
+  const isConstructor = this.isConstructor();
+  const isMethodCall = !(this.isToplevel() || isConstructor);
   if (isMethodCall) {
-    var typeName = this.getTypeName();
+    let typeName = this.getTypeName();
     // Fixes shim to be backward compatable with Node v0 to v4
-    if (typeName === "[object Object]") {
-      typeName = "null";
+    if (typeName === '[object Object]') {
+      typeName = 'null';
     }
-    var methodName = this.getMethodName();
+    const methodName = this.getMethodName();
     if (functionName) {
       if (typeName && functionName.indexOf(typeName) != 0) {
-        line += typeName + ".";
+        line += typeName + '.';
       }
       line += functionName;
-      if (methodName && functionName.indexOf("." + methodName) != functionName.length - methodName.length - 1) {
-        line += " [as " + methodName + "]";
+      if (methodName && functionName.indexOf('.' + methodName) != functionName.length - methodName.length - 1) {
+        line += ' [as ' + methodName + ']';
       }
     } else {
-      line += typeName + "." + (methodName || "<anonymous>");
+      line += typeName + '.' + (methodName || '<anonymous>');
     }
   } else if (isConstructor) {
-    line += "new " + (functionName || "<anonymous>");
+    line += 'new ' + (functionName || '<anonymous>');
   } else if (functionName) {
     line += functionName;
   } else {
@@ -341,15 +340,19 @@ function CallSiteToString() {
     addSuffix = false;
   }
   if (addSuffix) {
-    line += " (" + fileLocation + ")";
+    line += ' (' + fileLocation + ')';
   }
   return line;
 }
 
 function cloneCallSite(frame) {
-  var object = {};
-  Object.getOwnPropertyNames(Object.getPrototypeOf(frame)).forEach(function(name) {
-    object[name] = /^(?:is|get)/.test(name) ? function() { return frame[name].call(frame); } : frame[name];
+  const object = {};
+  Object.getOwnPropertyNames(Object.getPrototypeOf(frame)).forEach(name => {
+    object[name] = /^(?:is|get)/.test(name)
+      ? function () {
+          return frame[name].call(frame);
+        }
+      : frame[name];
   });
   object.toString = CallSiteToString;
   return object;
@@ -358,9 +361,9 @@ function cloneCallSite(frame) {
 function wrapCallSite(frame, state) {
   // provides interface backward compatibility
   if (state === undefined) {
-    state = { nextPosition: null, curPosition: null }
+    state = { nextPosition: null, curPosition: null };
   }
-  if(frame.isNative()) {
+  if (frame.isNative()) {
     state.curPosition = null;
     return frame;
   }
@@ -368,49 +371,59 @@ function wrapCallSite(frame, state) {
   // Most call sites will return the source file from getFileName(), but code
   // passed to eval() ending in "//# sourceURL=..." will return the source file
   // from getScriptNameOrSourceURL() instead
-  var source = frame.getFileName() || frame.getScriptNameOrSourceURL();
+  const source = frame.getFileName() || frame.getScriptNameOrSourceURL();
   if (source) {
-    var line = frame.getLineNumber();
-    var column = frame.getColumnNumber() - 1;
+    const line = frame.getLineNumber();
+    let column = frame.getColumnNumber() - 1;
 
     // Fix position in Node where some (internal) code is prepended.
     // See https://github.com/evanw/node-source-map-support/issues/36
     // Header removed in node at ^10.16 || >=11.11.0
     // v11 is not an LTS candidate, we can just test the one version with it.
     // Test node versions for: 10.16-19, 10.20+, 12-19, 20-99, 100+, or 11.11
-    var noHeader = /^v(10\.1[6-9]|10\.[2-9][0-9]|10\.[0-9]{3,}|1[2-9]\d*|[2-9]\d|\d{3,}|11\.11)/;
-    var headerLength = noHeader.test(globalProcessVersion()) ? 0 : 62;
+    const noHeader = /^v(10\.1[6-9]|10\.[2-9][0-9]|10\.[0-9]{3,}|1[2-9]\d*|[2-9]\d|\d{3,}|11\.11)/;
+    const headerLength = noHeader.test(globalProcessVersion()) ? 0 : 62;
     if (line === 1 && column > headerLength && !isInBrowser() && !frame.isEval()) {
       column -= headerLength;
     }
 
-    var position = mapSourcePosition({
+    const position = mapSourcePosition({
       source: source,
       line: line,
-      column: column
+      column: column,
     });
     state.curPosition = position;
     frame = cloneCallSite(frame);
-    var originalFunctionName = frame.getFunctionName;
-    frame.getFunctionName = function() {
+    const originalFunctionName = frame.getFunctionName;
+    frame.getFunctionName = function () {
       if (state.nextPosition == null) {
         return originalFunctionName();
       }
       return state.nextPosition.name || originalFunctionName();
     };
-    frame.getFileName = function() { return position.source; };
-    frame.getLineNumber = function() { return position.line; };
-    frame.getColumnNumber = function() { return position.column + 1; };
-    frame.getScriptNameOrSourceURL = function() { return position.source; };
+    frame.getFileName = function () {
+      return position.source;
+    };
+    frame.getLineNumber = function () {
+      return position.line;
+    };
+    frame.getColumnNumber = function () {
+      return position.column + 1;
+    };
+    frame.getScriptNameOrSourceURL = function () {
+      return position.source;
+    };
     return frame;
   }
 
   // Code called using eval() needs special handling
-  var origin = frame.isEval() && frame.getEvalOrigin();
+  let origin = frame.isEval() && frame.getEvalOrigin();
   if (origin) {
     origin = mapEvalOrigin(origin);
     frame = cloneCallSite(frame);
-    frame.getEvalOrigin = function() { return origin; };
+    frame.getEvalOrigin = function () {
+      return origin;
+    };
     return frame;
   }
 
@@ -418,7 +431,7 @@ function wrapCallSite(frame, state) {
   return frame;
 }
 
-// This function is part of the V8 stack trace API, for more info see:
+// This function is part of the V8 Stack trace API, for more info see:
 // https://v8.dev/docs/stack-trace-api
 function prepareStackTrace(error, stack) {
   if (emptyCacheBetweenOperations) {
@@ -426,13 +439,13 @@ function prepareStackTrace(error, stack) {
     sourceMapCache = {};
   }
 
-  var name = error.name || 'Error';
-  var message = error.message || '';
-  var errorString = name + ": " + message;
+  const name = error.name || 'Error';
+  const message = error.message || '';
+  const errorString = name + ': ' + message;
 
-  var state = { nextPosition: null, curPosition: null };
-  var processedStack = [];
-  for (var i = stack.length - 1; i >= 0; i--) {
+  const state = { nextPosition: null, curPosition: null };
+  const processedStack = [];
+  for (let i = stack.length - 1; i >= 0; i--) {
     processedStack.push('\n    at ' + wrapCallSite(stack[i], state));
     state.nextPosition = state.curPosition;
   }
@@ -442,14 +455,14 @@ function prepareStackTrace(error, stack) {
 
 // Generate position and snippet of original source with pointer
 function getErrorSource(error) {
-  var match = /\n    at [^(]+ \((.*):(\d+):(\d+)\)/.exec(error.stack);
+  const match = /\n {4}at [^(]+ \((.*):(\d+):(\d+)\)/.exec(error.stack);
   if (match) {
-    var source = match[1];
-    var line = +match[2];
-    var column = +match[3];
+    const source = match[1];
+    const line = +match[2];
+    const column = +match[3];
 
     // Support the inline sourceContents inside the source map
-    var contents = fileContentsCache[source];
+    let contents = fileContentsCache[source];
 
     // Support files on disk
     if (!contents && fs && fs.existsSync(source)) {
@@ -462,21 +475,20 @@ function getErrorSource(error) {
 
     // Format the line from the original source code like node does
     if (contents) {
-      var code = contents.split(/(?:\r\n|\r|\n)/)[line - 1];
+      const code = contents.split(/(?:\r\n|\r|\n)/)[line - 1];
       if (code) {
-        return source + ':' + line + '\n' + code + '\n' +
-          new Array(column).join(' ') + '^';
+        return source + ':' + line + '\n' + code + '\n' + new Array(column).join(' ') + '^';
       }
     }
   }
   return null;
 }
 
-function printErrorAndExit (error) {
-  var source = getErrorSource(error);
+function printErrorAndExit(error) {
+  const source = getErrorSource(error);
 
   // Ensure error is printed synchronously and not truncated
-  var stderr = globalProcessStderr();
+  const stderr = globalProcessStderr();
   if (stderr && stderr._handle && stderr._handle.setBlocking) {
     stderr._handle.setBlocking(true);
   }
@@ -490,13 +502,13 @@ function printErrorAndExit (error) {
   globalProcessExit(1);
 }
 
-function shimEmitUncaughtException () {
-  var origEmit = process.emit;
+function shimEmitUncaughtException() {
+  const origEmit = process.emit;
 
   process.emit = function (type) {
     if (type === 'uncaughtException') {
-      var hasStack = (arguments[1] && arguments[1].stack);
-      var hasListeners = (this.listeners(type).length > 0);
+      const hasStack = arguments[1] && arguments[1].stack;
+      const hasListeners = this.listeners(type).length > 0;
 
       if (hasStack && !hasListeners) {
         return printErrorAndExit(arguments[1]);
@@ -507,21 +519,21 @@ function shimEmitUncaughtException () {
   };
 }
 
-var originalRetrieveFileHandlers = retrieveFileHandlers.slice(0);
-var originalRetrieveMapHandlers = retrieveMapHandlers.slice(0);
+const originalRetrieveFileHandlers = retrieveFileHandlers.slice(0);
+const originalRetrieveMapHandlers = retrieveMapHandlers.slice(0);
 
 exports.wrapCallSite = wrapCallSite;
 exports.getErrorSource = getErrorSource;
 exports.mapSourcePosition = mapSourcePosition;
 exports.retrieveSourceMap = retrieveSourceMap;
 
-exports.install = function(options) {
+exports.install = function (options) {
   options = options || {};
 
   if (options.environment) {
     environment = options.environment;
-    if (["node", "browser", "auto"].indexOf(environment) === -1) {
-      throw new Error("environment " + environment + " was unknown. Available options are {auto, browser, node}")
+    if (['node', 'browser', 'auto'].indexOf(environment) === -1) {
+      throw new Error('environment ' + environment + ' was unknown. Available options are {auto, browser, node}');
     }
   }
 
@@ -548,11 +560,11 @@ exports.install = function(options) {
   // Support runtime transpilers that include inline source maps
   if (options.hookRequire && !isInBrowser()) {
     // Use dynamicRequire to avoid including in browser bundles
-    var Module = dynamicRequire(module, 'module');
-    var $compile = Module.prototype._compile;
+    const Module = dynamicRequire(module, 'module');
+    const $compile = Module.prototype._compile;
 
     if (!$compile.__sourceMapSupport) {
-      Module.prototype._compile = function(content, filename) {
+      Module.prototype._compile = function (content, filename) {
         fileContentsCache[filename] = content;
         sourceMapCache[filename] = undefined;
         return $compile.call(this, content, filename);
@@ -564,8 +576,8 @@ exports.install = function(options) {
 
   // Configure options
   if (!emptyCacheBetweenOperations) {
-    emptyCacheBetweenOperations = 'emptyCacheBetweenOperations' in options ?
-      options.emptyCacheBetweenOperations : false;
+    emptyCacheBetweenOperations =
+      'emptyCacheBetweenOperations' in options ? options.emptyCacheBetweenOperations : false;
   }
 
   // Install the error reformatter
@@ -575,26 +587,25 @@ exports.install = function(options) {
   }
 
   if (!uncaughtShimInstalled) {
-    var installHandler = 'handleUncaughtExceptions' in options ?
-      options.handleUncaughtExceptions : true;
+    let installHandler = 'handleUncaughtExceptions' in options ? options.handleUncaughtExceptions : true;
 
     // Do not override 'uncaughtException' with our own handler in Node.js
     // Worker threads. Workers pass the error to the main thread as an event,
     // rather than printing something to stderr and exiting.
     try {
       // We need to use `dynamicRequire` because `require` on it's own will be optimized by WebPack/Browserify.
-      var worker_threads = dynamicRequire(module, 'worker_threads');
+      const worker_threads = dynamicRequire(module, 'worker_threads');
       if (worker_threads.isMainThread === false) {
         installHandler = false;
       }
-    } catch(e) {}
+    } catch (e) {}
 
     // Provide the option to not install the uncaught exception handler. This is
     // to support other uncaught exception handlers (in test frameworks, for
     // example). If this handler is not installed and there are no other uncaught
     // exception handlers, uncaught exceptions will be caught by node's built-in
     // exception handler and the process will still be terminated. However, the
-    // generated JavaScript code will be shown above the stack trace instead of
+    // generated JavaScript code will be shown above the Stack trace instead of
     // the original source code.
     if (installHandler && hasGlobalProcessEventEmitter()) {
       uncaughtShimInstalled = true;
@@ -603,7 +614,7 @@ exports.install = function(options) {
   }
 };
 
-exports.resetRetrieveHandlers = function() {
+exports.resetRetrieveHandlers = function () {
   retrieveFileHandlers.length = 0;
   retrieveMapHandlers.length = 0;
 
@@ -612,4 +623,4 @@ exports.resetRetrieveHandlers = function() {
 
   retrieveSourceMap = handlerExec(retrieveMapHandlers);
   retrieveFile = handlerExec(retrieveFileHandlers);
-}
+};

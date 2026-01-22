@@ -1,7 +1,7 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRouteSnapshot, EventType, Route, Router, RouterStateSnapshot, Routes } from '@angular/router';
-import * as lodash from 'lodash';
+import * as lodash from 'lodash-es';
 import {
   BreadcrumbData,
   BreadcrumbElement,
@@ -49,7 +49,7 @@ export class RouterSupportService {
   }
 
   async navigateBack(defaultRoute: string) {
-    const previousUrl = this.router.lastSuccessfulNavigation?.previousNavigation?.finalUrl ?? defaultRoute;
+    const previousUrl = this.router.lastSuccessfulNavigation()?.previousNavigation?.finalUrl ?? defaultRoute;
     await this.router.navigateByUrl(previousUrl);
   }
 

@@ -1,6 +1,6 @@
 <div class="basement-container">
   <mat-toolbar class="tool-bar">
-    <span class="title">{{ 'app.title' | scopedTranslate }}</span>
+    <h1 class="title">{{ 'app.title' | scopedTranslate }}</h1>
     <span class="divider"></span>
     @for (feature of features; track feature.route) {
       <a
@@ -8,8 +8,8 @@
         routerLinkActive
         #rla="routerLinkActive"
         [routerLink]="feature.route"
-        >{{ feature.translationKey | scopedTranslate }}</a
-      >
+        >{{ feature.translationKey | scopedTranslate }}
+      </a>
     }
   </mat-toolbar>
   <fs-breadcrumb></fs-breadcrumb>

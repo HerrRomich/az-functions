@@ -1,50 +1,8 @@
 import { InvocationContext } from '@azure/functions';
-import { AzureFunctionError } from 'shared';
+import { AzFunctionsSystemError } from 'shared';
 import { z } from 'zod';
 
-/**
- * Interface that all Event Hub handler classes must implement.
- * The `handle` method will be called with the Event Hub messages.
- *
- * @example
- * ```typescript
- *
- * const eventPayloadSchema = z.object({ id: z.string(), value: z.number() });
- * type EventPayload = z.infer<typeof eventPayloadSchema>;
- *
- * const eventPropertiesSchema = z.object({ source: z.string() });
- * type EventProperties = z.infer<typeof eventPropertiesSchema>;
- *
- * @eventHubHandler({
- *  connection: 'EVENT_HUB_CONNECTION_STRING',
- *  eventHubName: 'my-event-hub',
- *  triggerId: 'my-event-hub-trigger',
- *  consumerGroup: 'my-consumer-group',
- *  cardinality: 'many',
- * })
- * @injectable()
- * class MyEventHubHandler implements EventHubHandler {
- *   constructor(private readonly logger: Logger) {}
- *
- *   async handle(
- *     @messages({ withPayload: eventPayloadSchema, withProperties: eventPropertiesSchema, withEventData: true })
- *     messages: EventHubMessageWrapper<EventPayload, EventProperties, undefined, true>[],
- *   ): Promise<void> {
- *     for (const message of messages) {
- *       logger.log(`Received message with id: ${message.payload.id} and value: ${message.payload.value}, from event hub: ${message.eventData.partitionContext.eventHubPath}`);
- *       // Process the message...
- *     }
- *   }
- * }
- * ```
- */
-export interface EventHubHandler {
-  handle(...args: unknown[]): void | Promise<void>;
-}
-
-export const HANDLE_METHOD_NAME = 'handle';
-
-export class EventHubTriggerDefinitionError extends AzureFunctionError {}
+export class EventHubTriggerDefinitionError extends AzFunctionsSystemError {}
 
 export interface EventHubArgProviderInput {
   context: InvocationContext;
@@ -54,23 +12,25 @@ export interface EventHubArgProviderInput {
 export type EventHubArgProvider = (input: EventHubArgProviderInput) => unknown;
 export type EventHubAsyncArgsProvider = (messages: unknown, context: InvocationContext) => Promise<unknown[]>;
 
-export const eventHubEventDataSchema = z.object({
+export const EventHubEventDataSchema = z.object({
   partitionContext: z.object({
-    consumerGroupName: z.string(),
-    eventHubPath: z.string(),
+    fullyQualifiedNamespace: z.string(),
+    consumerGroup: z.string(),
+    eventHubName: z.string(),
+    partitionId: z.string(),
   }),
-  enqueuedTimeUtc: z.iso.datetime(),
-  offset: z.string(),
-  partitionKey: z.string(),
-  sequenceNumber: z.number().int(),
+  enqueuedTimeUtc: z.iso.datetime({ local: true }),
+  offset: z.int(),
+  partitionKey: z.string().optional(),
+  sequenceNumber: z.int(),
 });
 
 /**
  * Schema representing the raw Event Hub event data.
- * Includes metadata such as partition context, enqueue time, offset, partition key, and sequence number.
+ * Includes metadata such as partition InvocationCtx, enqueue time, offset, partition key, and sequence number.
  * Can be used to strongly type the raw event data in handler methods.
  *
- * ```typescript
+ * ```ts
  * type EventHubEventData = {
  *  partitionContext: {
  *   consumerGroupName: string;
@@ -92,7 +52,7 @@ export const eventHubEventDataSchema = z.object({
  * - `sequenceNumber`: The sequence number of the event in the partition.
  *
  * @example
- * ```typescript
+ * ```ts
  * const eventData: EventHubEventData = {
  *   partitionContext: {
  *     consumerGroupName: 'my-consumer-group',
@@ -105,20 +65,36 @@ export const eventHubEventDataSchema = z.object({
  * };
  * ```
  */
-export type EventHubEventData = z.infer<typeof eventHubEventDataSchema>;
+export type EventHubEventData = z.infer<typeof EventHubEventDataSchema>;
+
+export type EventHubMessageBaseWrapper<PAYLOAD = unknown, PROPERTIES = undefined, SYSTEM_PROPERTIES = undefined> = {
+  payload: PAYLOAD;
+} & (PROPERTIES extends undefined ? object : { properties: PROPERTIES }) &
+  (SYSTEM_PROPERTIES extends undefined ? object : { systemProperties: SYSTEM_PROPERTIES });
+
+export type SafeWrapper<T, P> = ({ valid: true } & T) | ({ valid: false; error: unknown } & P);
+
+export type SafeEventHubMessageWrapper<
+  PAYLOAD = unknown,
+  PROPERTIES = undefined,
+  SYSTEM_PROPERTIES = undefined,
+> = SafeWrapper<
+  EventHubMessageBaseWrapper<PAYLOAD, PROPERTIES, SYSTEM_PROPERTIES>,
+  EventHubMessageBaseWrapper<unknown, unknown, unknown>
+>;
 
 /**
- * Wrapper for Event Hub messages, including payload, properties, system properties, and optionally the raw event data.
- * It allows for flexible typing of the message components. Can be used to strongly type the message structure in handler methods.
+ * Wrapper for Event Hub Messages, including payload, properties, system properties, and optionally the raw event data.
+ * It allows for flexible typing of the Message components. Can be used to strongly type the Message structure in handler methods.
  *
  * Type Parameters:
- * - `PAYLOAD`: The type of the message payload.
- * - `PROPERTIES`: The type of the custom properties of the message. If not provided, properties will be omitted.
- * - `SYSTEM_PROPERTIES`: The type of the system properties of the message. If not provided, system properties will be omitted.
+ * - `PAYLOAD`: The type of the Message payload.
+ * - `PROPERTIES`: The type of the custom properties of the Message. If not provided, properties will be omitted.
+ * - `SYSTEM_PROPERTIES`: The type of the system properties of the Message. If not provided, system properties will be omitted.
  * - `EVENT_DATA`: If set to true, includes the raw Event Hub event data in the wrapper.
  *
  * @example
- * ```typescript
+ * ```ts
  * const eventPayloadSchema = z.object({ id: z.string(), value: z.number() });
  * type EventPayload = z.infer<typeof eventPayloadSchema>;
  *
@@ -132,10 +108,5 @@ export type EventHubMessageWrapper<
   PROPERTIES = undefined,
   SYSTEM_PROPERTIES = undefined,
   EVENT_DATA extends true | undefined = undefined,
-> = {
-  payload: PAYLOAD;
-} & (PROPERTIES extends undefined ? object : { properties: PROPERTIES }) &
-  (SYSTEM_PROPERTIES extends undefined ? object : { systemProperties: SYSTEM_PROPERTIES }) &
+> = SafeEventHubMessageWrapper<PAYLOAD, PROPERTIES, SYSTEM_PROPERTIES> &
   (EVENT_DATA extends undefined ? object : { eventData: EventHubEventData });
-
-export class HandlerArgsParseError extends AzureFunctionError {}

@@ -17,14 +17,13 @@ export default (env, argv) => {
       '@azure/functions': '@azure/functions',
       'inversify': 'inversify',
       'reflect-metadata': 'reflect-metadata',
-      'winston': 'winston',
       'zod': 'zod',
     },
   ];
   if (argv.mode !== 'production') {
     externals.push(
       webpackNodeExternals({
-        additionalModuleDirs: ['./node_modules', '../../node_modules'],
+        additionalModuleDirs: ['./node_modules', '../../node_modules', '../../../node_modules'],
       }),
     );
   }

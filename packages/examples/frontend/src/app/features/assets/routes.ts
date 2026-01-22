@@ -8,7 +8,7 @@ export const ROUTES: Routes = [
     component: AssetsOverview,
     providers: [
       provideScopedTranslateService({
-        translationKeyPrefix: 'features.assets',
+        translationNamespace: 'features.assets',
         bundleLoaders: {
           en: () => import('./translations/en').then(m => m.EN),
           de: () => import('./translations/de').then(m => m.DE),

@@ -6,6 +6,4 @@ import { Component } from '@angular/core';
   templateUrl: './assets-overview.html',
   styleUrl: './assets-overview.scss',
 })
-export class AssetsOverview {
-
-}
+export class AssetsOverview {}

@@ -1,197 +1,99 @@
 import { app } from '@azure/functions';
-import { mock, MockProxy } from 'jest-mock-extended';
-import { ControllerMetadata, ControllerOperationMetadata, HttpControllerMetadataService } from './decorators';
+import { getPartialFixture } from '@utilities/test-utilities';
+import { BindToFluentSyntax, Container } from 'inversify';
+import { mock, mockFn, MockProxy } from 'jest-mock-extended';
 import { HttpControllerRegistrationService } from './http-controller-registration.service';
-import { OpenAPIObjectConfig, RestApplication } from './http-controller.model';
-import { HttpRequestHandlerProvider, RequestHandler } from './http-request-handler.provider';
-import { OpenApiDefinitionService } from './open-api-definition.service';
+import { HttpHandlerFactory, RequestHandler } from './http-handler.factory';
+import { HttpOperationRegistration, HttpOperationsRegistrationService } from './http-operations-registration.service';
 
 jest.mock('@azure/functions');
 
-class TestController {
-  get staticResponse(): string {
-    return this._staticResponse;
-  }
+describe('HttpControllerRegistrationService', () => {
+  let mockPlatformContainer: MockProxy<Container>;
+  let mockFluentSyntax: MockProxy<BindToFluentSyntax<any>>;
+  let mockRegistrationService: MockProxy<HttpOperationsRegistrationService>;
+  let mockHandlerFactory: MockProxy<HttpHandlerFactory>;
 
-  constructor(private _staticResponse: string) {}
-
-  testGetRequest(): string {
-    return this.staticResponse;
-  }
-
-  async testPostRequest() {
-    const response = Promise.resolve('post-response');
-    return await response;
-  }
-}
-
-describe('HttpControllerPlatformService', () => {
-  const testRestApplication: RestApplication = {
-    name: 'test-application',
-    context: 'rest-context',
-    openApiConfig: {} as OpenAPIObjectConfig,
-  };
-
-  const testGetRequestOperationMetadata: ControllerOperationMetadata = {
-    operationId: 'my-test-get-operation',
-    method: 'get',
-    args: [],
-  };
-  const testPostRequestOperationMetadata: ControllerOperationMetadata = {
-    path: 'test-post-request-path',
-    method: 'post',
-    args: [],
-  };
-  const testControllerMetadata: ControllerMetadata = {
-    type: 'http-controller',
-    path: 'test-path',
-    tags: ['tag1', 'tag2'],
-    application: 'test-application',
-  };
-
-  const testController = new TestController('test-response');
-
-  let getOperationRegistrationData: unknown;
-  let mockGetRequest: MockProxy<RequestHandler>;
-
-  let postOperationRegistrationData: unknown;
-  let mockPostRequest: MockProxy<RequestHandler>;
-
-  let mockOpenApiDefinitionService: MockProxy<OpenApiDefinitionService>;
-  let mockHttpControllerMetadataService: MockProxy<HttpControllerMetadataService>;
-  let mockRequestHandlerProvider: MockProxy<HttpRequestHandlerProvider>;
   let subject: HttpControllerRegistrationService;
 
   beforeEach(() => {
-    mockHttpControllerMetadataService = mock();
-    mockHttpControllerMetadataService.getOperationMetadata
-      .calledWith(testController, 'testGetRequest')
-      .mockReturnValue(testGetRequestOperationMetadata);
-    mockHttpControllerMetadataService.getOperationMetadata
-      .calledWith(testController, 'testPostRequest')
-      .mockReturnValue(testPostRequestOperationMetadata);
+    mockPlatformContainer = mock<Container>();
+    mockFluentSyntax = mock<BindToFluentSyntax<any>>();
+    mockPlatformContainer.bind.mockReturnValue(mockFluentSyntax);
 
-    mockOpenApiDefinitionService = mock();
-    mockOpenApiDefinitionService.getApplication
-      .calledWith(testControllerMetadata.application)
-      .mockReturnValue(testRestApplication);
+    mockRegistrationService = mock<HttpOperationsRegistrationService>();
+    mockHandlerFactory = mock<HttpHandlerFactory>();
 
-    mockRequestHandlerProvider = mock();
-
-    getOperationRegistrationData = {
-      controller: testController,
-      operation: 'testGetRequest',
-      controllerMetadata: testControllerMetadata,
-      operationMetadata: testGetRequestOperationMetadata,
-      application: testRestApplication,
-      route: 'test-path',
-    };
-    mockGetRequest = mock();
-    mockRequestHandlerProvider.getHttpRequestHandler
-      .calledWith(expect.objectContaining(getOperationRegistrationData), expect.anything())
-      .mockReturnValue(mockGetRequest);
-
-    postOperationRegistrationData = {
-      controller: testController,
-      operation: 'testPostRequest',
-      controllerMetadata: testControllerMetadata,
-      operationMetadata: testPostRequestOperationMetadata,
-      application: testRestApplication,
-      route: 'test-path/test-post-request-path',
-    };
-    mockPostRequest = mock();
-    mockRequestHandlerProvider.getHttpRequestHandler
-      .calledWith(expect.objectContaining(postOperationRegistrationData), expect.anything())
-      .mockReturnValue(mockPostRequest);
+    subject = new HttpControllerRegistrationService(mockPlatformContainer, mockRegistrationService, mockHandlerFactory);
   });
 
-  afterEach(() => {
-    jest.resetAllMocks();
-  });
-
-  describe('register in start displayMode', () => {
-    beforeEach(() => {
-      subject = new HttpControllerRegistrationService(
-        'start',
-        mockHttpControllerMetadataService,
-        mockOpenApiDefinitionService,
-        mockRequestHandlerProvider,
-      );
+  describe('register', () => {
+    const mockTestMethod = mockFn<(rg1: string, rg2: string) => string>();
+    class TestController {
+      testMethod(arg1: string, arg2: string): string {
+        return mockTestMethod(arg1, arg2);
+      }
+    }
+    const testRegistration = getPartialFixture<HttpOperationRegistration>({
+      operationId: 'test-operation',
+      application: {
+        context: 'test-invocationContext',
+      },
+      route: 'test-route',
+      operationMetadata: {
+        authLevel: 'anonymous',
+        extraInputs: [],
+        extraOutputs: [],
+        method: 'get',
+      },
+      controllerMethod: 'testMethod',
     });
 
-    it('should register trigger and provide swagger operation', async () => {
-      subject.register(testController, testControllerMetadata);
+    it('should bind the controller class to the platform container and register its operations', () => {
+      mockPlatformContainer.get.calledWith(TestController).mockReturnValue(new TestController());
 
-      expect(mockRequestHandlerProvider.getHttpRequestHandler).toHaveBeenNthCalledWith(
-        1,
-        expect.objectContaining(getOperationRegistrationData),
-        expect.anything(),
-      );
-      expect(mockRequestHandlerProvider.getHttpRequestHandler).toHaveBeenNthCalledWith(
-        2,
-        expect.objectContaining(postOperationRegistrationData),
-        expect.anything(),
-      );
-      const getMethod = mockRequestHandlerProvider.getHttpRequestHandler.mock.calls[0]?.[1];
-      expect(await getMethod?.()).toEqual('test-response');
-      const postMethod = mockRequestHandlerProvider.getHttpRequestHandler.mock.calls[1]?.[1];
-      expect(await postMethod?.()).toEqual('post-response');
+      subject.register(TestController);
 
-      expect(app.http).toHaveBeenNthCalledWith(
-        1,
-        'my-test-get-operation',
-        expect.objectContaining({
-          route: 'rest-context/test-path',
-          methods: ['GET'],
-          handler: mockGetRequest,
-        }),
-      );
-      expect(app.http).toHaveBeenNthCalledWith(
-        2,
-        'testPostRequest',
-        expect.objectContaining({
-          route: 'rest-context/test-path/test-post-request-path',
-          methods: ['POST'],
-          handler: mockPostRequest,
-        }),
-      );
-
-      expect(mockOpenApiDefinitionService.registerOperation).toHaveBeenNthCalledWith(
-        1,
-        expect.objectContaining(getOperationRegistrationData),
-      );
-      expect(mockOpenApiDefinitionService.registerOperation).toHaveBeenNthCalledWith(
-        2,
-        expect.objectContaining(postOperationRegistrationData),
-      );
-    });
-  });
-
-  describe('register in print OpenAPI displayMode', () => {
-    beforeEach(() => {
-      subject = new HttpControllerRegistrationService(
-        'print-open-api',
-        mockHttpControllerMetadataService,
-        mockOpenApiDefinitionService,
-        mockRequestHandlerProvider,
-      );
+      expect(mockPlatformContainer.bind).toHaveBeenCalledWith(TestController);
+      expect(mockFluentSyntax.toSelf).toHaveBeenCalled();
+      expect(mockPlatformContainer.get).toHaveBeenCalledWith(TestController);
+      expect(mockRegistrationService.registerOperations).toHaveBeenCalledWith(TestController, expect.any(Function));
     });
 
-    it('should only provide swagger operation', async () => {
-      subject.register(testController, testControllerMetadata);
+    it('should register operations with the correct handler factory function', () => {
+      const mockHandler = mockFn<RequestHandler>();
+      mockHandlerFactory.createHandler.mockReturnValue(mockHandler);
+      const controllerInstance = new TestController();
+      mockPlatformContainer.get.calledWith(TestController).mockReturnValue(controllerInstance);
 
-      expect(mockRequestHandlerProvider.getHttpRequestHandler).not.toHaveBeenCalled();
+      subject.register(TestController);
 
-      expect(app.http).not.toHaveBeenCalled();
+      const handlerFactoryFunction = mockRegistrationService.registerOperations.mock.calls[0]![1];
+      handlerFactoryFunction(testRegistration);
 
-      expect(mockOpenApiDefinitionService.registerOperation).toHaveBeenNthCalledWith(
-        1,
-        expect.objectContaining(getOperationRegistrationData),
-      );
-      expect(mockOpenApiDefinitionService.registerOperation).toHaveBeenNthCalledWith(
-        2,
-        expect.objectContaining(postOperationRegistrationData),
-      );
+      expect(mockHandlerFactory.createHandler).toHaveBeenCalledWith(testRegistration, expect.any(Function));
+      expect(app.http).toHaveBeenCalledWith(testRegistration.operationId, {
+        route: `${testRegistration.application.context}/${testRegistration.route}`,
+        methods: ['GET'],
+        handler: mockHandler,
+        authLevel: testRegistration.operationMetadata.authLevel,
+        extraInputs: testRegistration.operationMetadata.extraInputs,
+        extraOutputs: testRegistration.operationMetadata.extraOutputs,
+      });
+    });
+
+    it('should call the controller method with the correct invocationContext', async () => {
+      const controllerInstance = new TestController();
+      mockPlatformContainer.get.calledWith(TestController).mockReturnValue(controllerInstance);
+
+      subject.register(TestController);
+
+      const handlerFactoryFunction = mockRegistrationService.registerOperations.mock.calls[0]![1];
+      handlerFactoryFunction(testRegistration);
+
+      const method = mockHandlerFactory.createHandler.mock.calls[0]![1];
+      await method('arg1', 'arg2');
+      expect(mockTestMethod).toHaveBeenCalledWith('arg1', 'arg2');
     });
   });
 });

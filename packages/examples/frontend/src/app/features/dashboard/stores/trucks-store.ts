@@ -1,5 +1,5 @@
 import { inject } from '@angular/core';
-import { DashboardService } from '@fleet/shared/apis/backend';
+import { TrucksService } from '@fleet/shared/apis/backend';
 import { patchState, signalStore, withMethods, withProps, withState } from '@ngrx/signals';
 import { removeAllEntities, setAllEntities, withEntities } from '@ngrx/signals/entities';
 import { Extent } from 'ol/extent';
@@ -12,15 +12,15 @@ export const TrucksStore = signalStore(
   }),
   withEntities<Truck>(),
   withProps(() => ({
-    _dashboardService: inject(DashboardService),
+    _truckService: inject(TrucksService),
   })),
   withMethods(store => ({
     setBox: (box: Extent) => {
       patchState(store, { box });
     },
     load: async () => {
-      const trucksResponse = await firstValueFrom(store._dashboardService.getTrucks());
-      const trucks = trucksResponse.items.map<Truck>(item => item);
+      const trucksResponse = await firstValueFrom(store._truckService.getTrucks());
+      const trucks = trucksResponse.map<Truck>(item => item);
       patchState(store, setAllEntities(trucks));
       return trucks;
     },
@@ -37,4 +37,4 @@ Object.defineProperty(TrucksStore, 'name', {
   writable: false,
 });
 
-export type FleetStore = InstanceType<typeof TrucksStore>;
+export type TrucksStore = InstanceType<typeof TrucksStore>;

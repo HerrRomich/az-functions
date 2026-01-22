@@ -1,7 +1,7 @@
-import { DataSource } from '@herrromich/transaction-manager';
-import { injectable } from 'inversify';
+import { inject, injectable } from 'inversify';
 import { Migrator } from 'kysely';
-import process from 'node:process';
+import { APP_CONFIG, AppConfig } from '../app-config';
+import { FleetSightDatasource } from '../persistence';
 import { FleetSightMigrationProvider } from './migration.provider';
 
 export class MigrationError extends Error {
@@ -15,22 +15,24 @@ export class MigrationError extends Error {
 @injectable()
 export class FleetSightMigrationService {
   constructor(
-    private readonly dataSource: DataSource<unknown>,
+    @inject(APP_CONFIG) private appConfig: AppConfig,
+    private readonly dataSource: FleetSightDatasource,
     private readonly migrationProvider: FleetSightMigrationProvider,
   ) {}
 
   async migrateToLatest() {
-    const { error } = await this.createMigrator().migrateToLatest();
+    const { error, results } = await this.createMigrator().migrateToLatest();
     if (error !== undefined) {
       throw new MigrationError('Migration is failed', { cause: error });
     }
+    return results;
   }
 
   private createMigrator(): Migrator {
     return new Migrator({
       db: this.dataSource,
       provider: this.migrationProvider,
-      migrationTableSchema: process.env.PostgresSchema,
+      migrationTableSchema: this.appConfig.persistence.schema,
     });
   }
 }

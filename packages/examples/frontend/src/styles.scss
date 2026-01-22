@@ -1,6 +1,5 @@
-@use 'theme-colors' as my-theme; // location of generated file
+@use 'theme-colors' as my-theme;
 @use '@angular/material' as mat;
-@import '@mdi/font/css/materialdesignicons.min.css';
 
 html {
   @include mat.theme((
@@ -20,7 +19,7 @@ body {
   color: var(--mat-sys-on-surface);
   font: var(--mat-sys-body-medium);
 
-  // Reset the user agent margin.
+  // Reset the AuthContext agent margin.
   margin: 0;
 }
 /* You can add global styles to this file, and also import other style files */

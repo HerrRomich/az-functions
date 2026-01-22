@@ -8,9 +8,8 @@ describe('InteractiveMap', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [InteractiveMap]
-    })
-    .compileComponents();
+      imports: [InteractiveMap],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(InteractiveMap);
     component = fixture.componentInstance;

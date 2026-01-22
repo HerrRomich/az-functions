@@ -1,61 +1,51 @@
-import tseslint from "typescript-eslint";
-import eslint from '@eslint/js';
-import {defineConfig, globalIgnores} from "eslint/config";
-import angular from "angular-eslint";
+import angular from 'angular-eslint';
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { javascriptConfig, provideBaseConfig } from '../../../eslint.base.config.mjs';
+const rootName = dirname(fileURLToPath(import.meta.url));
 
-import { getTypeScriptPathsRules } from '../../../eslint.config.mjs';
-
-import eslintPluginPrettier from "eslint-plugin-prettier/recommended";
-import eslintPluginSonar from "eslint-plugin-sonarjs";
-import globals from "globals";
-
-const rootName = import.meta.dirname;
-
-export default defineConfig([
-  globalIgnores([".angular/", "node_modules/"]),
+const config = [
+  { ignores: ['node_modules/**', 'dist/**', 'coverage/**', 'generated/**', 'src/app/shared/apis/**'] },
+  ...provideBaseConfig(),
+  ...javascriptConfig,
   {
-    files: ["**/*.ts", ],
-    extends: [
-      eslintPluginPrettier,
-      eslint.configs.recommended,
-      tseslint.configs.recommended,
-      tseslint.configs.stylistic,
-      eslintPluginSonar.configs.recommended,
-      angular.configs.tsRecommended,
-    ],
+    files: ['**/*.ts', '**/*.tsx'],
+    ignores: ['**/*.spec.ts', '**/*.spec.tsx'],
+    languageOptions: { parserOptions: { rootName, project: './tsconfig.app.json', sourceType: 'module' } },
     processor: angular.processInlineTemplates,
-    languageOptions: {
-      globals: {
-          ...globals.jest,
-          ...globals.node,
-          ...globals.browser,
-      }
-    },
+    plugins: { '@angular-eslint': angular.tsPlugin, '@angular-eslint/template': angular.templatePlugin },
+    ...angular.configs.recommended,
+    ...angular.configs['process-inline-templates'],
     rules: {
-      "@angular-eslint/directive-selector": [
-        "error",
+      '@angular-eslint/directive-selector': [
+        'error',
         {
-          type: "attribute",
-          prefix: "fs",
-          style: "camelCase",
+          type: 'attribute',
+          prefix: 'fs',
+          style: 'camelCase',
         },
       ],
-      "@angular-eslint/component-selector": [
-        "error",
+      '@angular-eslint/component-selector': [
+        'error',
         {
-          type: "element",
-          prefix: "fs",
-          style: "kebab-case",
+          type: 'element',
+          prefix: 'fs',
+          style: 'kebab-case',
         },
       ],
     },
   },
   {
-    files: ["**/*.html"],
-    extends: [
-      angular.configs.templateRecommended,
-      angular.configs.templateAccessibility,
-    ],
-    rules: {},
+    files: ['**/*.spec.ts', '**/*.spec.tsx'],
+    languageOptions: { parserOptions: { rootName, project: './tsconfig.spec.json', sourceType: 'module' } },
+    plugins: { '@angular-eslint': angular.tsPlugin },
+    ...angular.configs.recommended,
   },
-]);
+  {
+    files: ['**/*.html'],
+    languageOptions: { parser: angular.templateParser },
+    plugins: { '@angular-eslint/template': angular.templatePlugin },
+    ...angular.configs.recommended,
+  },
+];
+export default config;

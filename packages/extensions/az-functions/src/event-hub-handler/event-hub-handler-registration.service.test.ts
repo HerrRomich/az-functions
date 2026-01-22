@@ -1,131 +1,117 @@
-import { app, EventHubFunctionOptions } from '@azure/functions';
-import { mock, MockProxy } from 'jest-mock-extended';
-import { z } from 'zod';
-import { eventHubHandler, message } from './decorators';
-import { EventHubHandleMethodArgsMetadataService } from './event-hub-handle-method-args-metadata.service';
+import { app } from '@azure/functions';
+import { getPartialFixture } from '@utilities/test-utilities';
+import { BindToFluentSyntax, Container } from 'inversify';
+import { CalledWithMock, mock, mockFn, MockProxy } from 'jest-mock-extended';
 import { EventHubHandlerRegistrationService } from './event-hub-handler-registration.service';
-import { EventHubHandler, EventHubTriggerDefinitionError } from './event-hub-handler.model';
-import { EventHubHandlerProvider } from './event-hub-handler.provider';
+import { EventHubHandlerFactory, EventHubTriggerHandler } from './event-hub-handler.factory';
+import {
+  EventhubTriggerRegistration,
+  EventHubTriggersRegistrationService,
+} from './event-hub-triggers-registration.service';
 
 jest.mock('@azure/functions');
 
-const handlerBody = jest.fn();
-const testHandlerMetadata = {
-  triggerId: 'test-handler',
-  connection: 'test-connection',
-  eventHubName: 'test-event-hub',
-};
-@eventHubHandler(testHandlerMetadata)
-class TestEventHubHandler implements EventHubHandler {
-  async handle(
-    @message({
-      withPayload: z.object({ text: z.string() }),
-      withEventData: true,
-      withProperties: z.object({ number: z.number() }),
-    })
-    _messages: unknown,
-  ): Promise<void> {
-    handlerBody();
-  }
-}
-
-@eventHubHandler(testHandlerMetadata)
-class TestEventHubHandlerWithoutArgs implements EventHubHandler {
-  async handle(): Promise<void> {
-    handlerBody();
-  }
-}
-
-const testFailureHandlerMetadata = {
-  triggerId: 'test-failure-handler',
-  connection: 'test-connection',
-  eventHubName: 'test-event-hub-name',
-  consumerGroup: 'test-consumer',
-};
-
-@eventHubHandler(testFailureHandlerMetadata)
-class TestFailureEventHubHandler {}
-
 describe('EventHubHandlerRegistrationService', () => {
-  let mockHandleMethodArgsMetadataService: MockProxy<EventHubHandleMethodArgsMetadataService>;
-  let mockHandlerProvider: MockProxy<EventHubHandlerProvider>;
+  const mockedAppEventHub = jest.mocked(app.eventHub);
+
+  let mockPlatformContainer: MockProxy<Container>;
+  let mockFluentSyntax: MockProxy<BindToFluentSyntax<any>>;
+  let mockHandlerFactory: MockProxy<EventHubHandlerFactory>;
+  let mockTriggersRegistrationService: MockProxy<EventHubTriggersRegistrationService>;
   let subject: EventHubHandlerRegistrationService;
 
-  let testEventHubHandler: TestEventHubHandler;
-
   beforeEach(() => {
-    testEventHubHandler = new TestEventHubHandler();
-
-    mockHandleMethodArgsMetadataService = mock();
-    mockHandleMethodArgsMetadataService.getMethodArgsMetadata.calledWith(testEventHubHandler).mockReturnValue({
-      args: [],
-    });
-
-    mockHandlerProvider = mock();
-  });
-
-  describe('startPlatform displayMode, other than start', () => {
-    it('should not register azure function event hub trigger', () => {
-      subject = new EventHubHandlerRegistrationService(
-        'print-open-api',
-        mockHandleMethodArgsMetadataService,
-        mockHandlerProvider,
-      );
-
-      subject.register(testEventHubHandler, { ...testHandlerMetadata, type: 'event-hub-handler' });
-
-      expect(app.eventHub).not.toHaveBeenCalled();
-    });
+    mockPlatformContainer = mock<Container>();
+    mockFluentSyntax = mock<BindToFluentSyntax<any>>();
+    mockPlatformContainer.bind.mockReturnValue(mockFluentSyntax);
+    mockHandlerFactory = mock<EventHubHandlerFactory>();
+    mockTriggersRegistrationService = mock<EventHubTriggersRegistrationService>();
+    subject = new EventHubHandlerRegistrationService(
+      mockPlatformContainer,
+      mockHandlerFactory,
+      mockTriggersRegistrationService,
+    );
   });
 
   describe('register', () => {
+    const mockTestMethod = mockFn<(rg1: string, rg2: string) => void>();
+    class TestEventHubHandler {
+      async handleEventHubTrigger(arg1: string, arg2: string): Promise<void> {
+        mockTestMethod(arg1, arg2);
+      }
+    }
+
+    const testRegistration = getPartialFixture<EventhubTriggerRegistration>({
+      triggerId: 'test-trigger',
+      handlerMetadata: {
+        connection: 'test-connection',
+        eventHubName: 'test-event-hub',
+      },
+      triggerMetadata: {
+        cardinality: 'many',
+        extraInputs: [],
+        extraOutputs: [],
+      },
+      triggerMethod: 'handleEventHubTrigger',
+    });
+
+    let mockHandler: CalledWithMock<EventHubTriggerHandler>;
+    let handlerInstance: TestEventHubHandler;
+
     beforeEach(() => {
-      mockHandlerProvider.getEventHubTriggerHandler.mockImplementation((_, method) => async () => {
-        await method();
+      mockHandler = mockFn<EventHubTriggerHandler>();
+      mockPlatformContainer.get.calledWith(TestEventHubHandler).mockReturnValue(new TestEventHubHandler());
+      mockHandlerFactory.createHandler.mockReturnValue(mockHandler);
+
+      handlerInstance = new TestEventHubHandler();
+      mockPlatformContainer.get.calledWith(TestEventHubHandler).mockReturnValue(handlerInstance);
+
+      mockTriggersRegistrationService.registerTriggers.mockImplementation((_, registerFn) => {
+        registerFn(testRegistration);
       });
-      subject = new EventHubHandlerRegistrationService(
-        'start',
-        mockHandleMethodArgsMetadataService,
-        mockHandlerProvider,
+    });
+
+    it('should bind the event hub handler class to the platform container and register its triggers', () => {
+      subject.register(TestEventHubHandler);
+
+      expect(mockPlatformContainer.bind).toHaveBeenCalledWith(TestEventHubHandler);
+      expect(mockFluentSyntax.toSelf).toHaveBeenCalled();
+      expect(mockPlatformContainer.get).toHaveBeenCalledWith(TestEventHubHandler);
+      expect(mockTriggersRegistrationService.registerTriggers).toHaveBeenCalledWith(
+        TestEventHubHandler,
+        expect.any(Function),
       );
     });
 
-    afterEach(() => {
-      jest.resetAllMocks();
+    it('should register the event hub triggers with the correct handler factory', async () => {
+      subject.register(TestEventHubHandler);
+
+      const handlerFactoryFunction = mockTriggersRegistrationService.registerTriggers.mock.calls[0]![1];
+      handlerFactoryFunction(testRegistration);
+
+      expect(mockHandlerFactory.createHandler).toHaveBeenCalledWith(testRegistration, expect.any(Function));
+      expect(mockedAppEventHub).toHaveBeenCalledWith('test-trigger', {
+        connection: 'test-connection',
+        eventHubName: 'test-event-hub',
+        cardinality: 'many',
+        extraInputs: [],
+        extraOutputs: [],
+        handler: mockHandler,
+      });
     });
 
-    it('should register event hub trigger handler', () => {
-      subject.register(testEventHubHandler, { ...testHandlerMetadata, type: 'event-hub-handler' });
+    it('should call the correct method on the handler instance when the trigger is invoked', async () => {
+      const handlerInstance = new TestEventHubHandler();
+      mockPlatformContainer.get.calledWith(TestEventHubHandler).mockReturnValue(handlerInstance);
 
-      expect(app.eventHub).toHaveBeenCalled();
-      const mocked = jest.mocked(app.eventHub);
-      const handler = (mocked.mock.calls[0]![1] as EventHubFunctionOptions).handler;
-      handler(mock(), mock());
-      handler(mock(), mock());
-      expect(handlerBody).toHaveBeenCalledTimes(2);
-    });
+      subject.register(TestEventHubHandler);
 
-    it('should register event hub trigger handler without args metadata', () => {
-      const testEventHubHandlerWithoutArgs = new TestEventHubHandlerWithoutArgs();
-      mockHandleMethodArgsMetadataService.getMethodArgsMetadata
-        .calledWith(testEventHubHandlerWithoutArgs)
-        .mockReturnValue(undefined);
+      const handlerFactoryFunction = mockTriggersRegistrationService.registerTriggers.mock.calls[0]![1];
+      handlerFactoryFunction(testRegistration);
 
-      subject.register(testEventHubHandlerWithoutArgs, { ...testHandlerMetadata, type: 'event-hub-handler' });
-
-      expect(app.eventHub).toHaveBeenCalled();
-    });
-
-    it('should fail, if no handle method is registered', () => {
-      expect(() =>
-        subject.register(new TestFailureEventHubHandler(), {
-          ...testFailureHandlerMetadata,
-          type: 'event-hub-handler',
-        }),
-      ).toThrowWithMessage(
-        EventHubTriggerDefinitionError,
-        'Event hub handler service "TestFailureEventHubHandler" with triggerId=test-failure-handler has no "handle" method. Please, implement "EventHubHandler" interface.',
-      );
+      const method = mockHandlerFactory.createHandler.mock.calls[0]![1];
+      await method('arg1', 'arg2');
+      expect(mockTestMethod).toHaveBeenCalledWith('arg1', 'arg2');
     });
   });
 });

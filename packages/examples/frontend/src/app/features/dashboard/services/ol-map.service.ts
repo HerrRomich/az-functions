@@ -1,5 +1,4 @@
-import { effect, inject, OnDestroy } from '@angular/core';
-import { injectable } from 'inversify';
+import { effect, inject, Injectable, OnDestroy } from '@angular/core';
 import { Feature, Map, View } from 'ol';
 import { Point } from 'ol/geom';
 import TileLayer from 'ol/layer/Tile';
@@ -17,7 +16,7 @@ const ViewSettingsSchema = z.object({
   zoom: z.number().min(0).max(28), // OpenLayers supports zoom levels from 0 to 28
 });
 
-@injectable()
+@Injectable()
 export class OlMapService implements OnDestroy {
   private readonly fleetStore = inject(TrucksStore);
   private readonly map: Map;
@@ -85,7 +84,7 @@ export class OlMapService implements OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.map.setTarget(undefined);
+    this.map.setTarget();
     this.map.dispose();
   }
 

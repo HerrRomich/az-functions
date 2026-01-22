@@ -1,51 +1,51 @@
-import { AZURE_FUNCTION_METADATA_KEY } from 'shared';
+import { FUNCTION_HANDLER_METADATA } from 'shared';
 import { z } from 'zod';
-import { EventHubHandler } from '../event-hub-handler.model';
-import {
-  EVENT_HUB_HANDLE_METHOD_METADATA_KEY,
-  eventHubHandler,
-  message,
-  messages,
-  rawMessage,
-  rawMessages,
-} from './decorators';
+import { EventHubHandler, Message, Messages, OnEventHubTrigger, RawMessage, RawMessages } from './decorators';
 
-@eventHubHandler({
-  triggerId: 'test-event-hub-handler1',
+@EventHubHandler({
   connection: 'test-connection',
   eventHubName: 'test-event-hub-name',
-  consumerGroup: 'test-consumer',
 })
-class TestEventHubHandler1 implements EventHubHandler {
+class TestEventHubHandler1 {
+  @OnEventHubTrigger({
+    triggerId: 'test-event-hub-handler1',
+    consumerGroup: 'test-consumer',
+  })
   async handle(
-    @message({
+    @Message({
       withPayload: z.object({ text: z.string() }),
       withEventData: true,
       withProperties: z.object({ number: z.number() }),
     })
     _message: unknown,
-    @rawMessage() _rawMessage: unknown,
+    @RawMessage() _rawMessage: unknown,
   ): Promise<void> {
     // test implementation
   }
+
+  @OnEventHubTrigger({
+    triggerId: 'test-event-hub-handler1-wrong',
+  })
+  async TestInvalidMethodName() {
+    // private method implementation
+  }
 }
 
-@eventHubHandler({
-  triggerId: 'test-event-hub-handler2',
-  connection: 'test-connection',
-  eventHubName: 'test-event-hub-name',
-  consumerGroup: 'test-consumer',
-  cardinality: 'many',
-})
-class TestEventHubHandler2 implements EventHubHandler {
+@EventHubHandler({ connection: 'test-connection', eventHubName: 'test-event-hub-name' })
+class TestEventHubHandler2 {
+  @OnEventHubTrigger({
+    triggerId: 'test-event-hub-handler2',
+    consumerGroup: 'test-consumer',
+    cardinality: 'many',
+  })
   async handle(
-    @messages({
+    @Messages({
       withPayload: z.object({ text: z.string() }),
       withEventData: true,
       withProperties: z.object({ number: z.number() }),
     })
     _messages: unknown,
-    @rawMessages() _rawMessages: unknown,
+    @RawMessages() _rawMessages: unknown,
   ): Promise<void> {
     // test implementation
   }
@@ -60,19 +60,20 @@ describe('decorators', () => {
 
     it('should provide handler with metadata', () => {
       const metadataKeys = Reflect.getMetadataKeys(TestEventHubHandler1);
-      expect(metadataKeys).toEqual(['azure_function', '@inversifyjs/core/classIsInjectableFlagReflectKey']);
-      expect(Reflect.getMetadata(AZURE_FUNCTION_METADATA_KEY, TestEventHubHandler1)).toEqual({
+      expect(metadataKeys).toEqual([FUNCTION_HANDLER_METADATA, '@inversifyjs/core/classIsInjectableFlagReflectKey']);
+      expect(Reflect.getMetadata(FUNCTION_HANDLER_METADATA, TestEventHubHandler1)).toEqual({
         type: 'event-hub-handler',
-        triggerId: 'test-event-hub-handler1',
         connection: 'test-connection',
         eventHubName: 'test-event-hub-name',
-        consumerGroup: 'test-consumer',
       });
     });
 
     describe('handler decorator', () => {
       it('should provide handler with metadata', () => {
-        expect(Reflect.getMetadata(EVENT_HUB_HANDLE_METHOD_METADATA_KEY, testHandler, 'handle')).toEqual({
+        expect(Reflect.getMetadata(FUNCTION_HANDLER_METADATA, testHandler, 'handle')).toEqual({
+          type: 'event-hub-handler',
+          triggerId: 'test-event-hub-handler1',
+          consumerGroup: 'test-consumer',
           args: [
             expect.objectContaining({
               type: 'message',
@@ -97,20 +98,21 @@ describe('decorators', () => {
 
     it('should provide handler with metadata', () => {
       const metadataKeys = Reflect.getMetadataKeys(TestEventHubHandler2);
-      expect(metadataKeys).toEqual(['azure_function', '@inversifyjs/core/classIsInjectableFlagReflectKey']);
-      expect(Reflect.getMetadata(AZURE_FUNCTION_METADATA_KEY, TestEventHubHandler2)).toEqual({
+      expect(metadataKeys).toEqual([FUNCTION_HANDLER_METADATA, '@inversifyjs/core/classIsInjectableFlagReflectKey']);
+      expect(Reflect.getMetadata(FUNCTION_HANDLER_METADATA, TestEventHubHandler2)).toEqual({
         type: 'event-hub-handler',
-        triggerId: 'test-event-hub-handler2',
         connection: 'test-connection',
         eventHubName: 'test-event-hub-name',
-        consumerGroup: 'test-consumer',
-        cardinality: 'many',
       });
     });
 
     describe('handler decorator', () => {
       it('should provide handler with metadata', () => {
-        expect(Reflect.getMetadata(EVENT_HUB_HANDLE_METHOD_METADATA_KEY, testHandler, 'handle')).toEqual({
+        expect(Reflect.getMetadata(FUNCTION_HANDLER_METADATA, testHandler, 'handle')).toEqual({
+          type: 'event-hub-handler',
+          triggerId: 'test-event-hub-handler2',
+          cardinality: 'many',
+          consumerGroup: 'test-consumer',
           args: [
             expect.objectContaining({
               type: 'messages',

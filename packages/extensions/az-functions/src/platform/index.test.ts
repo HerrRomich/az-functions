@@ -1,64 +1,57 @@
-import { Container } from 'inversify';
+import { BindToFluentSyntax, ContainerModuleLoadOptions, ResolutionContext } from 'inversify';
 import { mock, MockProxy } from 'jest-mock-extended';
-import * as process from 'process';
-import { AzurePlatform } from './azure-platform';
-import { startPlatform } from './index';
-import { registerStartupService } from './startup.service';
-import { extendPlatformContainer, getSystemContainer } from './system.container';
+import { LOGGER_NAME_PROVIDER, LoggerNameProvider } from 'logger';
+import { AzurePlatform, PlatformModule, STARTUP_SERVICE } from './index';
+import { REGISTER_TRIGGER_HANDLER_FACTORY, RegisterTriggerHandlerFactory } from './register-trigger-handler.factory';
+import { systemLoggerNameProvider } from './system-logger-name.provider';
 
-jest.mock('./startup.service');
-jest.mock('./system.container');
-jest.mock('inversify', () => {
-  const original = jest.requireActual('inversify');
-  return {
-    ...original,
-    Container: jest.fn(),
-  };
+describe('exports', () => {
+  it('should export AzurePlatform', () => {
+    expect(STARTUP_SERVICE).toBeDefined();
+  });
 });
 
-describe('startPlatform', () => {
-  const originalEnv = process.env;
-
-  let platformContainer: MockProxy<Container>;
-  let systemContainer: MockProxy<Container>;
-  let azurePlatform: MockProxy<AzurePlatform>;
+describe('PlatformModule', () => {
+  let mockLoadOptions: MockProxy<ContainerModuleLoadOptions>;
+  let mockAzurePlatformBinding: MockProxy<BindToFluentSyntax<AzurePlatform>>;
+  let mockTriggerHandlerBinding: MockProxy<BindToFluentSyntax<RegisterTriggerHandlerFactory>>;
+  let mockNameProviderBinding: MockProxy<BindToFluentSyntax<LoggerNameProvider>>;
 
   beforeEach(() => {
-    platformContainer = mock<Container>();
+    mockLoadOptions = mock<ContainerModuleLoadOptions>();
 
-    systemContainer = mock<Container>();
-    jest.mocked(getSystemContainer).mockReturnValueOnce(systemContainer);
+    mockAzurePlatformBinding = mock<BindToFluentSyntax<AzurePlatform>>();
+    mockLoadOptions.bind.calledWith(AzurePlatform).mockReturnValue(mockAzurePlatformBinding);
 
-    azurePlatform = mock<AzurePlatform>();
-    systemContainer.getAsync.calledWith(AzurePlatform).mockResolvedValue(azurePlatform);
+    mockTriggerHandlerBinding = mock<BindToFluentSyntax<RegisterTriggerHandlerFactory>>();
+    mockLoadOptions.bind.calledWith(REGISTER_TRIGGER_HANDLER_FACTORY).mockReturnValue(mockTriggerHandlerBinding);
+
+    mockNameProviderBinding = mock<BindToFluentSyntax<LoggerNameProvider>>();
+    mockLoadOptions.bind.calledWith(LOGGER_NAME_PROVIDER).mockReturnValue(mockNameProviderBinding);
   });
 
-  afterEach(() => {
-    (process as any).env = originalEnv;
-    jest.resetAllMocks();
+  it('should bind AzurePlatform', async () => {
+    await PlatformModule.load(mockLoadOptions);
+
+    expect(mockLoadOptions.bind).toHaveBeenCalledWith(AzurePlatform);
+    expect(mockAzurePlatformBinding.toSelf).toHaveBeenCalled();
   });
 
-  it.each(['start', 'other'])('should start platform in start displayMode', async mode => {
-    process.env.PLATFORM_MODE = mode;
+  it('should bind REGISTER_TRIGGER_HANDLER_FACTORY', async () => {
+    await PlatformModule.load(mockLoadOptions);
 
-    await startPlatform(platformContainer);
-
-    expect(extendPlatformContainer).toHaveBeenCalledWith(platformContainer);
-    expect(registerStartupService).toHaveBeenCalledWith(platformContainer);
-    expect(getSystemContainer).toHaveBeenCalledWith(platformContainer, 'start');
-    expect(systemContainer.getAsync).toHaveBeenCalledWith(AzurePlatform);
-    expect(azurePlatform.start).toHaveBeenCalled();
+    expect(mockLoadOptions.bind).toHaveBeenCalledWith(REGISTER_TRIGGER_HANDLER_FACTORY);
+    expect(mockTriggerHandlerBinding.toFactory).toHaveBeenCalled();
   });
 
-  it('should start platform in other displayMode', async () => {
-    process.env.PLATFORM_MODE = 'print-open-api';
+  it('should bind LOGGER_NAME_PROVIDER', async () => {
+    await PlatformModule.load(mockLoadOptions);
 
-    await startPlatform(platformContainer);
+    expect(mockLoadOptions.bind).toHaveBeenCalledWith(LOGGER_NAME_PROVIDER);
+    expect(mockNameProviderBinding.toFactory).toHaveBeenCalled();
 
-    expect(extendPlatformContainer).toHaveBeenCalledWith(platformContainer);
-    expect(registerStartupService).not.toHaveBeenCalled();
-    expect(getSystemContainer).toHaveBeenCalledWith(platformContainer, 'print-open-api');
-    expect(systemContainer.getAsync).toHaveBeenCalledWith(AzurePlatform);
-    expect(azurePlatform.start).toHaveBeenCalled();
+    const func = await mockNameProviderBinding.toFactory.mock.calls[0]![0]({} as ResolutionContext);
+
+    expect(func).toBe(systemLoggerNameProvider);
   });
 });

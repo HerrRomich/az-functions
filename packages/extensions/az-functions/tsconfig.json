@@ -7,9 +7,15 @@
     "declaration": true,
     "types": ["node", "reflect-metadata"],
     "paths": {
-      "shared": ["./src/shared"]
+      "shared": ["./src/shared"],
+      "http-controller": ["./src/http-controller"],
+      "context": ["./src/context"],
+      "security": ["./src/security"],
+      "logger": ["./src/logger"],
+      "event-hub-handler": ["./src/event-hub-handler"],
+      "platform": ["./src/platform"]
     }
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "test", "src/**/*.test.ts"]
+  "exclude": ["node_modules", "dist", "src/**/*.test.ts"]
 }

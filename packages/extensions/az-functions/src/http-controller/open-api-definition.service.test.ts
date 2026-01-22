@@ -1,59 +1,86 @@
 import { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
+import { getPartialFixture } from '@utilities/test-utilities';
 import { mock, MockProxy } from 'jest-mock-extended';
+import { Logger } from 'logger';
+import { PartialDeep } from 'type-fest';
 import { z } from 'zod';
-import { HttpControllerDefinitionError } from './http-controller-platform.model';
-import { HttpOperationRegistrationData } from './http-controller-registration.service';
-import { OpenAPIObjectConfig } from './http-controller.model';
-import { OpenApiDefinitionService } from './open-api-definition.service';
+import { OpenAPIObjectConfig, RestApplication } from './http-controller.model';
+import { HttpOperationRegistration } from './http-operations-registration.service';
+import { OpenApiDefinitionError, OpenApiDefinitionService } from './open-api-definition.service';
 import { OpenApiMetadataService } from './open-api-metadata.service';
-import { RestOpenApiEntries } from './rest-open-api.regstry';
 
 describe('OpenApiDefinitionService', () => {
-  let testApiEntries: RestOpenApiEntries;
-  let registry1: OpenAPIRegistry;
-  let registry2: OpenAPIRegistry;
-
-  let subject: OpenApiDefinitionService;
+  const testApplication1: RestApplication = {
+    name: 'test-application1',
+    context: 'test-contest-1',
+    openApiConfig: {} as OpenAPIObjectConfig,
+  };
+  const testApplication2: RestApplication = {
+    name: 'test-application2',
+    context: 'test-contest-2',
+    openApiConfig: {
+      openapi: '3.0.1',
+      info: {
+        version: '1.0.0',
+        title: 'unknown',
+      },
+      tags: [{ name: 'tag1' }, { name: 'tag2', description: 'tag2 description' }],
+      security: [
+        {
+          OAuth2: ['scope1', 'scope2'],
+        },
+      ],
+    },
+  };
 
   let mockApiMetadataService: MockProxy<OpenApiMetadataService>;
 
-  beforeEach(() => {
-    registry1 = new OpenAPIRegistry();
-    registry2 = new OpenAPIRegistry();
+  let subject: OpenApiDefinitionService;
 
-    testApiEntries = {
-      'test-application1': {
-        application: {
-          name: 'test-application1',
-          context: 'test-contest-1',
-          openApiConfig: {} as OpenAPIObjectConfig,
-        },
-        registry: registry1,
-      },
-      'test-application2': {
-        application: {
-          name: 'test-application2',
-          context: 'test-contest-2',
-          openApiConfig: {
-            openapi: '3.0.1',
-            info: {
-              version: '1.0.0',
-              title: 'unknown',
-            },
-            tags: [{ name: 'tag1' }, { name: 'tag2', description: 'tag2 description' }],
-            security: [
-              {
-                OAuth2: ['scope1', 'scope2'],
+  beforeEach(() => {
+    mockApiMetadataService = mock<OpenApiMetadataService>();
+    subject = new OpenApiDefinitionService(() => mock<Logger>(), mockApiMetadataService);
+    subject.addApplication(testApplication1);
+    subject.addApplication(testApplication2);
+  });
+
+  describe('addApplication', () => {
+    it('should add new application', () => {
+      const newApplication = getPartialFixture<RestApplication>({
+        name: 'new-application',
+        context: 'new-contest',
+        openApiConfig: {
+          components: {
+            schemas: {
+              testComponent: {
+                type: 'object',
+                properties: {
+                  testProperty: {
+                    type: 'string',
+                  },
+                },
               },
-            ],
+            },
+            parameters: {},
+            requestBodies: {},
+            responses: {},
+            securitySchemes: {},
           },
         },
-        registry: registry2,
-      },
-    };
+      });
 
-    mockApiMetadataService = mock();
-    subject = new OpenApiDefinitionService(mockApiMetadataService, testApiEntries);
+      subject.addApplication(newApplication);
+
+      const applications = subject.getApplications();
+      expect(applications).toContain('new-application');
+    });
+
+    it('should throw if application already exists', () => {
+      expect(() => subject.addApplication(testApplication1)).toThrowWithMessage(
+        OpenApiDefinitionError,
+        'OpenAPI definition for application test-application1 already exists',
+      );
+    });
   });
 
   describe('getApplications', () => {
@@ -74,9 +101,18 @@ describe('OpenApiDefinitionService', () => {
 
     it('should throw if application is unknown', () => {
       expect(() => subject.getApplication('unknown-application')).toThrowWithMessage(
-        Error,
-        'Unknown OpenAPI definition: unknown-application.',
+        OpenApiDefinitionError,
+        'Unknown OpenAPI definition for application unknown-application',
       );
+    });
+
+    it('should return default application if application name is not provided', () => {
+      const application = subject.getApplication();
+
+      expect(application).toMatchObject({
+        name: 'default',
+        context: 'default',
+      });
     });
   });
 
@@ -93,17 +129,17 @@ describe('OpenApiDefinitionService', () => {
       expect(registry).toBeInstanceOf(OpenAPIRegistry);
     });
 
-    it('should throw if Open API definition is unknown', () => {
-      expect(() => subject.getRegistry('unknown-definition')).toThrowWithMessage(
-        HttpControllerDefinitionError,
-        'Unknown OpenAPI definition: unknown-definition.',
-      );
+    it('should set default Open API Definition if default definition is not set', () => {
+      subject.getRegistry();
+      const registry = subject.getRegistry();
+
+      expect(registry).toBeInstanceOf(OpenAPIRegistry);
     });
 
-    it('should throw if Open API definition name was not set', () => {
-      expect(() => subject.getRegistry('')).toThrowWithMessage(
-        HttpControllerDefinitionError,
-        'OpenAPI definition is not set.',
+    it('should throw if Open API definition is unknown', () => {
+      expect(() => subject.getRegistry('unknown-definition')).toThrowWithMessage(
+        OpenApiDefinitionError,
+        'Unknown OpenAPI definition for application unknown-definition',
       );
     });
   });
@@ -144,29 +180,53 @@ describe('OpenApiDefinitionService', () => {
       });
     });
 
-    it('should throw if Open API definition is unknown', () => {
-      expect(() => subject.generateDocument('unknown-definition')).toThrowWithMessage(
-        HttpControllerDefinitionError,
-        'Unknown OpenAPI definition: unknown-definition.',
-      );
+    it('should generate bare OPEN API Definition document without server part', () => {
+      const apiDocument = subject.generateDocument('test-application2');
+      expect(apiDocument).toMatchObject({
+        openapi: '3.0.1',
+        tags: [
+          {
+            name: 'tag1',
+          },
+          {
+            description: 'tag2 description',
+            name: 'tag2',
+          },
+        ],
+        info: {
+          title: 'unknown',
+          version: '1.0.0',
+        },
+        paths: {},
+        components: {
+          parameters: {},
+          schemas: {},
+        },
+        security: [
+          {
+            OAuth2: ['scope1', 'scope2'],
+          },
+        ],
+      });
     });
 
-    it('should throw if Open API definition name was not set', () => {
-      expect(() => subject.generateDocument('')).toThrowWithMessage(
-        HttpControllerDefinitionError,
-        'OpenAPI definition is not set.',
+    it('should throw if Open API definition is unknown', () => {
+      expect(() => subject.generateDocument('unknown-definition')).toThrowWithMessage(
+        OpenApiDefinitionError,
+        'Unknown OpenAPI definition for application unknown-definition',
       );
     });
   });
 
   describe('registerOperation', () => {
-    it('should register operation definition', () => {
+    it('should register controllerMethod definition', () => {
       const registrationData = {
+        operationId: 'test-controllerMethod',
         application: { name: 'test-application2' },
         operationMetadata: {
           method: 'post',
           path: 'test-path',
-          operationId: 'test-operation',
+          operationId: 'test-controllerMethod',
           requestBody: {
             content: {
               'application/json': {
@@ -176,7 +236,7 @@ describe('OpenApiDefinitionService', () => {
           },
         },
         route: 'test-route',
-      } as unknown as HttpOperationRegistrationData;
+      } as PartialDeep<HttpOperationRegistration> as HttpOperationRegistration;
 
       mockApiMetadataService.getTags.mockReturnValue(['tag1', 'tag2']);
       mockApiMetadataService.getRequest.mockReturnValue({
@@ -191,11 +251,11 @@ describe('OpenApiDefinitionService', () => {
 
       subject.registerOperation(registrationData);
 
-      expect(registry2.definitions).toMatchObject([
+      expect(subject.getRegistry('test-application2').definitions).toMatchObject([
         {
           route: {
             method: 'post',
-            operationId: 'test-operation',
+            operationId: 'test-controllerMethod',
             path: '/test-route',
             tags: ['tag1', 'tag2'],
             request: {
@@ -211,8 +271,9 @@ describe('OpenApiDefinitionService', () => {
       ]);
     });
 
-    it('should register operation without operationId', () => {
+    it('should register controllerMethod without triggerId', () => {
       const registrationData = {
+        operationId: 'getTestData',
         application: { name: 'test-application2' },
         operation: 'getTestData',
         operationMetadata: {
@@ -220,14 +281,14 @@ describe('OpenApiDefinitionService', () => {
           path: 'test-path',
         },
         route: 'test-route',
-      } as unknown as HttpOperationRegistrationData;
+      } as PartialDeep<HttpOperationRegistration> as HttpOperationRegistration;
 
       mockApiMetadataService.getTags.mockReturnValue(undefined);
       mockApiMetadataService.getRequest.mockReturnValue({});
 
       subject.registerOperation(registrationData);
 
-      expect(registry2.definitions).toMatchObject([
+      expect(subject.getRegistry('test-application2').definitions).toMatchObject([
         {
           route: {
             method: 'get',

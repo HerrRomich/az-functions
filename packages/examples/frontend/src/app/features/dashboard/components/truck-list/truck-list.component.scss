@@ -11,7 +11,7 @@
     overflow-y: scroll;
 
     .mat-column-license-plate {
-      flex: 0 0 18ch;
+      flex: 0 0 16ch;
     }
 
     .mat-column-speed {
@@ -23,7 +23,7 @@
     }
 
     .mat-column-destination {
-      flex: 4 4 0;
+      flex: 3 3 0;
     }
 
     .mat-column-state,
@@ -33,10 +33,14 @@
       flex: 0 0 0;
       justify-content: center;
       align-items: center;
-      button.mat-mdc-mini-fab {
+      button.action-button {
         width: 24px;
         height: 24px;
-        padding-top: 10px;
+        padding-top: 4px;
+        .mat-icon {
+          width: 16px;
+          height: 16px;
+        }
       }
     }
 

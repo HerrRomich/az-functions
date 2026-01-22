@@ -3,7 +3,7 @@
     <mat-header-cell *matHeaderCellDef></mat-header-cell>
     <mat-cell *matCellDef="let element">
       @let stateIcon = getStateIcon(element);
-      <span><mat-icon [fontIcon]="stateIcon.icon" [class]="'state-' + stateIcon.color" fontSet="mdi" ]></mat-icon></span
+      <span><mat-icon [svgIcon]="stateIcon.icon" [class]="'state-' + stateIcon.color"></mat-icon></span
     ></mat-cell>
   </ng-container>
   <ng-container matColumnDef="license-plate">
@@ -19,8 +19,8 @@
       <span fsEllipsis> {{ 'truck-list.table.columns.driver' | scopedTranslate }}</span>
     </mat-header-cell>
     <mat-cell *matCellDef="let element">
-      <a fsEllipsis [routerLink]="'/fleet/drivers/' + element.driver?.id">{{ element.driver?.name }} </a></mat-cell
-    >
+      <a fsEllipsis [routerLink]="'/fleet/drivers/' + element.driver?.id">{{ element.driver?.name }} </a>
+    </mat-cell>
   </ng-container>
   <ng-container matColumnDef="destination">
     <mat-header-cell *matHeaderCellDef>
@@ -39,8 +39,8 @@
   <ng-container matColumnDef="actions">
     <mat-header-cell *matHeaderCellDef></mat-header-cell>
     <mat-cell *matCellDef="let element">
-      <button mat-mini-fab (click)="centerTruck(element.id)">
-        <mat-icon fontIcon="mdi-target" fontSet="mdi"></mat-icon>
+      <button mat-mini-fab class="action-button" (click)="centerTruck(element.id)">
+        <mat-icon svgIcon="target"></mat-icon>
       </button>
     </mat-cell>
   </ng-container>

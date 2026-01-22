@@ -1,50 +1,49 @@
 import { app } from '@azure/functions';
-import * as fs from 'fs/promises';
+import { SwaggerHandlingService } from 'http-controller';
 import { Container, inject, injectable } from 'inversify';
-import * as path from 'path';
-import * as process from 'process';
-import {
-  AZURE_FUNCTION,
-  AzureFunction,
-  AzureFunctionRegistrationError,
-  PLATFORM_CONTAINER,
-  PLATFORM_MODE,
-  PlatformMode,
-} from 'shared';
-import * as YAML from 'yaml';
-import { OpenApiDefinitionService, SwaggerHandlingService } from '../http-controller';
-import { Logger, LOGGER_FACTORY, LoggerFactory } from '../logger';
-import { PlatformComponentMetadataService } from './platform-component-metadata.service';
-import { REGISTER_FUNCTION_FACTORY, RegisterFunctionFactory } from './register-function.factory';
+import { LOGGER_FACTORY, LoggerFactory } from 'logger';
+import { PLATFORM_CONTAINER, TriggerHandlerClass } from 'shared';
+import { REGISTER_TRIGGER_HANDLER_FACTORY, RegisterTriggerHandlerFactory } from './register-trigger-handler.factory';
+import { STARTUP_SERVICE } from './startup.service';
 
 @injectable()
 export class AzurePlatform {
-  private readonly logger: Logger;
+  private readonly logger;
 
   constructor(
-    @inject(PLATFORM_MODE) private readonly platformMode: PlatformMode,
-    @inject(PLATFORM_CONTAINER) private readonly platformContainer: Container,
-    @inject(REGISTER_FUNCTION_FACTORY) private readonly registerFunctionsFactory: RegisterFunctionFactory,
-    private readonly swaggerHandlingService: SwaggerHandlingService,
-    private readonly metadataService: PlatformComponentMetadataService,
-    private readonly openApiDefinitionService: OpenApiDefinitionService,
     @inject(LOGGER_FACTORY) loggerFactory: LoggerFactory,
+    @inject(PLATFORM_CONTAINER) private readonly platformContainer: Container,
+    @inject(REGISTER_TRIGGER_HANDLER_FACTORY) private readonly registerHandler: RegisterTriggerHandlerFactory,
+    private readonly swaggerHandlingService: SwaggerHandlingService,
   ) {
     this.logger = loggerFactory();
   }
 
-  async start() {
-    if (this.openApiDefinitionService.getApplications().length > 0 && this.platformMode === 'start') {
-      this.registerSwaggerUi();
-    }
-    const azureFunctions = await this.platformContainer.getAllAsync<AzureFunction>(AZURE_FUNCTION);
-    azureFunctions.forEach(azureFunction => this.registerFunctions(azureFunction));
-    if (this.platformMode === 'print-open-api') {
-      await this.printOpenApi();
+  start(triggerHandlerClasses: TriggerHandlerClass[]) {
+    this.logger.info('Starting Azure platform');
+    this.registerStartupService();
+    this.registerSwaggerUi();
+    triggerHandlerClasses.forEach(azureFunctionType => {
+      this.registerHandler(azureFunctionType);
+    });
+    this.logger.info('Azure platform started');
+  }
+
+  private registerStartupService(): void {
+    this.logger.info('Registering startup service');
+    const startupService = this.platformContainer.get(STARTUP_SERVICE, { optional: true });
+    if (startupService !== undefined) {
+      app.hook.appStart(async () => {
+        await startupService.startup();
+      });
+      this.logger.info('Startup service registered');
+    } else {
+      this.logger.info('No startup service found');
     }
   }
 
   private registerSwaggerUi() {
+    this.logger.info('Registering Swagger UI endpoints');
     app.get('swaggerUi', {
       route: 'spec/{fileName?}',
       handler: async request => await this.swaggerHandlingService.handleSwaggerContent(request),
@@ -53,30 +52,6 @@ export class AzurePlatform {
       route: 'spec/definition/{definitionName}',
       handler: request => this.swaggerHandlingService.handleOpenApiDefinition(request),
     });
-  }
-
-  private registerFunctions(azureFunctions: AzureFunction) {
-    const metadata = this.metadataService.getMetadata(azureFunctions.constructor);
-    const triggerType = metadata?.type;
-    if (!triggerType) {
-      throw new AzureFunctionRegistrationError(`Unmanageable azure trigger: ${azureFunctions.constructor.name}`);
-    }
-    this.registerFunctionsFactory(triggerType).register(azureFunctions, metadata);
-  }
-
-  private async printOpenApi() {
-    const printPath = process.env.OPEN_API_PRINT_PATH ?? path.resolve(process.cwd(), 'dist/open-api-definitions');
-    await fs.stat(printPath).catch(() => fs.mkdir(printPath));
-    for (const application of this.openApiDefinitionService.getApplications()) {
-      try {
-        const definition = this.openApiDefinitionService.generateDocument(application);
-        let filePath = path.resolve(printPath, `${application}.json`);
-        await fs.writeFile(filePath, JSON.stringify(definition, null, 2));
-        filePath = path.resolve(printPath, `${application}.yaml`);
-        await fs.writeFile(filePath, YAML.stringify(definition));
-      } catch (e) {
-        this.logger.error(`Failed to print OpenAPI definition for application=${application}.`, e);
-      }
-    }
+    this.logger.info('Swagger UI endpoints registered');
   }
 }

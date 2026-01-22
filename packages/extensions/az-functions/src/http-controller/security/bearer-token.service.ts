@@ -1,6 +1,6 @@
-import { UserAccount } from 'shared';
+import { Principal } from 'security';
 
 export interface BearerTokenService {
   readonly bearerFormat: string;
-  getUserAccountFromToken(accessToken: string): UserAccount | PromiseLike<UserAccount>;
+  getPrincipalFromToken(accessToken: string): Principal | PromiseLike<Principal>;
 }

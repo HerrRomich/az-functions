@@ -1,5 +1,5 @@
 import { inject } from '@angular/core';
-import { DashboardService } from '@fleet/shared/apis/backend';
+import { TrucksService } from '@fleet/shared/apis/backend';
 import { patchState, signalStore, withMethods, withProps, withState } from '@ngrx/signals';
 import { firstValueFrom } from 'rxjs';
 import { Truck } from '../models/truck-model';
@@ -7,11 +7,11 @@ import { Truck } from '../models/truck-model';
 export const TruckStore = signalStore(
   withState<{ truck: Truck | undefined }>({ truck: undefined }),
   withProps(() => ({
-    _dashboardService: inject(DashboardService),
+    _truckService: inject(TrucksService),
   })),
   withMethods(store => ({
-    load: async (truckId: number) => {
-      const truck = await firstValueFrom(store._dashboardService.getTruck(truckId));
+    load: async (truckId: string) => {
+      const truck = await firstValueFrom(store._truckService.getTruck(truckId));
       patchState(store, {
         truck,
       });

@@ -6,20 +6,16 @@ import { FleetSightMigrationService } from './migration.service';
 export class StartupService implements IStartupService {
   private readonly logger: Logger;
   constructor(
-    private readonly migrationService: FleetSightMigrationService,
     @inject(LOGGER_FACTORY) loggerFactory: LoggerFactory,
+    private readonly migrationService: FleetSightMigrationService,
   ) {
-    this.logger = loggerFactory('StartupService');
+    this.logger = loggerFactory();
   }
 
   async startup(): Promise<void> {
-    try {
-      this.logger.info('Starting database migration...');
-      await this.migrationService.migrateToLatest();
-      this.logger.info('Database migration completed successfully.');
-    } catch (error) {
-      this.logger.error('Database migration failed.', error);
-      throw error;
-    }
+    this.logger.info('Starting database migrations.');
+    const results = await this.migrationService.migrateToLatest();
+    this.logger.info(`Successfully completed ${results?.length ?? 0} database migrations.`);
+    this.logger.debug('Successfully completed database migrations.', { results });
   }
 }

@@ -1,82 +1,71 @@
-import { InvocationContext } from '@azure/functions';
-import * as util from 'node:util';
+import { Container } from 'inversify';
 import { z } from 'zod';
-import { UserAccount } from './security.model';
+import { serviceIdentifier } from './ioc-container.utils';
 
-export const BASE_DIR = Symbol.for('BASE_DIR');
-export const PLATFORM_CONTAINER = Symbol.for('PLATFORM_CONTAINER');
-export const PLATFORM_MODE = Symbol.for('PLATFORM_MODE');
+export const BASE_DIR = serviceIdentifier<string>('Base Directory for Azure Functions');
+export const PLATFORM_CONTAINER = serviceIdentifier<Container>('Platform Container');
 
-export const AZURE_FUNCTION_METADATA_KEY = 'azure_function';
+export const FUNCTION_HANDLER_METADATA = Symbol.for('AzFunctions.Metadata.Handler');
 
 export const platformModeSchema = z.enum(['start', 'print-open-api']).catch('start');
-export type PlatformMode = z.infer<typeof platformModeSchema>;
 
-export class AzureFunctionError extends Error {
-  constructor(message?: string, options?: ErrorOptions) {
+/**
+ * Options for creating an AzFunctionsError.
+ * @property {Record<string, unknown>} [details] - Optional additional details about the error.
+ */
+export interface AzFunctionsErrorOptions extends ErrorOptions {
+  details?: Record<string, unknown>;
+}
+
+export abstract class AzFunctionsError extends Error {
+  protected _details?: Record<string, unknown>;
+  get details(): Readonly<Record<string, unknown>> | undefined {
+    return this._details;
+  }
+
+  protected constructor(message?: string, options?: AzFunctionsErrorOptions) {
     super(message, options);
     this.name = this.constructor.name;
     Object.setPrototypeOf(this, new.target.prototype);
+    this._details = options?.details;
   }
 }
 
-export function errorToString(err: unknown): string {
-  if (err instanceof Error) {
-    return err.message;
+export abstract class AzFunctionsSystemError extends AzFunctionsError {
+  constructor(message?: string, options?: AzFunctionsErrorOptions) {
+    super(message, options);
   }
-  if (typeof err === 'string') {
-    return err;
-  }
-  if (typeof err === 'object' && err !== null) {
-    try {
-      return util.inspect(err, { depth: null });
-    } catch {
-      return String(err);
-    }
-  }
-  return String(err);
 }
-
-export class AzureFunctionRegistrationError extends AzureFunctionError {}
 
 /**
- * Token to register Azure Functions in the DI container.
- *
+ * Abstract base class for runtime errors in Azure Functions.
  * @example
- * ```typescript
- * @httpController({
- *   path: '/users',
- * })
- * export class UserController {
- *  constructor(private readonly adUsersService: AdUsersService
- *    private readonly usersMapper: UsersMapper) {}
- *
- *    @httpGet({
- *      response: {
- *        contentSchema: usersResponseDtoSchema,
- *      },
- *    })
- *    async handle(
- *      @queryParam({ name: 'filter', schema: z.string().optional() }) filter: string | undefined,
- *      @queryParam({ name: 'top', schema: z.coerce.number().min(1).max(100).default(10) }) top: number,
- *      @context context: InvocationContext
- *    ): Promise<UsersResponseDto> {
- *      context.log.info(`Received request to fetch users with filter: ${filter} and top: ${top}`);
- *      const adUsers = await this.adUsersService.getUsers(filter, top);
- *      return this.usersMapper.toUsersResponseDto(adUsers);
- *    }
- * }
- *
- * iocContainer.bind<AzureFunction>(AZURE_FUNCTION).to(UserController);
+ * ```ts
+ * class MyRuntimeError extends AzFunctionsRuntimeError {}
  * ```
  */
-export const AZURE_FUNCTION = Symbol.for('AZURE_FUNCTION');
-
-export type AzureFunction = object;
-
-export interface PlatformContext {
-  readonly invocationContext?: InvocationContext;
-  readonly userAccount?: UserAccount;
+export class AzFunctionsRuntimeError extends AzFunctionsError {
+  constructor(message?: string, options?: AzFunctionsErrorOptions) {
+    super(message, options);
+  }
 }
 
-export class PlatformError extends AzureFunctionError {}
+export type TriggerHandlerClass<
+  TInstance extends object = object,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  TArgs extends unknown[] = any[],
+> = new (...args: TArgs) => TInstance;
+
+export interface TriggerHandlerClassMetadata {
+  type: string;
+}
+
+export const TRIGGER_HANDLER_REGISTRATION_SERVICE = serviceIdentifier<TriggerHandlerRegistrationService>(
+  'AzFunctions.TriggerHandler.RegistrationService',
+);
+
+export interface TriggerHandlerRegistrationService {
+  register(triggerHandlerClass: TriggerHandlerClass): void;
+}
+
+export class HandlerArgsParseError extends AzFunctionsRuntimeError {}

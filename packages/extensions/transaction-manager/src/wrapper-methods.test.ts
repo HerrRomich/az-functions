@@ -1,6 +1,6 @@
 import { mock, mockDeep, MockProxy } from 'jest-mock-extended';
 import { ControlledTransaction } from 'kysely';
-import { TransactionManager, TransactionManagerError } from './transaction-manager.module';
+import { TransactionManager, TransactionManagerError } from './transaction-manager.model';
 import {
   getNestedTransactionalMethod,
   getNonTransactionalMethod,
@@ -11,7 +11,7 @@ import { callMandatory, callNested, callNever, callNotSupported, callRequired } 
 jest.mock('./transactional-methods');
 
 describe('Wrapper Methods', () => {
-  let mockTransactionalManager: TransactionManager;
+  let mockTransactionalManager: TransactionManager<any>;
   let mockTransaction: ControlledTransaction<any> | undefined;
   let mockOriginalMethod: jest.Mock;
   let mockService: MockProxy<any>;
@@ -21,7 +21,7 @@ describe('Wrapper Methods', () => {
 
   beforeEach(() => {
     mockTransaction = undefined;
-    mockTransactionalManager = mockDeep<TransactionManager>({
+    mockTransactionalManager = mockDeep<TransactionManager<any>>({
       storage: {
         get transaction() {
           return mockTransaction;

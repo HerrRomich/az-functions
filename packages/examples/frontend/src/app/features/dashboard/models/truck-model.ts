@@ -1,7 +1,7 @@
 import { GeoJSONPoint } from 'ol/format/GeoJSON';
 
 export interface Truck {
-  id: number;
+  id: string;
   licensePlate: string;
   model: string;
   location: GeoJSONPoint;
@@ -9,7 +9,7 @@ export interface Truck {
   acceleration: number;
   fuelLevel: number;
   driver?: {
-    id: number;
+    id: string;
     name: string;
   };
   status: 'idle' | 'en_route' | 'loading' | 'unloading' | 'maintenance';

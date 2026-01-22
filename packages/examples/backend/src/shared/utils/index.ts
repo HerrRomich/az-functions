@@ -1,19 +1,10 @@
-import * as crypto from 'crypto';
+import { ContainerModule } from 'inversify';
+import { HashUtilitiesService } from './hash-utilities.service';
 
-export function stringsToKey(...strings: string[]): string {
-  return strings.map(str => `${str.length}${str}`).join('');
-}
+export * from './data-utilities.model';
+export * from './hash-utilities.service';
+export * from './object-utilities';
 
-export function stringToBucket(input: string, buckets: number, seed: string = ''): number {
-  const hash = crypto.createHash('sha256').update(seed).update(input).digest('hex');
-  const intValue = parseInt(hash.slice(0, 16), 16);
-  return intValue % buckets;
-}
-
-export function stringToHashString(str: string, hashDigits: number, seed: string = '', radix: number = 10): string {
-  const bucketCount = 10 ** hashDigits;
-  const bucketNumber = stringToBucket(str, bucketCount, seed);
-  return bucketNumber.toString(radix).padStart(hashDigits, '0');
-}
-
-export type ElementOfPromiseArray<T> = T extends Promise<infer R> ? (R extends Array<infer U> ? U : never) : never;
+export const UtilitiesModule = new ContainerModule(({ bind }) => {
+  bind(HashUtilitiesService).toSelf();
+});

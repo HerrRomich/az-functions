@@ -1,1 +1,9 @@
 /infra.env
+/infra.tfplan
+/.terraform
+/infra.tfvars
+/certs/
+/.terraform.lock.hcl
+/terraform.tfstate
+/terraform.tfstate.backup
+/.terraform.tfstate.lock.info

@@ -6,32 +6,30 @@ import { CodeTranslateLoader } from './code-translate-loader';
 import { ScopedTranslateService } from './scoped-translate.service';
 import { TranslationBundleLoaders } from './scoped-translations.model';
 
-export const SCOPED_TRANSLATION_KEY_PREFIX_TOKEN = new InjectionToken<string>('SCOPED_TRANSLATION_KEY_PREFIX_TOKEN');
+export const TRANSLATION_NAMESPACE_TOKEN = new InjectionToken<string>('TRANSLATION_NAMESPACE_TOKEN');
 export interface ScopedTranslateProvidersOptions {
-  translationKeyPrefix?: string;
+  translationNamespace?: string;
   bundleLoaders: TranslationBundleLoaders;
 }
 
 export function provideScopedTranslateService(options?: ScopedTranslateProvidersOptions) {
-  const translationKeyPrefix = options?.translationKeyPrefix ?? '';
+  const translationNamespace = options?.translationNamespace ?? '';
   const bundleLoaders = options?.bundleLoaders ?? {};
   return [
     provideChildTranslateService({
       loader: {
         provide: TranslateLoader,
-        useFactory: () => new CodeTranslateLoader(bundleLoaders, translationKeyPrefix),
+        useFactory: () => new CodeTranslateLoader(bundleLoaders, translationNamespace),
       },
       extend: true,
     }),
     {
-      provide: SCOPED_TRANSLATION_KEY_PREFIX_TOKEN,
+      provide: TRANSLATION_NAMESPACE_TOKEN,
       useFactory: () => {
         const translateStore = inject(TranslateStore);
         const translateService = inject(TranslateService);
         const currentLang = translateStore.getCurrentLang();
-        if (currentLang !== undefined) {
-          translateService.use(currentLang);
-        }
+        translateService.use(currentLang);
         const fallbackLang = translateStore.getFallbackLang();
         if (fallbackLang !== null) {
           translateService.setFallbackLang(fallbackLang);
@@ -46,7 +44,7 @@ export function provideScopedTranslateService(options?: ScopedTranslateProviders
           .subscribe(lang => {
             translateService.use(lang);
           });
-        return translationKeyPrefix;
+        return translationNamespace;
       },
       deps: [TranslateStore, TranslateService],
     },

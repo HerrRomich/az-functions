@@ -2,13 +2,7 @@
   "version": "2.0",
   "logging": {
     "loglevel": {
-      "default": "Trace"
-    },
-    "applicationInsights": {
-      "samplingSettings": {
-        "isEnabled": true,
-        "excludedTypes": "Request"
-      }
+      "default": "None"
     }
   },
   "extensionBundle": {

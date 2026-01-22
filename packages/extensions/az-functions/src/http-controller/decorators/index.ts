@@ -1,3 +1,3 @@
-export * from '../http-controller-metadata.service';
+export * from '../http-controller-metadata.reader';
 export * from './decorators';
 export * from './decorators.model';

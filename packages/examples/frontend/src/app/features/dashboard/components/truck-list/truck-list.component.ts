@@ -16,13 +16,13 @@ interface StateIcon {
 }
 
 const STATE_ICONS = {
-  loading: { icon: 'mdi-upload-circle-outline', color: 'orange' },
-  unloading: { icon: 'mdi-download-circle-outline', color: 'brown' },
-  maintenance: { icon: 'mdi-wrench-clock', color: 'gray' },
-  accelerating: { icon: 'mdi-arrow-top-right-thin-circle-outline', color: 'green' },
-  decelerating: { icon: 'mdi-arrow-bottom-right-thin-circle-outline', color: 'red' },
-  cruising: { icon: 'mdi-arrow-right-thin-circle-outline', color: 'blue' },
-  idle: { icon: 'mdi-sleep', color: 'gray' },
+  loading: { icon: 'upload-circle-outline', color: 'orange' },
+  unloading: { icon: 'download-circle-outline', color: 'brown' },
+  maintenance: { icon: 'wrench-clock', color: 'gray' },
+  accelerating: { icon: 'arrow-top-right-thin-circle-outline', color: 'green' },
+  decelerating: { icon: 'arrow-bottom-right-thin-circle-outline', color: 'red' },
+  cruising: { icon: 'arrow-right-thin-circle-outline', color: 'blue' },
+  idle: { icon: 'sleep', color: 'gray' },
 } satisfies Record<string, StateIcon>;
 
 @Component({

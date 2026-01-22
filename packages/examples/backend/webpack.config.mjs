@@ -3,6 +3,7 @@ import childProcess from 'node:child_process';
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import webpack from 'webpack';
 import webpackNodeExternals from 'webpack-node-externals';
 
 const require = createRequire(import.meta.url);
@@ -11,12 +12,31 @@ const __dirname = path.dirname(__filename);
 
 class OpenApiDefinitionPlugin {
   apply(compiler) {
-    compiler.hooks.afterEmit.tap('OpenApiDefinitionPlugin', compilation => {
-      try {
-        childProcess.execSync('PLATFORM_MODE=print-open-api node dist/index.cjs');
-      } catch (e) {
-        compilation.errors.push(new Error('Error generationg OpenAPI definition', { cause: e }));
-      }
+    const logger = compiler.getInfrastructureLogger('OpenApiDefinitionPlugin');
+
+    compiler.hooks.afterEmit.tapPromise('OpenApiDefinitionPlugin', async compilation => {
+      await new Promise(resolve => {
+        const child = childProcess.spawn('node', ['dist/index.cjs'], {
+          env: { ...process.env, PLATFORM_MODE: 'print-open-api' },
+        });
+
+        child.stdout.on('data', data => {
+          const message = data.toString();
+          logger.info(message);
+        });
+
+        child.stderr.on('data', data => {
+          const message = data.toString();
+          logger.error(message);
+        });
+
+        child.on('close', code => {
+          if (code !== 0) {
+            compilation.errors.push(new Error(`OpenAPI definition generation process exited with code ${code}`));
+          }
+          resolve();
+        });
+      });
     });
   }
 }
@@ -48,6 +68,12 @@ export default (env, argv) => {
             to: 'assets/swagger-ui',
           },
         ],
+      }),
+      new webpack.IgnorePlugin({
+        resourceRegExp: /^pg-native$/,
+      }),
+      new webpack.optimize.LimitChunkCountPlugin({
+        maxChunks: 1,
       }),
       new OpenApiDefinitionPlugin(),
     ],

@@ -4,10 +4,10 @@
     "rootDir": ".",
     "outDir": "dist",
     "baseUrl": ".",
-    "declaration": true,
     "types": ["node", "reflect-metadata"],
     "paths": {
-      "shared/*": ["./src/shared/*"]
+      "@fleet-sight/shared/*": ["./src/shared/*"],
+      "@fleet-sight/interfaces/*": ["./src/interfaces/*"]
     }
   },
   "include": ["src/**/*.ts"],

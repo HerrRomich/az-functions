@@ -16,7 +16,7 @@ export class Truck {
 
   protected readonly selectedTruck = this.dashboardService.selectedTruck;
 
-  close() {
-    this.router.navigate(['/dashboard']);
+  async close() {
+    await this.router.navigate(['/dashboard']);
   }
 }

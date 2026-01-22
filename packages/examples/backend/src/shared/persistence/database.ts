@@ -1,10 +1,5 @@
-import { DriverTable } from './features/fleet/driver.table';
-import { TruckRunTable } from './features/fleet/truck-run.table';
-import { TruckTable } from './features/fleet/truck.table';
-import { CustomerTable } from './features/orders/customer.table';
-import { OrderTable } from './features/orders/order.table';
-
-export const DB = Symbol.for('DB');
+import { DriverTable, TruckRunTable, TruckTable } from './features/fleet';
+import { CustomerTable, OrderTable } from './features/orders';
 
 export interface IFleetSightDatabase {
   // fleet management

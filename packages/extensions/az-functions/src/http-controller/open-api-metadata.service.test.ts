@@ -1,6 +1,6 @@
-import { PartialDeep } from 'type-fest';
-import { z, ZodArray, ZodBoolean, ZodNumber, ZodOptional, ZodString, ZodType } from 'zod';
-import { ControllerMetadata, ControllerOperationMetadata } from './decorators';
+import { getPartialFixture } from '@utilities/test-utilities';
+import { z, ZodArray, ZodNumber, ZodOptional, ZodString, ZodType } from 'zod';
+import { ControllerOperationMetadata, HttpControllerMetadata } from './decorators';
 import { OpenApiMetadataService } from './open-api-metadata.service';
 
 describe('OpenApiMetadataService', () => {
@@ -11,44 +11,44 @@ describe('OpenApiMetadataService', () => {
   });
 
   describe('getTags', () => {
-    it('should return distinct list of tags from controller metadata and operation metadata', () => {
-      const testControllerMetadata = {
+    it('should return distinct list of tags from controller metadata and controllerMethod metadata', () => {
+      const testControllerMetadata = getPartialFixture<HttpControllerMetadata>({
         tags: ['tag1', 'tag2'],
-      } as unknown as ControllerMetadata;
-      const testOperationMetadata = {
+      });
+      const testOperationMetadata = getPartialFixture<ControllerOperationMetadata>({
         tags: ['tag1', 'tag3'],
-      } as unknown as ControllerOperationMetadata;
+      });
 
       const tags = subject.getTags(testControllerMetadata, testOperationMetadata);
 
       expect(tags).toEqual(['tag1', 'tag2', 'tag3']);
     });
 
-    it('should return list of tags from controller metadata, if operation metadata has no tags', () => {
-      const testControllerMetadata = {
+    it('should return list of tags from controller metadata, if controllerMethod metadata has no tags', () => {
+      const testControllerMetadata = getPartialFixture<HttpControllerMetadata>({
         tags: ['tag1', 'tag2'],
-      } as unknown as ControllerMetadata;
-      const testOperationMetadata = {} as unknown as ControllerOperationMetadata;
+      });
+      const testOperationMetadata = getPartialFixture<ControllerOperationMetadata>({});
 
       const tags = subject.getTags(testControllerMetadata, testOperationMetadata);
 
       expect(tags).toEqual(['tag1', 'tag2']);
     });
 
-    it('should return list of tags from operation metadata, if controller metadata has no tags', () => {
-      const testControllerMetadata = {} as unknown as ControllerMetadata;
-      const testOperationMetadata = {
+    it('should return list of tags from controllerMethod metadata, if controller metadata has no tags', () => {
+      const testControllerMetadata = getPartialFixture<HttpControllerMetadata>({});
+      const testOperationMetadata = getPartialFixture<ControllerOperationMetadata>({
         tags: ['tag1', 'tag3'],
-      } as unknown as ControllerOperationMetadata;
+      });
 
       const tags = subject.getTags(testControllerMetadata, testOperationMetadata);
 
       expect(tags).toEqual(['tag1', 'tag3']);
     });
 
-    it('should return undefined, if controller metadata abd operation metadata have no tags', () => {
-      const testControllerMetadata = {} as unknown as ControllerMetadata;
-      const testOperationMetadata = {} as unknown as ControllerOperationMetadata;
+    it('should return undefined, if controller metadata abd controllerMethod metadata have no tags', () => {
+      const testControllerMetadata = getPartialFixture<HttpControllerMetadata>({});
+      const testOperationMetadata = getPartialFixture<ControllerOperationMetadata>({});
 
       const tags = subject.getTags(testControllerMetadata, testOperationMetadata);
 
@@ -57,12 +57,12 @@ describe('OpenApiMetadataService', () => {
   });
 
   describe('getRequest', () => {
-    const testOperationMetadata = {
+    const testOperationMetadata = getPartialFixture<ControllerOperationMetadata>({
       args: [
         {
           type: 'path',
           name: 'test-path-parameter1',
-          schema: z.boolean(),
+          schema: z.string(),
         },
         {
           type: 'path',
@@ -97,12 +97,12 @@ describe('OpenApiMetadataService', () => {
             prop1: z.boolean(),
           }),
         },
-        { type: 'user' },
-        { type: 'context' },
+        { type: 'authContext' },
+        { type: 'invocationContext' },
         { type: 'request' },
         { type: 'undefined' },
       ],
-    } as PartialDeep<ControllerOperationMetadata> as ControllerOperationMetadata;
+    });
     let request: ReturnType<OpenApiMetadataService['getRequest']>;
 
     beforeEach(() => {
@@ -114,7 +114,7 @@ describe('OpenApiMetadataService', () => {
       if (requestParams?.type !== 'object') {
         throw new Error('Request params is not an object');
       }
-      expect(requestParams.shape['test-path-parameter1']).toBeInstanceOf(ZodBoolean);
+      expect(requestParams.shape['test-path-parameter1']).toBeInstanceOf(ZodString);
       expect(requestParams.shape['test-path-parameter2']).toBeInstanceOf(ZodString);
     });
 
@@ -166,24 +166,27 @@ describe('OpenApiMetadataService', () => {
   });
 
   describe('getResponse', () => {
-    it('should return no content if no responses set', () => {
-      const response = subject.getResponses({} as unknown as ControllerOperationMetadata);
+    it('should return no jsonContent if no responses set', () => {
+      const testMetadata = getPartialFixture<ControllerOperationMetadata>({});
+      const response = subject.getResponses(testMetadata);
 
       expect(response).toEqual({
         204: {
-          description: 'Default no content',
+          description: 'Default no jsonContent',
         },
       });
     });
 
-    it('should return one, taken from response definition with default status', () => {
+    it('should return one, taken from directResponse definition with default status', () => {
       const testSchema = {} as ZodType<unknown>;
-      const testOperationMetadata = {
-        response: {
-          description: 'test response',
-          contentSchema: testSchema,
+      const testOperationMetadata = getPartialFixture<ControllerOperationMetadata>({
+        directResponse: {
+          description: 'test directResponse',
+          jsonContent: {
+            schema: testSchema,
+          },
         },
-      } as ControllerOperationMetadata;
+      });
       const response = subject.getResponses(testOperationMetadata);
 
       expect(response).toEqual({
@@ -193,21 +196,23 @@ describe('OpenApiMetadataService', () => {
               schema: testSchema,
             },
           },
-          description: 'test response',
+          description: 'test directResponse',
         },
       });
     });
   });
 
-  it('should return one, taken from response definition with dedicated status', () => {
+  it('should return one, taken from directResponse definition with dedicated status', () => {
     const testSchema = {} as ZodType<unknown>;
-    const testOperationMetadata = {
-      response: {
+    const testOperationMetadata = getPartialFixture<ControllerOperationMetadata>({
+      directResponse: {
         status: 201,
-        description: 'test response',
-        contentSchema: testSchema,
+        description: 'test directResponse',
+        jsonContent: {
+          schema: testSchema,
+        },
       },
-    } as ControllerOperationMetadata;
+    });
     const response = subject.getResponses(testOperationMetadata);
 
     expect(response).toEqual({
@@ -217,18 +222,20 @@ describe('OpenApiMetadataService', () => {
             schema: testSchema,
           },
         },
-        description: 'test response',
+        description: 'test directResponse',
       },
     });
   });
 
-  it('should return responses, overwritten by response', () => {
+  it('should return responses, overwritten by directResponse', () => {
     const testSchema = {} as ZodType<unknown>;
-    const testOperationMetadata = {
-      response: {
+    const testOperationMetadata = getPartialFixture<ControllerOperationMetadata>({
+      directResponse: {
         status: 201,
-        description: 'test response',
-        contentSchema: testSchema,
+        description: 'test directResponse',
+        jsonContent: {
+          schema: testSchema,
+        },
       },
       responses: {
         201: {
@@ -238,7 +245,7 @@ describe('OpenApiMetadataService', () => {
           description: 'Bad request',
         },
       },
-    } as unknown as ControllerOperationMetadata;
+    });
     const response = subject.getResponses(testOperationMetadata);
 
     expect(response).toEqual({
@@ -248,7 +255,7 @@ describe('OpenApiMetadataService', () => {
             schema: {},
           },
         },
-        description: 'test response',
+        description: 'test directResponse',
       },
       400: {
         description: 'Bad request',
@@ -256,18 +263,19 @@ describe('OpenApiMetadataService', () => {
     });
   });
 
-  it('should return no content when direct response has no content', () => {
-    const testOperationMetadata = {
-      response: {
+  it('should return no jsonContent when direct directResponse has no jsonContent', () => {
+    const testOperationMetadata = getPartialFixture<ControllerOperationMetadata>({
+      directResponse: {
         status: 201,
-        description: 'test response',
+        description: 'test directResponse',
       },
-    } as unknown as ControllerOperationMetadata;
+    });
+
     const response = subject.getResponses(testOperationMetadata);
 
     expect(response).toEqual({
       201: {
-        description: 'test response',
+        description: 'test directResponse',
       },
     });
   });

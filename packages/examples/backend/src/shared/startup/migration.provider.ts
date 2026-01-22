@@ -8,6 +8,7 @@ export class FleetSightMigrationProvider implements MigrationProvider {
   async getMigrations(): Promise<Record<string, Migration>> {
     return this.migrations.reduce(
       (prev, curr) => {
+        // Kysely uses spread operator internally, so we need to create a new object with methods defined as prop
         const migration: Migration = {
           up: async (db: Kysely<unknown>): Promise<void> => {
             await curr.up(db);

@@ -1,7 +1,7 @@
 import { DeepMockProxy, mock, mockDeep, MockProxy } from 'jest-mock-extended';
 import { Command, ControlledTransaction, ControlledTransactionBuilder, IsolationLevel } from 'kysely';
 import { Isolation } from './decorators';
-import { TransactionManager } from './transaction-manager.module';
+import { TransactionManager } from './transaction-manager.model';
 import {
   getNestedTransactionalMethod,
   getNonTransactionalMethod,
@@ -12,8 +12,8 @@ jest.mock('uuid', () => ({
   v4: () => 'unique-savepoint-id',
 }));
 
-describe('transactional methods', () => {
-  let mockTransactionalManager: DeepMockProxy<TransactionManager>;
+describe('Transactional methods', () => {
+  let mockTransactionalManager: DeepMockProxy<TransactionManager<any>>;
   let mockTransactionBuilder: MockProxy<ControlledTransactionBuilder<any>>;
   let mockStartedTransaction: MockProxy<ControlledTransaction<any>>;
   let mockStoredTransaction: ControlledTransaction<any> | undefined;
@@ -23,7 +23,7 @@ describe('transactional methods', () => {
   beforeEach(() => {
     mockStoredTransaction = undefined;
     mockTransactionBuilder = mock<ControlledTransactionBuilder<any>>();
-    mockTransactionalManager = mockDeep<TransactionManager>({
+    mockTransactionalManager = mockDeep<TransactionManager<any>>({
       kysely: {
         startTransaction: jest.fn().mockReturnValue(mockTransactionBuilder),
       },
@@ -36,7 +36,7 @@ describe('transactional methods', () => {
         },
       },
     });
-    mockTransactionalManager.storage.run.mockImplementation(async (_store, fn) => {
+    mockTransactionalManager.storage.run.mockImplementation(async (_store: any, fn: () => any) => {
       return fn();
     });
     mockOriginalMethod = jest.fn().mockResolvedValue('original-method-result');

@@ -6,6 +6,8 @@ const moduleNameMapper = getModuleNameMapper(tsConfig.compilerOptions.paths);
 export default {
   ...config,
   setupFilesAfterEnv: [...config.setupFilesAfterEnv, '<rootDir>/jest.setup.mjs'],
+  coveragePathIgnorePatterns: [...config.coveragePathIgnorePatterns, '/src/test-utilities/'],
+  testPathIgnorePatterns: [...config.testPathIgnorePatterns, '/src/test-utilities/'],
   transform: {
     ...config.transform,
     '^.+\\.mjs$': 'babel-jest',

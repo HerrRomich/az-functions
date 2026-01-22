@@ -1,30 +1,47 @@
-/* istanbul ignore file */
 import { ContainerModule } from 'inversify';
-import { AzureHttpTriggerService } from './azure-http-trigger.service';
-import { HttpControllerMetadataService } from './decorators';
+import { TRIGGER_HANDLER_REGISTRATION_SERVICE } from 'shared';
+import { HTTP_CONTROLLER_TYPE, HttpControllerMetadataReader } from './decorators';
 import { HttpControllerRegistrationService } from './http-controller-registration.service';
-import { HttpRequestHandlerProvider } from './http-request-handler.provider';
+import { HttpHandlerSupportFactory } from './http-handler-support.factory';
+import { HttpHandlerFactory } from './http-handler.factory';
+import { HttpOperationsRegistrationService } from './http-operations-registration.service';
+import { HttpRequestArgProviderFactory } from './http-request-arg-provider.factory';
+import { HttpResponseProcessorFactory } from './http-response-processor.factory';
 import { OpenApiDefinitionService } from './open-api-definition.service';
 import { OpenApiMetadataService } from './open-api-metadata.service';
-import { REST_OPEN_API_REGISTRY, buildRestOpenApiRegistry } from './rest-open-api.regstry';
-import { AuthenticationServiceFactory } from './security';
+import { OpenApiPrintService } from './open-api-print.service';
+import { OpenApiRegistrationService } from './open-api-registration.service';
+import { AuthenticatorProvider } from './security/authenticator.provider';
+import { OperationAuthenticationResolver } from './security/operation-authentication.resolver';
+import { FallbackPrincipalMergeService } from './security/principal-merge.service';
+import { StrictPrincipalMergeService } from './security/strict-principal-merge.servce';
 import { SwaggerHandlingService } from './swagger-handling.service';
 
-export * from './azure-http-trigger.service';
 export * from './decorators';
 export * from './http-controller-registration.service';
 export * from './http-controller.model';
+export * from './http-handler-support.factory';
 export * from './open-api-definition.service';
+export * from './open-api-print.service';
+export * from './open-api-registration.service';
+export * from './security';
 export * from './swagger-handling.service';
 
-export const httpControllerModule = new ContainerModule(({ bind }) => {
-  bind(HttpControllerMetadataService).toSelf();
-  bind(HttpRequestHandlerProvider).toSelf();
-  bind(HttpControllerRegistrationService).toSelf();
+export const HttpControllerModule = new ContainerModule(({ bind }) => {
+  bind(HttpControllerMetadataReader).toSelf();
+  bind(HttpHandlerFactory).toSelf();
+  bind(TRIGGER_HANDLER_REGISTRATION_SERVICE).to(HttpControllerRegistrationService).whenNamed(HTTP_CONTROLLER_TYPE);
   bind(SwaggerHandlingService).toSelf();
-  bind(AzureHttpTriggerService).toSelf();
+  bind(HttpHandlerSupportFactory).toSelf();
+  bind(HttpRequestArgProviderFactory).toSelf();
+  bind(HttpResponseProcessorFactory).toSelf();
   bind(OpenApiMetadataService).toSelf();
-  bind(AuthenticationServiceFactory).toSelf();
+  bind(AuthenticatorProvider).toSelf();
+  bind(OperationAuthenticationResolver).toSelf();
+  bind(OpenApiRegistrationService).toSelf();
   bind(OpenApiDefinitionService).toSelf();
-  bind(REST_OPEN_API_REGISTRY).toDynamicValue(context => buildRestOpenApiRegistry(context));
+  bind(HttpOperationsRegistrationService).toSelf();
+  bind(OpenApiPrintService).toSelf();
+  bind(FallbackPrincipalMergeService).toSelf();
+  bind(StrictPrincipalMergeService).toSelf();
 });

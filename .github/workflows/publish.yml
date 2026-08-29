@@ -30,7 +30,7 @@ jobs:
           version: ${{ env.PNPM_VERSION }}
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -40,10 +40,10 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: build package
-        run: pnpm --filter "$package" c:build
+        run: pnpm --filter "${{inputs.package}}" ci:build:recursive
 
       - name: Check package contents
-        run: pnpm --filter "$package" pack --pack-destination ./artifacts
+        run: pnpm --filter "${{inputs.package}}" pack --pack-destination ./artifacts
 
   publish:
     name: Publish package
@@ -70,9 +70,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build package
-        run: pnpm --filter "$package" dist:build:recursive
+        run: pnpm --filter "${{inputs.package}}" dist:build:recursive
 
       - name: Publish to npm
-        run: pnpm --filter "$package" publish --access public --no-git-checks --provenance
+        run: pnpm --filter "${{inputs.package}}" publish --access public --no-git-checks --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

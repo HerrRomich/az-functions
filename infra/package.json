@@ -1,0 +1,12 @@
+{
+  "name": "infra",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "deploy": "pnpm run terraform:init && pnpm run terraform:apply",
+    "terraform:init": "terraform init",
+    "terraform:plan": "terraform plan --var-file=infra.tfvars -out infra.tfplan",
+    "terraform:apply": "terraform apply --var-file=infra.tfvars -auto-approve",
+    "terraform:destroy": "terraform destroy --var-file=infra.tfvars -auto-approve"
+  }
+}

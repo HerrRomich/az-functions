@@ -1,0 +1,17 @@
+<div class="basement-container">
+  <mat-toolbar class="tool-bar">
+    <h1 class="title">{{ 'app.title' | scopedTranslate }}</h1>
+    <span class="divider"></span>
+    @for (feature of features; track feature.route) {
+      <a
+        [matButton]="rla.isActive ? 'filled' : 'outlined'"
+        routerLinkActive
+        #rla="routerLinkActive"
+        [routerLink]="feature.route"
+        >{{ feature.translationKey | scopedTranslate }}
+      </a>
+    }
+  </mat-toolbar>
+  <fs-breadcrumb></fs-breadcrumb>
+  <router-outlet />
+</div>

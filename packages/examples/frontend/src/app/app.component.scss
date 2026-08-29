@@ -1,0 +1,31 @@
+@use '@angular/material' as mat;
+
+:host {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+}
+
+.basement-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+}
+
+.tool-bar {
+  background-color: var(--mat-sys-primary-container);
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+
+  .title {
+    font: var(--mat-sys-title-large);
+    letter-spacing: var(--mat-sys-title-large-tracking);
+    color: var(--mat-sys-primary);
+    margin-right: 16px;
+  }
+
+  .divider {
+    flex: 1 1 0;
+  }
+}

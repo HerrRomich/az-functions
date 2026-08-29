@@ -1,0 +1,12 @@
+<div class="bread-crumb">
+  @for (breadcrumbElement of breadcrumb(); track breadcrumbElement.path; let last = $last) {
+    @if (!last) {
+      <a [routerLink]="breadcrumbElement.path">
+        {{ breadcrumbElement.title | optTranslate }}
+      </a>
+      &nbsp;&gt;&nbsp;
+    } @else {
+      <div>{{ breadcrumbElement.title | optTranslate }}</div>
+    }
+  }
+</div>

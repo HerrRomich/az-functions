@@ -74,3 +74,5 @@ jobs:
 
       - name: Publish to npm
         run: pnpm --filter "${{inputs.package}}" publish --access public --no-git-checks --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

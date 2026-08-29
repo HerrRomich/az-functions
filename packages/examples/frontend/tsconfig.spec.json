@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/spec",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "types": ["node", "browser", "jest", "jest-extended", "jest-mock-extended"]
+  },
+  "include": ["src/**/*.d.ts", "src/**/*.spec.ts"]
+}

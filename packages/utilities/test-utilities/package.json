@@ -1,0 +1,29 @@
+{
+  "name": "@utilities/test-utilities",
+  "description": "Utilities for testing.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dist:clean": "rimraf ./dist",
+    "dist:build": "pnpm run dist:clean && tsc --build",
+    "dist:build:recursive": "pnpm -r --sort --filter {.}... run dist:build",
+    "watch": "pnpm run dist:clean && tsc --watch",
+    "watch:recursive": "pnpm -r --sort --filter {.}... --parallel --stream run watch",
+    "lint": "eslint src",
+    "lint:fix": "eslint --fix src ",
+    "ci:build": "pnpm lint && pnpm dist:build"
+  },
+  "devDependencies": {
+    "rimraf": "catalog:",
+    "type-fest": "catalog:"
+  },
+  "peerDependencies": {
+    "@jest/globals": "*",
+    "jest": "*",
+    "expect": "*"
+  }
+}

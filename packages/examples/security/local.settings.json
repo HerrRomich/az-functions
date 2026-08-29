@@ -1,0 +1,12 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "WEBSITE_INSTANCE_ID": "test-instance",
+    "WEBSITE_DEPLOYMENT_ID": "example",
+    "AzureWebJobsFeatureFlags": "EnableWorkerIndexing",
+    "PersistenceConnectionString": "postgresql://postgres:welcome1@localhost/postgres",
+    "PersistenceSecureConnection": "false",
+    "PersistenceSchema": "fleet_sight"
+  }
+}

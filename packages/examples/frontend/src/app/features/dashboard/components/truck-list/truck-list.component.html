@@ -1,0 +1,52 @@
+<mat-table [dataSource]="trucks()" class="truck-list-table">
+  <ng-container matColumnDef="state">
+    <mat-header-cell *matHeaderCellDef></mat-header-cell>
+    <mat-cell *matCellDef="let element">
+      @let stateIcon = getStateIcon(element);
+      <span><mat-icon [svgIcon]="stateIcon.icon" [class]="'state-' + stateIcon.color"></mat-icon></span
+    ></mat-cell>
+  </ng-container>
+  <ng-container matColumnDef="license-plate">
+    <mat-header-cell *matHeaderCellDef>
+      <span fsEllipsis>{{ 'truck-list.table.columns.license-plate' | scopedTranslate }}</span>
+    </mat-header-cell>
+    <mat-cell *matCellDef="let element">
+      <a fsEllipsis [routerLink]="'./trucks/' + element.id">{{ element.licensePlate }}</a>
+    </mat-cell>
+  </ng-container>
+  <ng-container matColumnDef="driver">
+    <mat-header-cell *matHeaderCellDef>
+      <span fsEllipsis> {{ 'truck-list.table.columns.driver' | scopedTranslate }}</span>
+    </mat-header-cell>
+    <mat-cell *matCellDef="let element">
+      <a fsEllipsis [routerLink]="'/fleet/drivers/' + element.driver?.id">{{ element.driver?.name }} </a>
+    </mat-cell>
+  </ng-container>
+  <ng-container matColumnDef="destination">
+    <mat-header-cell *matHeaderCellDef>
+      <span fsEllipsis> {{ 'truck-list.table.columns.destination' | scopedTranslate }}</span>
+    </mat-header-cell>
+    <mat-cell *matCellDef="let element">
+      <span fsEllipsis> {{ element.destinationAddress }}</span>
+    </mat-cell>
+  </ng-container>
+  <ng-container matColumnDef="speed">
+    <mat-header-cell *matHeaderCellDef>
+      <span fsEllipsis> {{ 'truck-list.table.columns.speed' | scopedTranslate }}</span>
+    </mat-header-cell>
+    <mat-cell *matCellDef="let element"> {{ element.speed }} km/h </mat-cell>
+  </ng-container>
+  <ng-container matColumnDef="actions">
+    <mat-header-cell *matHeaderCellDef></mat-header-cell>
+    <mat-cell *matCellDef="let element">
+      <button mat-mini-fab class="action-button" (click)="centerTruck(element.id)">
+        <mat-icon svgIcon="target"></mat-icon>
+      </button>
+    </mat-cell>
+  </ng-container>
+  <mat-header-row *matHeaderRowDef="displayedColumns(); sticky: true"></mat-header-row>
+  <mat-row
+    *matRowDef="let row; columns: displayedColumns()"
+    [ngClass]="{ 'selected-truck': selectedTruck()?.id === row.id }"
+  ></mat-row>
+</mat-table>

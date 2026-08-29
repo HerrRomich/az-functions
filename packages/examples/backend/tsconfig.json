@@ -1,0 +1,15 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "dist",
+    "baseUrl": ".",
+    "types": ["node", "reflect-metadata"],
+    "paths": {
+      "@fleet-sight/shared/*": ["./src/shared/*"],
+      "@fleet-sight/interfaces/*": ["./src/interfaces/*"]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "test", "src/**/*.test.ts"]
+}

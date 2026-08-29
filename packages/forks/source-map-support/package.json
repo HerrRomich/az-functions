@@ -1,0 +1,14 @@
+{
+  "name": "@forks/source-map-support",
+  "description": "Fixes stack traces for files with source maps.",
+  "private": true,
+  "main": "source-map-support.js",
+  "types": "./source-map-support.d.ts",
+  "dependencies": {
+    "buffer-from": "catalog:",
+    "source-map": "catalog:"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

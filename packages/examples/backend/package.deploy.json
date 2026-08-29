@@ -1,0 +1,11 @@
+{
+  "name": "example-backend",
+  "version": "0.0.1",
+  "main": "index.cjs",
+  "dependencies": {
+    "@azure/functions": "^4"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

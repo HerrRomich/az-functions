@@ -1,2 +1,1 @@
-# az-functions
-Azure-functions for NodeJS
+# Monorepo for Azure Function NodeJS Extensions 

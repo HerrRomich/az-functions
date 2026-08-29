@@ -1,0 +1,13 @@
+@use 'theme-colors' as my-theme; // location of generated file
+@import 'styles';
+
+$blue: #1976d2;
+$red: #d32f2f;
+$gray: #888;
+$green: #388e3c;
+$orange: #f57c00;
+$brown: #5d4037;
+
+$selected-table-background: map-get(my-theme.$primary-palette, 90);
+$odd-table-background: map-get(my-theme.$primary-palette, 'neutral', 90);
+$even-table-background: map-get(my-theme.$primary-palette, 'neutral', 95);

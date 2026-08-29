@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "module": "es2022",
+    "target": "es2022",
+    "moduleResolution": "node",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "sourceMap": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noErrorTruncation": true,
+    "plugins": []
+  },
+  "exclude": ["node_modules"]
+}

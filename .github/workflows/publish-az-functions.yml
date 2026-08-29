@@ -1,0 +1,21 @@
+name: Publish az-functions to npm
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: npm-publish-az-functions
+  cancel-in-progress: false
+
+env:
+  PACKAGE_NAME: '@herrromich/az-functions'
+
+jobs:
+  publish:
+    uses: ./.github/workflows/publish.yml
+    with:
+      package: ${{ env.PACKAGE_NAME }}

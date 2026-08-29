@@ -1,0 +1,21 @@
+name: Publish transaction-manager to npm
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: npm-publish-transaction-manager
+  cancel-in-progress: false
+
+env:
+  PACKAGE_NAME: '@herrromich/transaction-manager'
+
+jobs:
+  publish:
+    uses: ./.github/workflows/publish.yml
+    with:
+      package: ${{ env.PACKAGE_NAME }}

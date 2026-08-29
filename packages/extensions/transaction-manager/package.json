@@ -20,7 +20,8 @@
     "test": "jest --env=node --colors --coverage",
     "lint": "eslint src",
     "lint:fix": "eslint --fix src",
-    "ci:build": "pnpm lint && pnpm test && pnpm dist:build"
+    "ci:build": "pnpm lint && pnpm test && pnpm dist:build",
+    "ci:build:recursive": "pnpm -r --sort --filter {.}... run ci:build"
   },
   "dependencies": {
     "reflect-metadata": "catalog:",

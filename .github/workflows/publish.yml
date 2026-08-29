@@ -11,10 +11,6 @@ permissions:
   contents: read
   id-token: write
 
-concurrency:
-  group: npm-publish-transaction-manager
-  cancel-in-progress: false
-
 env:
   NODE_VERSION: 22
   PNPM_VERSION: 10.30.3

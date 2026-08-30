@@ -899,9 +899,6 @@ importers:
       '@types/triple-beam':
         specifier: 'catalog:'
         version: 1.3.5
-      '@utilities/test-utilities':
-        specifier: workspace:*
-        version: link:../../utilities/test-utilities
       copy-webpack-plugin:
         specifier: 'catalog:'
         version: 13.0.1(webpack@5.105.4(webpack-cli@5.1.4))

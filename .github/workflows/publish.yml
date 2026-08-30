@@ -7,10 +7,6 @@ on:
         required: true
         type: string
 
-permissions:
-  contents: read
-  id-token: write
-
 env:
   NODE_VERSION: 22
   PNPM_VERSION: 10.30.3
@@ -49,7 +45,9 @@ jobs:
     name: Publish package
     needs: validate
     runs-on: ubuntu-latest
-    environment: npm
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -73,4 +71,4 @@ jobs:
         run: pnpm --filter "${{inputs.package}}" dist:build:recursive
 
       - name: Publish to npm
-        run: pnpm --filter "${{inputs.package}}" publish --access public --no-git-checks --provenance
+        run: pnpm --filter "${{inputs.package}}" publish --access public --no-git-checks

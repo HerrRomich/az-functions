@@ -1,6 +1,6 @@
 {
   "name": "@herrromich/transaction-manager",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "MIT",
   "description": "Declarative transaction management for Kysely using decorators and AsyncLocalStorage.",
   "main": "dist/index.cjs",

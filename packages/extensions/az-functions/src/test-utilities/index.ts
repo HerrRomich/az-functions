@@ -1,0 +1,1 @@
+export { getPartialFixture } from './utils';

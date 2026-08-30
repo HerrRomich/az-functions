@@ -1,7 +1,7 @@
 import { app } from '@azure/functions';
-import { getPartialFixture } from '@utilities/test-utilities';
 import { BindToFluentSyntax, Container } from 'inversify';
 import { mock, mockFn, MockProxy } from 'jest-mock-extended';
+import { getPartialFixture } from 'test-utilities';
 import { HttpControllerRegistrationService } from './http-controller-registration.service';
 import { HttpHandlerFactory, RequestHandler } from './http-handler.factory';
 import { HttpOperationRegistration, HttpOperationsRegistrationService } from './http-operations-registration.service';

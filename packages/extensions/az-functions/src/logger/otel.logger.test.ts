@@ -2,8 +2,8 @@ import { TraceContext } from '@azure/functions';
 import { Context, ROOT_CONTEXT, trace } from '@opentelemetry/api';
 import { Logger } from '@opentelemetry/api-logs';
 import { LoggerProvider } from '@opentelemetry/sdk-logs';
-import { getPartialFixture } from '@utilities/test-utilities';
 import { mock, MockProxy } from 'jest-mock-extended';
+import { getPartialFixture } from 'test-utilities';
 import { PlatformLogInfo } from './logger.model';
 import { OtelLogger } from './otel.logger';
 

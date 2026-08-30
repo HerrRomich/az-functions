@@ -1,7 +1,7 @@
-import { getPartialFixture } from '@utilities/test-utilities';
 import { mock, mockFn, MockProxy } from 'jest-mock-extended';
 import { Logger } from 'logger';
 import { TriggerHandlerMetadataError } from 'shared';
+import { getPartialFixture } from 'test-utilities';
 import { EventHubHandlerMetadata, EventHubTriggerMetadata } from './decorators/index';
 import { EventHubHandlerMetadataReader } from './event-hub-handler-metadata.reader';
 import { EventHubTriggersRegistrationService, RegisterCallback } from './event-hub-triggers-registration.service';

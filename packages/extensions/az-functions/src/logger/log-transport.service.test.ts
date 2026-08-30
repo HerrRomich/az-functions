@@ -1,7 +1,7 @@
-import { getPartialFixture } from '@utilities/test-utilities';
 import { PlatformContext, PlatformContextManager } from 'context';
 import { mock, mockFn, MockProxy } from 'jest-mock-extended';
 import { AzFunctionsError } from 'shared';
+import { getPartialFixture } from 'test-utilities';
 import { LogLevelService } from './log-level.service';
 import { AzFunctionsTransport } from './log-transport.service';
 import { CONTEXT_LOGGER_METADATA, LogLevel } from './logger.model';

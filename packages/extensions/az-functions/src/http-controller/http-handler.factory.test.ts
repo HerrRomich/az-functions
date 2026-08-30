@@ -1,5 +1,4 @@
 import { HttpRequest, HttpResponse, InvocationContext } from '@azure/functions';
-import { getPartialFixture } from '@utilities/test-utilities';
 import {
   PLATFORM_CONTEXT_MANAGER,
   PLATFORM_CONTEXT_PROVIDER,
@@ -13,6 +12,7 @@ import { fn, Mock } from 'jest-mock';
 import { CalledWithMock, mock, mockFn, MockProxy } from 'jest-mock-extended';
 import { Logger } from 'logger';
 import { AuthContext, AUTHENTICATION_CONTEXT_KEY } from 'security';
+import { getPartialFixture } from 'test-utilities';
 import { CommonHttpTriggerError, UnauthorizedError } from './http-controller.model';
 import {
   HttpHandlerSupportFactory,

@@ -1,7 +1,7 @@
 import { app } from '@azure/functions';
-import { getPartialFixture } from '@utilities/test-utilities';
 import { BindToFluentSyntax, Container } from 'inversify';
 import { CalledWithMock, mock, mockFn, MockProxy } from 'jest-mock-extended';
+import { getPartialFixture } from 'test-utilities';
 import { EventHubHandlerRegistrationService } from './event-hub-handler-registration.service';
 import { EventHubHandlerFactory, EventHubTriggerHandler } from './event-hub-handler.factory';
 import {

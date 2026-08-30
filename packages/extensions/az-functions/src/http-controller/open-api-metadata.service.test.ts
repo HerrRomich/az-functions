@@ -1,4 +1,4 @@
-import { getPartialFixture } from '@utilities/test-utilities';
+import { getPartialFixture } from 'test-utilities';
 import { z, ZodArray, ZodNumber, ZodOptional, ZodString, ZodType } from 'zod';
 import { ControllerOperationMetadata, HttpControllerMetadata } from './decorators';
 import { OpenApiMetadataService } from './open-api-metadata.service';

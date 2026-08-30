@@ -1,7 +1,7 @@
 import { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
-import { getPartialFixture } from '@utilities/test-utilities';
 import { mock, MockProxy } from 'jest-mock-extended';
 import { Logger } from 'logger';
+import { getPartialFixture } from 'test-utilities';
 import { PartialDeep } from 'type-fest';
 import { z } from 'zod';
 import { OpenAPIObjectConfig, RestApplication } from './http-controller.model';

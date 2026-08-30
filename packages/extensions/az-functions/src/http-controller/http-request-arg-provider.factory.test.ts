@@ -1,8 +1,8 @@
 import { HttpRequest, InvocationContext } from '@azure/functions';
-import { getPartialFixture } from '@utilities/test-utilities';
 import { mock, mockFn, MockProxy } from 'jest-mock-extended';
 import { AuthContext } from 'security';
 import { HandlerArgsParseError } from 'shared';
+import { getPartialFixture } from 'test-utilities';
 import { Writable } from 'type-fest';
 import { z } from 'zod';
 import { BadRequestError } from './http-controller.model';

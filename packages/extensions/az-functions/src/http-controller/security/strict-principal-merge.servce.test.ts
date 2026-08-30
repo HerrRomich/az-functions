@@ -1,5 +1,5 @@
-import { getPartialFixture } from '@utilities/test-utilities';
 import { AuthenticationError, Principal } from 'security';
+import { getPartialFixture } from 'test-utilities';
 import { StrictPrincipalMergeService } from './strict-principal-merge.servce';
 
 describe('StrictPrincipalMergeService', () => {

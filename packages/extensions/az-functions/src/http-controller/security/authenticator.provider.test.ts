@@ -1,9 +1,9 @@
 import { HttpRequest } from '@azure/functions';
-import { getPartialFixture } from '@utilities/test-utilities';
 import { AuthenticationService, ForbiddenError, UnauthorizedError } from 'http-controller';
 import { mock, mockFn, MockProxy } from 'jest-mock-extended';
 import { Logger } from 'logger';
 import { AuthContext, AuthenticationError, Principal } from 'security';
+import { getPartialFixture } from 'test-utilities';
 import { HttpOperationRegistration } from '../http-operations-registration.service';
 import { AuthenticationHandler, AuthenticatorProvider } from './authenticator.provider';
 import { OperationAuthenticationResolver, SecurityBindingObject } from './operation-authentication.resolver';

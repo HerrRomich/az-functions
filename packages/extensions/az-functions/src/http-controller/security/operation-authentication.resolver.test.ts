@@ -1,5 +1,4 @@
 import { HttpRequest } from '@azure/functions';
-import { getPartialFixture } from '@utilities/test-utilities';
 import {
   AUTHENTICATION_SERVICE,
   AuthenticationService,
@@ -10,6 +9,7 @@ import { Container } from 'inversify';
 import { mock, MockProxy } from 'jest-mock-extended';
 import { Logger } from 'logger';
 import { SecurityRequirementObject, SecuritySchemeObject } from 'openapi3-ts/oas30';
+import { getPartialFixture } from 'test-utilities';
 import { HttpOperationRegistration } from '../http-operations-registration.service';
 import { OperationAuthenticationResolver } from './operation-authentication.resolver';
 

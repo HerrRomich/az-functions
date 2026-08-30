@@ -1,7 +1,7 @@
-import { getPartialFixture } from '@utilities/test-utilities';
 import { mock, MockProxy } from 'jest-mock-extended';
 import { Logger } from 'logger';
 import { TriggerHandlerClass, TriggerHandlerClassMetadata, TriggerHandlerMetadataReader } from 'shared';
+import { getPartialFixture } from 'test-utilities';
 import { RestApplication } from './http-controller.model';
 import { HttpOperationRegistration, HttpOperationsRegistrationService } from './http-operations-registration.service';
 import { OpenApiDefinitionService } from './open-api-definition.service';

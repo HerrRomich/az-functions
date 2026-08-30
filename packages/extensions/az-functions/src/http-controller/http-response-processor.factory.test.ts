@@ -1,4 +1,4 @@
-import { getPartialFixture } from '@utilities/test-utilities';
+import { getPartialFixture } from 'test-utilities';
 import { z, ZodObject } from 'zod';
 import { DirectResponseObject } from './decorators/index';
 import { InternalServerError } from './http-controller.model';

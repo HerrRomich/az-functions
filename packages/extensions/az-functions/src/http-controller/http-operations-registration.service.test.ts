@@ -1,7 +1,7 @@
-import { getPartialFixture } from '@utilities/test-utilities';
 import { mock, mockFn, MockProxy } from 'jest-mock-extended';
 import { Logger } from 'logger';
 import { TriggerHandlerMetadataError } from 'shared';
+import { getPartialFixture } from 'test-utilities';
 import { ControllerOperationMetadata, HttpControllerMetadata } from './decorators/index';
 import { HttpControllerMetadataReader } from './http-controller-metadata.reader';
 import { RestApplication } from './http-controller.model';

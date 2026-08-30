@@ -13,9 +13,10 @@
       "security": ["./src/security"],
       "logger": ["./src/logger"],
       "event-hub-handler": ["./src/event-hub-handler"],
-      "platform": ["./src/platform"]
+      "platform": ["./src/platform"],
+      "test-utilities": ["./src/test-utilities"]
     }
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "src/**/*.test.ts"]
+  "exclude": ["node_modules", "dist", "src/**/*.test.ts", "src/test-utilities/**/*.ts"]
 }

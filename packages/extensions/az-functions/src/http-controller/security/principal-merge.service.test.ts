@@ -1,6 +1,6 @@
-import { getPartialFixture } from '@utilities/test-utilities';
 import { mock, MockProxy } from 'jest-mock-extended';
 import { Principal } from 'security';
+import { getPartialFixture } from 'test-utilities';
 import { FallbackPrincipalMergeService, PrincipalMergeService } from './principal-merge.service';
 
 describe('FallbackPrincipalMergeService', () => {

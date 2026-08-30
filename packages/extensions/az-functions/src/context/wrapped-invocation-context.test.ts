@@ -1,6 +1,6 @@
 import { InvocationContext } from '@azure/functions';
-import { getPartialFixture } from '@utilities/test-utilities';
 import { mock, MockProxy } from 'jest-mock-extended';
+import { getPartialFixture } from 'test-utilities';
 import * as winston from 'winston';
 import { WrappedInvocationContext } from './wrapped-invocation-context';
 

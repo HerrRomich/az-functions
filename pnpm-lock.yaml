@@ -41,7 +41,7 @@ catalogs:
       version: 3.3.4
     '@eslint/js':
       specifier: ^9.39.4
-      version: 9.39.3
+      version: 9.39.4
     '@mdi/font':
       specifier: ^7.4.47
       version: 7.4.47
@@ -275,7 +275,7 @@ catalogs:
       version: 5.9.3
     typescript-eslint:
       specifier: ^8.57.2
-      version: 8.56.1
+      version: 8.57.2
     uuid:
       specifier: ^11
       version: 11.1.0
@@ -400,10 +400,10 @@ importers:
         version: 1.5.2(rollup@4.60.0)(typescript@5.9.3)
       source-map-loader:
         specifier: 'catalog:'
-        version: 5.0.0(webpack@5.105.4(webpack-cli@5.1.4(webpack@5.105.4)))
+        version: 5.0.0(webpack@5.105.4)
       terser-webpack-plugin:
         specifier: 'catalog:'
-        version: 5.3.17(webpack@5.105.4(webpack-cli@5.1.4(webpack@5.105.4)))
+        version: 5.3.17(webpack@5.105.4)
       ts-jest:
         specifier: 'catalog:'
         version: 29.4.6(@babel/core@7.29.0)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.2.0(@babel/core@7.29.0))(jest-util@30.4.1)(jest@30.2.0(@types/node@22.13.14))(typescript@5.9.3)
@@ -427,7 +427,7 @@ importers:
         version: 8.56.1(eslint@9.39.3)(typescript@5.9.3)
       webpack:
         specifier: 'catalog:'
-        version: 5.105.4(webpack-cli@5.1.4(webpack@5.105.4))
+        version: 5.105.4(webpack-cli@5.1.4)
       webpack-cli:
         specifier: 'catalog:'
         version: 5.1.4(webpack@5.105.4)
@@ -544,7 +544,7 @@ importers:
         version: 8.18.0
       copy-webpack-plugin:
         specifier: 'catalog:'
-        version: 13.0.1(webpack@5.105.4(webpack-cli@5.1.4(webpack@5.105.4)))
+        version: 13.0.1(webpack@5.105.4(webpack-cli@5.1.4))
       eslint:
         specifier: 'catalog:'
         version: 9.39.3
@@ -568,7 +568,7 @@ importers:
         version: 3.5.0
       source-map-loader:
         specifier: 'catalog:'
-        version: 5.0.0(webpack@5.105.4(webpack-cli@5.1.4(webpack@5.105.4)))
+        version: 5.0.0(webpack@5.105.4)
       swagger-ui-dist:
         specifier: 'catalog:'
         version: 5.32.0
@@ -583,7 +583,7 @@ importers:
         version: 5.9.3
       webpack:
         specifier: 'catalog:'
-        version: 5.105.4(webpack-cli@5.1.4(webpack@5.105.4))
+        version: 5.105.4(webpack-cli@5.1.4)
       webpack-bundle-analyzer:
         specifier: 'catalog:'
         version: 4.10.2
@@ -795,7 +795,7 @@ importers:
         version: 4.60.0
       source-map-loader:
         specifier: 'catalog:'
-        version: 5.0.0(webpack@5.105.4(webpack-cli@5.1.4(webpack@5.105.4)))
+        version: 5.0.0(webpack@5.105.4)
       ts-jest:
         specifier: 'catalog:'
         version: 29.4.6(@babel/core@7.29.0)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.0))(jest-util@30.4.1)(jest@30.3.0(@types/node@22.13.14))(typescript@5.9.3)
@@ -807,7 +807,7 @@ importers:
         version: 5.9.3
       webpack:
         specifier: 'catalog:'
-        version: 5.105.4(webpack-cli@5.1.4(webpack@5.105.4))
+        version: 5.105.4(webpack-cli@5.1.4)
       webpack-bundle-analyzer:
         specifier: 'catalog:'
         version: 4.10.2
@@ -899,12 +899,9 @@ importers:
       '@types/triple-beam':
         specifier: 'catalog:'
         version: 1.3.5
-      '@utilities/test-utilities':
-        specifier: workspace:*
-        version: link:../../utilities/test-utilities
       copy-webpack-plugin:
         specifier: 'catalog:'
-        version: 13.0.1(webpack@5.105.4(webpack-cli@5.1.4(webpack@5.105.4)))
+        version: 13.0.1(webpack@5.105.4(webpack-cli@5.1.4))
       eslint:
         specifier: 'catalog:'
         version: 9.39.3
@@ -928,7 +925,7 @@ importers:
         version: 4.60.0
       source-map-loader:
         specifier: 'catalog:'
-        version: 5.0.0(webpack@5.105.4(webpack-cli@5.1.4(webpack@5.105.4)))
+        version: 5.0.0(webpack@5.105.4)
       syncpack:
         specifier: 'catalog:'
         version: 13.0.4(typescript@5.9.3)
@@ -943,7 +940,7 @@ importers:
         version: 5.9.3
       webpack:
         specifier: 'catalog:'
-        version: 5.105.4(webpack-cli@5.1.4(webpack@5.105.4))
+        version: 5.105.4(webpack-cli@5.1.4)
       webpack-bundle-analyzer:
         specifier: 'catalog:'
         version: 4.10.2
@@ -995,7 +992,7 @@ importers:
         version: 5.9.3
       webpack:
         specifier: 'catalog:'
-        version: 5.105.4(webpack-cli@5.1.4(webpack@5.105.4))
+        version: 5.105.4(webpack-cli@5.1.4)
       webpack-node-externals:
         specifier: 'catalog:'
         version: 3.0.0
@@ -14625,19 +14622,19 @@ snapshots:
       '@webassemblyjs/ast': 1.14.1
       '@xtuc/long': 4.2.2
 
-  '@webpack-cli/configtest@2.1.1(webpack-cli@5.1.4(webpack@5.105.4))(webpack@5.105.4)':
+  '@webpack-cli/configtest@2.1.1(webpack-cli@5.1.4)(webpack@5.105.4)':
     dependencies:
-      webpack: 5.105.4(webpack-cli@5.1.4(webpack@5.105.4))
+      webpack: 5.105.4(webpack-cli@5.1.4)
       webpack-cli: 5.1.4(webpack@5.105.4)
 
-  '@webpack-cli/info@2.0.2(webpack-cli@5.1.4(webpack@5.105.4))(webpack@5.105.4)':
+  '@webpack-cli/info@2.0.2(webpack-cli@5.1.4)(webpack@5.105.4)':
     dependencies:
-      webpack: 5.105.4(webpack-cli@5.1.4(webpack@5.105.4))
+      webpack: 5.105.4(webpack-cli@5.1.4)
       webpack-cli: 5.1.4(webpack@5.105.4)
 
-  '@webpack-cli/serve@2.0.5(webpack-cli@5.1.4(webpack@5.105.4))(webpack@5.105.4)':
+  '@webpack-cli/serve@2.0.5(webpack-cli@5.1.4)(webpack@5.105.4)':
     dependencies:
-      webpack: 5.105.4(webpack-cli@5.1.4(webpack@5.105.4))
+      webpack: 5.105.4(webpack-cli@5.1.4)
       webpack-cli: 5.1.4(webpack@5.105.4)
 
   '@xtuc/ieee754@1.2.0': {}
@@ -15371,14 +15368,14 @@ snapshots:
 
   cookie@0.7.2: {}
 
-  copy-webpack-plugin@13.0.1(webpack@5.105.4(webpack-cli@5.1.4(webpack@5.105.4))):
+  copy-webpack-plugin@13.0.1(webpack@5.105.4(webpack-cli@5.1.4)):
     dependencies:
       glob-parent: 6.0.2
       normalize-path: 3.0.0
       schema-utils: 4.3.3
       serialize-javascript: 6.0.2
       tinyglobby: 0.2.15
-      webpack: 5.105.4(webpack-cli@5.1.4(webpack@5.105.4))
+      webpack: 5.105.4(webpack-cli@5.1.4)
 
   core-js-compat@3.48.0:
     dependencies:
@@ -19677,11 +19674,11 @@ snapshots:
 
   source-map-js@1.2.1: {}
 
-  source-map-loader@5.0.0(webpack@5.105.4(webpack-cli@5.1.4(webpack@5.105.4))):
+  source-map-loader@5.0.0(webpack@5.105.4):
     dependencies:
       iconv-lite: 0.6.3
       source-map-js: 1.2.1
-      webpack: 5.105.4(webpack-cli@5.1.4(webpack@5.105.4))
+      webpack: 5.105.4(webpack-cli@5.1.4)
 
   source-map-support@0.5.13:
     dependencies:
@@ -19889,13 +19886,13 @@ snapshots:
       minizlib: 3.1.0
       yallist: 5.0.0
 
-  terser-webpack-plugin@5.3.17(webpack@5.105.4(webpack-cli@5.1.4(webpack@5.105.4))):
+  terser-webpack-plugin@5.3.17(webpack@5.105.4):
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       jest-worker: 27.5.1
       schema-utils: 4.3.3
       terser: 5.46.0
-      webpack: 5.105.4(webpack-cli@5.1.4(webpack@5.105.4))
+      webpack: 5.105.4(webpack-cli@5.1.4)
 
   terser@5.46.0:
     dependencies:
@@ -20079,7 +20076,7 @@ snapshots:
       semver: 7.7.4
       source-map: 0.7.6
       typescript: 5.9.3
-      webpack: 5.105.4(webpack-cli@5.1.4(webpack@5.105.4))
+      webpack: 5.105.4(webpack-cli@5.1.4)
 
   ts-patch@3.3.0:
     dependencies:
@@ -20446,9 +20443,9 @@ snapshots:
   webpack-cli@5.1.4(webpack@5.105.4):
     dependencies:
       '@discoveryjs/json-ext': 0.5.7
-      '@webpack-cli/configtest': 2.1.1(webpack-cli@5.1.4(webpack@5.105.4))(webpack@5.105.4)
-      '@webpack-cli/info': 2.0.2(webpack-cli@5.1.4(webpack@5.105.4))(webpack@5.105.4)
-      '@webpack-cli/serve': 2.0.5(webpack-cli@5.1.4(webpack@5.105.4))(webpack@5.105.4)
+      '@webpack-cli/configtest': 2.1.1(webpack-cli@5.1.4)(webpack@5.105.4)
+      '@webpack-cli/info': 2.0.2(webpack-cli@5.1.4)(webpack@5.105.4)
+      '@webpack-cli/serve': 2.0.5(webpack-cli@5.1.4)(webpack@5.105.4)
       colorette: 2.0.20
       commander: 10.0.1
       cross-spawn: 7.0.6
@@ -20457,7 +20454,7 @@ snapshots:
       import-local: 3.2.0
       interpret: 3.1.1
       rechoir: 0.8.0
-      webpack: 5.105.4(webpack-cli@5.1.4(webpack@5.105.4))
+      webpack: 5.105.4(webpack-cli@5.1.4)
       webpack-merge: 5.10.0
 
   webpack-merge@5.10.0:
@@ -20472,7 +20469,7 @@ snapshots:
 
   webpack-virtual-modules@0.6.2: {}
 
-  webpack@5.105.4(webpack-cli@5.1.4(webpack@5.105.4)):
+  webpack@5.105.4(webpack-cli@5.1.4):
     dependencies:
       '@types/eslint-scope': 3.7.7
       '@types/estree': 1.0.8
@@ -20496,7 +20493,7 @@ snapshots:
       neo-async: 2.6.2
       schema-utils: 4.3.3
       tapable: 2.3.0
-      terser-webpack-plugin: 5.3.17(webpack@5.105.4(webpack-cli@5.1.4(webpack@5.105.4)))
+      terser-webpack-plugin: 5.3.17(webpack@5.105.4)
       watchpack: 2.5.1
       webpack-sources: 3.3.4
     optionalDependencies:

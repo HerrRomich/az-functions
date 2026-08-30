@@ -1,8 +1,8 @@
 import { HttpRequest, InvocationContext } from '@azure/functions';
 import { HttpResponseInit } from '@azure/functions/types/http';
-import { getPartialFixture } from '@utilities/test-utilities';
 import { CalledWithMock, mock, mockFn, MockProxy } from 'jest-mock-extended';
 import { AuthContext } from 'security';
+import { getPartialFixture } from 'test-utilities';
 import { z } from 'zod';
 import {
   ControllerOperationBodyArgMetadata,

@@ -1,10 +1,10 @@
-import { getPartialFixture } from '@utilities/test-utilities';
 import { OpenApiPrintService, OpenApiRegistrationService } from 'http-controller';
 import { Container, ContainerModule } from 'inversify';
 import { mock, MockProxy } from 'jest-mock-extended';
 import { Logger, LOGGER_FACTORY } from 'logger';
 import { AzurePlatform, PlatformConfiguration } from 'platform';
 import { TriggerHandlerClass } from 'shared';
+import { getPartialFixture } from 'test-utilities';
 import { createContainers } from './framework.container';
 import { startPlatform } from './middleware';
 

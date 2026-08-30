@@ -1,13 +1,13 @@
 {
   "name": "@herrromich/az-functions",
   "description": "Extensions for NodeJS Azure Functions",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "MIT",
   "main": "dist/index.cjs",
   "types": "dist/src/index.d.ts",
   "publishConfig": {
     "access": "public",
-    "registry": "https://npm.pkg.github.com"
+    "registry": "https://registry.npmjs.org"
   },
   "scripts": {
     "dist:clean": "rimraf ./dist",
@@ -70,7 +70,6 @@
     "typescript": "catalog:",
     "webpack": "catalog:",
     "webpack-bundle-analyzer": "catalog:",
-    "@utilities/test-utilities": "workspace:*",
     "webpack-node-externals": "catalog:",
     "zod": "catalog:"
   },
@@ -83,6 +82,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:HerrRomich/az-functions.git"
-  }
+    "url": "git@github.com:HerrRomich/az-functions.git",
+    "directory": "packages/extensions/az-functions"
+  },
+  "bugs": {
+    "url": "https://github.com/HerrRomich/az-functions/issues/new?q=ilabel%3Apkg%3Aaz-functions"
+  },
+  "homepage": "https://github.com/HerrRomich/az-functions/tree/main/packages/extensions/az-functions"
 }

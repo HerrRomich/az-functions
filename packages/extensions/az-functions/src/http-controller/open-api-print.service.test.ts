@@ -1,7 +1,7 @@
-import { getPartialFixture } from '@utilities/test-utilities';
 import { mock, MockProxy } from 'jest-mock-extended';
 import { Logger } from 'logger';
 import * as fs from 'node:fs';
+import { getPartialFixture } from 'test-utilities';
 import { RestApplication } from './http-controller.model';
 import { OpenApiDefinitionService } from './open-api-definition.service';
 import { OpenApiPrintService } from './open-api-print.service';

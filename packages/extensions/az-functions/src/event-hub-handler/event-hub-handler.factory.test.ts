@@ -1,9 +1,9 @@
 import { InvocationContext } from '@azure/functions';
-import { getPartialFixture } from '@utilities/test-utilities';
 import { PLATFORM_CONTEXT_MANAGER, PLATFORM_CONTEXT_PROVIDER, PlatformContextManager } from 'context';
 import { Container } from 'inversify';
 import { CalledWithMock, mock, mockFn, MockProxy } from 'jest-mock-extended';
 import { Logger } from 'logger';
+import { getPartialFixture } from 'test-utilities';
 import { EventHubHandlerFactory } from './event-hub-handler.factory';
 import { EventHubTriggerSupportFactory } from './event-hub-trigger-support.factory';
 import { EventhubTriggerRegistration } from './event-hub-triggers-registration.service';

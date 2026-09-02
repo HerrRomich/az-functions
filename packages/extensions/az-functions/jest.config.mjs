@@ -10,7 +10,7 @@ export default {
   testPathIgnorePatterns: [...config.testPathIgnorePatterns, '/src/test-utilities/'],
   transform: {
     ...config.transform,
-    '^.+\\.mjs$': 'babel-jest',
+    '^.+\\.m?js$': 'babel-jest',
   },
   moduleNameMapper,
 };

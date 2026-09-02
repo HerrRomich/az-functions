@@ -1,5 +1,5 @@
 import { serviceIdentifier } from '@herrromich/az-functions';
-import { Migration } from 'kysely';
+import { Migration } from 'kysely/migration';
 
 export const MIGRATION = serviceIdentifier<IFleetSightMigration>('MIGRATION');
 

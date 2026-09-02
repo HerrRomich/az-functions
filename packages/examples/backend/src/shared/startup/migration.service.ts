@@ -1,5 +1,5 @@
 import { inject, injectable } from 'inversify';
-import { Migrator } from 'kysely';
+import { Migrator } from 'kysely/migration';
 import { APP_CONFIG, AppConfig } from '../app-config';
 import { FleetSightDatasource } from '../persistence';
 import { FleetSightMigrationProvider } from './migration.provider';

@@ -30,7 +30,6 @@
     "jest-extended": "catalog:",
     "jest-mock-extended": "catalog:",
     "rimraf": "catalog:",
-    "rollup": "catalog:",
     "source-map-loader": "catalog:",
     "ts-jest": "catalog:",
     "type-fest": "catalog:",

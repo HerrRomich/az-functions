@@ -62,7 +62,6 @@
     "jest-mock": "catalog:",
     "jest-mock-extended": "catalog:",
     "rimraf": "catalog:",
-    "rollup": "catalog:",
     "source-map-loader": "catalog:",
     "syncpack": "catalog:",
     "tsc-alias": "^1.9.2",

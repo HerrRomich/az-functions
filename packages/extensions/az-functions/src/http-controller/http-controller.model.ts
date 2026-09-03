@@ -211,10 +211,8 @@ export class HttpDirectResponseBuilderImpl<T = unknown> extends HttpDirectRespon
   }
 }
 
-// eslint-disable-next-line sonarjs/slow-regex
-const CLEANUP_REGEX = /^\/+|\/+$/g;
 export function joinPosix(...segments: string[]): string {
-  return path.posix.join(...segments.map(s => s.replace(CLEANUP_REGEX, '')));
+  return path.posix.join(...segments.map(s => _.trim(s, '/')));
 }
 
 const HttpResponseInitSchema = z

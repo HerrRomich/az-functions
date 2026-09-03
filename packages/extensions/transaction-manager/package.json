@@ -35,7 +35,6 @@
     "jest-extended": "catalog:",
     "jest-mock-extended": "catalog:",
     "rimraf": "catalog:",
-    "rollup": "catalog:",
     "typescript": "catalog:",
     "webpack": "catalog:",
     "webpack-node-externals": "catalog:"

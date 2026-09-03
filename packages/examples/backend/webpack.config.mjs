@@ -77,6 +77,11 @@ export default (env, argv) => {
       }),
       new OpenApiDefinitionPlugin(),
     ],
+    resolve: {
+      fallback: {
+        '@node-rs/xxhash': false,
+      },
+    },
     output: {
       filename: 'index.cjs',
       path: path.resolve(__dirname, 'dist'),

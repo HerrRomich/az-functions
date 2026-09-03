@@ -47,10 +47,6 @@ export default {
   ],
   resolve: {
     mainFields: ['main'],
-    fallback: {
-      'bufferutil': false,
-      'utf-8-validate': false,
-    },
     alias: {
       zod: require.resolve('zod'),
     },

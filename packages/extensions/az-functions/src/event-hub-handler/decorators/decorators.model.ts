@@ -18,7 +18,7 @@ export interface EventHubHandlerMetadata extends TriggerHandlerClassMetadata, Ev
   type: typeof EVENT_HUB_HANDLER_TYPE;
 }
 
-export type EventHubHandlerCardinality = EventHubTriggerOptions['cardinality'];
+export type EventHubHandlerCardinality = NonNullable<EventHubTriggerOptions['cardinality']>;
 
 /**
  * Configuration for an Event Hub handler.

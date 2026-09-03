@@ -6,7 +6,7 @@ export function getModuleNameMapper(tsConfigPaths) {
   };
 }
 
-export function provideBaseConfig(tsTestConfigName = 'tsconfig.test.json') {
+export function provideBaseConfig(tsTestConfigName = 'tsconfig.test.json', esmPackageNames = []) {
   return {
     clearMocks: true,
     resetMocks: true,
@@ -15,6 +15,14 @@ export function provideBaseConfig(tsTestConfigName = 'tsconfig.test.json') {
     coverageReporters: ['lcov', 'text', 'cobertura'],
     coveragePathIgnorePatterns: ['/test/'],
     testPathIgnorePatterns: ['/dist/', '/node_modules/', '/test/'],
+    ...(esmPackageNames.length > 0
+      ? {
+          // pnpm hoists deps into a `.pnpm/<pkg>@<version>/node_modules/<pkg>` virtual
+          // store, so the ignore pattern must key off the `.pnpm` segment, not a plain
+          // `node_modules/<pkg>` segment.
+          transformIgnorePatterns: [`/node_modules/\\.pnpm/(?!(${esmPackageNames.join('|')})@)`],
+        }
+      : {}),
     transform: {
       '^.+\\.ts$': [
         'ts-jest',
@@ -22,6 +30,7 @@ export function provideBaseConfig(tsTestConfigName = 'tsconfig.test.json') {
           tsconfig: `<rootDir>/${tsTestConfigName}`,
         },
       ],
+      ...(esmPackageNames.length > 0 ? { '^.+\\.[cm]?js$': 'babel-jest' } : {}),
     },
     setupFilesAfterEnv: ['jest-extended/all'],
   };

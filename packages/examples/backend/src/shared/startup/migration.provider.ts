@@ -1,5 +1,6 @@
 import { injectable, multiInject } from 'inversify';
-import { Kysely, Migration, MigrationProvider } from 'kysely';
+import { Kysely } from 'kysely';
+import { Migration, MigrationProvider } from 'kysely/migration';
 import { IFleetSightMigration, MIGRATION } from './migration.model';
 
 @injectable()

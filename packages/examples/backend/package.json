@@ -64,8 +64,6 @@
     "jest-extended": "catalog:",
     "jest-mock-extended": "catalog:",
     "rimraf": "catalog:",
-    "rollup": "catalog:",
-    "rollup-plugin-copy": "catalog:",
     "source-map-loader": "catalog:",
     "swagger-ui-dist": "catalog:",
     "ts-jest": "catalog:",

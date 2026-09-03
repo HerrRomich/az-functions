@@ -110,11 +110,11 @@ describe('TransactionManager Module', () => {
         return new DummyKysely() as any;
       }, 'data-source-2');
 
-      expect(Object.keys(transactionManagers).length).toBe(2);
+      expect(Object.keys(transactionManagers)).toHaveLength(2);
 
       resetTransactionManagers();
 
-      expect(Object.keys(transactionManagers).length).toBe(0);
+      expect(Object.keys(transactionManagers)).toHaveLength(0);
     });
   });
 

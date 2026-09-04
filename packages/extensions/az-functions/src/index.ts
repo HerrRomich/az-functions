@@ -55,17 +55,22 @@ export {
   UnauthorizedError,
 } from './http-controller';
 export {
+  CONTEXT_LOGGER_METADATA,
   DEFAULT_LOG_LEVEL,
   LOGGER_FACTORY,
+  LOGGER_NAME_META_KEY,
   LOGGER_NAME_PROVIDER,
   LOG_LEVEL_PROVIDER,
   LogLevel,
   LogLevelProvider,
   Logger,
+  LoggerConfiguration,
   LoggerFactory,
   LoggerNameProvider,
+  LoggerSanitizerOptions,
   OtelConfiguration,
   SYSTEM_LOGGER_NAME_PREFIX,
+  SanitizerOptions,
   TrieSearchService,
 } from './logger';
 export { startPlatform } from './middleware';

@@ -2,7 +2,7 @@ import { HttpRequest, HttpResponse } from '@azure/functions';
 import { PlatformContextManager } from 'context';
 import { AzFunctionsError } from 'shared';
 import { ZodType } from 'zod';
-import { CONTEXT_LOGGER_METADATA, ContextLoggerMetadata, LogLevel } from './logger.model';
+import { CONTEXT_LOGGER_METADATA, ContextLoggerMetadata, LogLevel, SanitizerOptions } from './logger.model';
 
 export type AnyValueScalar = string | number | boolean;
 export type AnyValueArray = AnyValue[];
@@ -16,14 +16,6 @@ const MAX_TRACE_LENGTH = 10;
 const MAX_ARRAY_LENGTH = 20;
 const MAX_KEYS_COUNT = 20;
 const MAX_STRING_LENGTH = 250;
-
-export interface SanitizerOptions {
-  maxDepth?: number;
-  maxTraceLength?: number;
-  maxArrayLength?: number;
-  maxKeysCount?: number;
-  maxStringLength?: number;
-}
 
 function sanitizeHeaders(headers: Headers) {
   return Array.from(headers.entries()).reduce<Record<string, string>>((acc, [key, val]) => {

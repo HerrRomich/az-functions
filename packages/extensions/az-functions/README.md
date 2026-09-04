@@ -2,7 +2,10 @@
 
 **az-functions** extension for Azure Functions in Node.js
 
-[![npm version](https://badge.fury.io/js/%40herrromich%2Faz-functions.svg)](https://badge.fury.io/js/%40herrromich%2Faz-functions) [![npm downloads](https://img.shields.io/npm/dm/%40herrromich%2Faz-functions.svg)](https://www.npmjs.com/package/@herrromich/az-functions) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![npm version](https://shields.io/npm/v/@herrromich%2Faz-functions.svg)](https://badge.fury.io/js/%40herrromich%2Faz-functions)
+[![npm downloads](https://shields.io/npm/dw/@herrromich%2Faz-functions)](https://www.npmjs.com/package/@herrromich/az-functions)
+[![License: MIT](https://shields.io/npm/l/@herrromich%2Faz-functions)](https://opensource.org/licenses/MIT)
+[![node](https://img.shields.io/node/v/@herrromich/az-functions)](https://www.npmjs.com/package/@herrromich/az-functions)
 
 ## Overview
 
@@ -733,6 +736,69 @@ The following internal logger names are currently produced by the platform:
 > name. It may grow as the framework evolves — inspect the resolved logger name via your own `LogLevelProvider`
 > or log output if you need to confirm the exact name for your installed version.
 
+### Log Sanitization
+
+Before log metadata is emitted, the platform sanitizes it to avoid leaking sensitive data and to keep log
+entries bounded in size. Sanitization is applied automatically to every logged metadata object (e.g. the
+second argument passed to `logger.info(message, metadata)`, error `cause`/`details`, and `HttpRequest` /
+`HttpResponse` instances) — you don't need to call anything yourself for the default behavior.
+
+What sanitization does:
+
+- **Redacts sensitive headers.** `authorization`, `cookie` and any header starting with `x-ms` are replaced
+  with `[REDACTED]` when an `HttpRequest`/`HttpResponse` is logged.
+- **Omits request/response bodies**, replacing them with a placeholder like `[RequestBody<123Byte>]` so
+  payloads are never logged inline.
+- **Truncates long strings** to a maximum length (appending `...`).
+- **Truncates large arrays/sets/maps** to a maximum number of elements (appending a `... more N items` marker).
+- **Truncates objects with many keys** to a maximum number of keys (adding a `__meta__` entry describing how
+  many keys were omitted).
+- **Limits recursion depth** for deeply nested objects, replacing anything beyond the limit with a short
+  placeholder (e.g. `[Object]`, `[Array<5>]`).
+- **Truncates error stack traces** to a maximum number of lines, while still recursing into `cause` and
+  (for `AzFunctionsError`) `details`.
+- **Detects circular references**, replacing repeated object references with `[Circular]`.
+
+#### Default Limits
+
+Limits are configured per log level via `SanitizerOptions` (`maxDepth`, `maxTraceLength`, `maxArrayLength`,
+`maxKeysCount`, `maxStringLength`). Lower-severity/high-volume levels use tighter limits, while `error` and
+`silly` are effectively unbounded so no diagnostic information is lost when you need it most:
+
+| Log Level | `maxDepth` | `maxTraceLength` | `maxArrayLength` | `maxKeysCount` | `maxStringLength` |
+|-----------|-----------:|-----------------:|------------------:|---------------:|-------------------:|
+| `error`   | unbounded  | 10 (default)      | unbounded          | unbounded      | unbounded           |
+| `warn`    | 10         | 10 (default)      | 20 (default)       | 20 (default)   | 250 (default)       |
+| `info`    | 5 (default)| 10 (default)      | 20 (default)       | 20 (default)   | 250 (default)       |
+| `http`    | 5          | 10 (default)      | 10                 | 20 (default)   | 250 (default)       |
+| `verbose` | 10         | 10 (default)      | 20 (default)       | 20 (default)   | 250 (default)       |
+| `debug`   | 20         | 10 (default)      | 25                 | 25             | 1000                |
+| `silly`   | unbounded  | 10 (default)      | unbounded          | unbounded      | unbounded           |
+
+> [!NOTE]
+> Cells marked "(default)" fall back to the base defaults used by `sanitizeMetadata` (`maxDepth: 5`,
+> `maxTraceLength: 10`, `maxArrayLength: 20`, `maxKeysCount: 20`, `maxStringLength: 250`) because that
+> log level has no explicit override for that property.
+
+#### Reconfiguring Sanitization
+
+Override the defaults (per log level) via `sanitizerOptions` in `LoggerConfiguration`.
+Only the levels/properties you want to change need to be specified — everything else keeps its default:
+
+```ts
+startPlatform({
+  // ...
+  loggerConfiguration: {
+    sanitizerOptions: {
+      // allow larger payloads to be logged at info level
+      info: { maxStringLength: 2000, maxArrayLength: 50 },
+      // reduce noise from warn-level logs even further
+      warn: { maxDepth: 3, maxKeysCount: 10 },
+    },
+  },
+});
+```
+
 ### OpenTelemetry / Application Insights
 
 Pass `otelConfiguration` in `loggerConfiguration` to export logs and traces to Application Insights:
@@ -754,7 +820,7 @@ If no `otelConfiguration` is provided, the framework falls back to the built-in 
 
 ## OpenAPI Generation
 
-If the application can be built, generate the OpenAPI specification in a special mode:
+Once the application is built, you can generate the OpenAPI specification in a special mode:
 
 ```bash
 PLATFORM_MODE=print-open-api node dist/index.js

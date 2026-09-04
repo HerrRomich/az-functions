@@ -6,12 +6,15 @@ import { LogLevelService } from './log-level.service';
 import {
   CONTEXT_LOGGER_METADATA,
   DEFAULT_LOG_LEVEL,
+  DEFAULT_SANITIZER_OPTIONS,
   LOG_LEVELS,
   LOGGER_NAME_META_KEY,
+  LOGGER_SANITIZER_OPTIONS,
+  LoggerSanitizerOptions,
   LogLevel,
   PlatformLogInfo,
 } from './logger.model';
-import { sanitizeMetadata, SanitizerOptions } from './logger.utils';
+import { sanitizeMetadata } from './logger.utils';
 import { OtelLogger } from './otel.logger';
 
 function isLogLevel(level: string): level is LogLevel {
@@ -27,25 +30,6 @@ export const LOG_METHOD_MAP: Record<LogLevel, keyof InvocationContextLogger> = {
   verbose: 'info',
   debug: 'debug',
   silly: 'trace',
-};
-
-const SANITIZER_OPTIONS: Partial<Record<LogLevel, SanitizerOptions>> = {
-  error: {
-    maxDepth: Number.MAX_VALUE,
-    maxArrayLength: Number.MAX_VALUE,
-    maxKeysCount: Number.MAX_VALUE,
-    maxStringLength: Number.MAX_VALUE,
-  },
-  warn: { maxDepth: 10 },
-  http: { maxDepth: 5, maxArrayLength: 10 },
-  verbose: { maxDepth: 10 },
-  debug: { maxDepth: 20, maxArrayLength: 25, maxKeysCount: 25, maxStringLength: 1000 },
-  silly: {
-    maxDepth: Number.MAX_VALUE,
-    maxArrayLength: Number.MAX_VALUE,
-    maxKeysCount: Number.MAX_VALUE,
-    maxStringLength: Number.MAX_VALUE,
-  },
 };
 
 interface LogMetadata {
@@ -66,6 +50,7 @@ interface LogInfo {
 
 @injectable()
 export class AzFunctionsTransport extends Transport {
+  private readonly sanitizerOptions;
   constructor(
     @inject(PLATFORM_CONTEXT_MANAGER)
     private readonly platformContextManager: PlatformContextManager,
@@ -75,8 +60,15 @@ export class AzFunctionsTransport extends Transport {
     @optional()
     private readonly logger: OtelLogger | undefined,
     private readonly logLevelsService: LogLevelService,
+    @inject(LOGGER_SANITIZER_OPTIONS)
+    @optional()
+    sanitizerOptions: LoggerSanitizerOptions | undefined,
   ) {
     super();
+    this.sanitizerOptions = {
+      ...DEFAULT_SANITIZER_OPTIONS,
+      ...sanitizerOptions,
+    };
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -129,7 +121,7 @@ export class AzFunctionsTransport extends Transport {
     Object.assign(metadata, rest);
     const extension =
       Object.keys(metadata).length > 0
-        ? { metadata: sanitizeMetadata(metadata, SANITIZER_OPTIONS[logInfo.level]) }
+        ? { metadata: sanitizeMetadata(metadata, this.sanitizerOptions[logInfo.level]) }
         : {};
     return {
       level,

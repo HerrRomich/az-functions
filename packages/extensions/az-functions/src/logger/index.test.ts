@@ -6,6 +6,7 @@ import {
   DEFAULT_LOG_LEVEL,
   LOGGER_FACTORY,
   LOGGER_PROVIDER,
+  LOGGER_SANITIZER_OPTIONS,
   LoggerConfiguration,
   LoggerFactory,
   provideLoggerModule,
@@ -34,16 +35,16 @@ describe('provideLoggerModule', () => {
     mockLoadOptions.bind.mockImplementation(() => mock<BindToFluentSyntax<any>>());
   });
 
-  it('should bind 5 services when no otelConfiguration is provided', async () => {
+  it('should bind 6 services when no otelConfiguration is provided', async () => {
     await provideLoggerModule().load(mockLoadOptions);
 
-    expect(mockLoadOptions.bind).toHaveBeenCalledTimes(5);
+    expect(mockLoadOptions.bind).toHaveBeenCalledTimes(6);
   });
 
-  it('should bind 7 services when otelConfiguration is provided', async () => {
+  it('should bind 8 services when otelConfiguration is provided', async () => {
     await provideLoggerModule(config).load(mockLoadOptions);
 
-    expect(mockLoadOptions.bind).toHaveBeenCalledTimes(7);
+    expect(mockLoadOptions.bind).toHaveBeenCalledTimes(8);
   });
 
   it('should bind LogLevelService', async () => {
@@ -113,21 +114,44 @@ describe('provideLoggerModule', () => {
     expect(mockBindSyntax.toConstantValue).toHaveBeenCalledWith('debug');
   });
 
+  it('should bind sanitizer options without config', async () => {
+    await provideLoggerModule().load(mockLoadOptions);
+
+    expect(mockLoadOptions.bind).toHaveBeenNthCalledWith(6, LOGGER_SANITIZER_OPTIONS);
+
+    const mockBindSyntax = mockLoadOptions.bind.mock.results[5]!.value as jest.Mocked<
+      BindToFluentSyntax<LoggerConfiguration['sanitizerOptions']>
+    >;
+    expect(mockBindSyntax.toConstantValue).toHaveBeenCalledWith({});
+  });
+
+  it('should bind sanitizer options with config', async () => {
+    const config: LoggerConfiguration = { sanitizerOptions: { info: { maxStringLength: 2000 } } };
+    await provideLoggerModule(config).load(mockLoadOptions);
+
+    expect(mockLoadOptions.bind).toHaveBeenNthCalledWith(6, LOGGER_SANITIZER_OPTIONS);
+
+    const mockBindSyntax = mockLoadOptions.bind.mock.results[5]!.value as jest.Mocked<
+      BindToFluentSyntax<LoggerConfiguration['sanitizerOptions']>
+    >;
+    expect(mockBindSyntax.toConstantValue).toHaveBeenCalledWith(config.sanitizerOptions);
+  });
+
   it('should bind OtelLogger if configuration is provided', async () => {
     await provideLoggerModule(config).load(mockLoadOptions);
 
-    expect(mockLoadOptions.bind).toHaveBeenNthCalledWith(6, OtelLogger);
+    expect(mockLoadOptions.bind).toHaveBeenNthCalledWith(7, OtelLogger);
 
-    const mockBindSyntax = mockLoadOptions.bind.mock.results[5]!.value as jest.Mocked<BindToFluentSyntax<OtelLogger>>;
+    const mockBindSyntax = mockLoadOptions.bind.mock.results[6]!.value as jest.Mocked<BindToFluentSyntax<OtelLogger>>;
     expect(mockBindSyntax.toSelf).toHaveBeenCalled();
   });
 
   it('should bind LOGGER_PROVIDER if configuration is provided', async () => {
     await provideLoggerModule(config).load(mockLoadOptions);
 
-    expect(mockLoadOptions.bind).toHaveBeenNthCalledWith(7, LOGGER_PROVIDER);
+    expect(mockLoadOptions.bind).toHaveBeenNthCalledWith(8, LOGGER_PROVIDER);
 
-    const mockBindSyntax = mockLoadOptions.bind.mock.results[6]!.value as jest.Mocked<BindToFluentSyntax<any>>;
+    const mockBindSyntax = mockLoadOptions.bind.mock.results[7]!.value as jest.Mocked<BindToFluentSyntax<any>>;
     expect(mockBindSyntax.toDynamicValue).toHaveBeenCalled();
 
     const mockDynamicBinding = mockBindSyntax.toDynamicValue.mock.calls[0]![0];

@@ -3,8 +3,8 @@ import { PlatformContext, PlatformContextManager } from 'context';
 import { mock, MockProxy } from 'jest-mock-extended';
 import { AzFunctionsError } from 'shared';
 import { z } from 'zod';
-import { CONTEXT_LOGGER_METADATA } from './logger.model';
-import { adjustContextLoggerMetadata, sanitizeMetadata, SanitizerOptions } from './logger.utils';
+import { CONTEXT_LOGGER_METADATA, SanitizerOptions } from './logger.model';
+import { adjustContextLoggerMetadata, sanitizeMetadata } from './logger.utils';
 
 class TestClass {
   constructor(public optionalString?: string) {}
@@ -663,6 +663,8 @@ describe('Logger utils', () => {
           httpMeta: 'http-meta',
         },
       });
+
+      expect(mockContext.setValue).not.toHaveBeenCalled();
     });
   });
 });

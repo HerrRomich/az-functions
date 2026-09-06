@@ -39,7 +39,13 @@ describe('AzFunctionsTransport', () => {
     }
 
     beforeEach(() => {
-      subject = new AzFunctionsTransport(mockPlatformContextManager, defaultLogLevel, mockLogger, mockLogLevelService);
+      subject = new AzFunctionsTransport(
+        mockPlatformContextManager,
+        defaultLogLevel,
+        mockLogger,
+        mockLogLevelService,
+        undefined,
+      );
     });
 
     it.each<{ level: LogLevel }>([
@@ -168,6 +174,34 @@ describe('AzFunctionsTransport', () => {
       expect(mockNext).toHaveBeenCalled();
     });
 
+    it('should apply custom sanitizer options overrides per level', () => {
+      subject = new AzFunctionsTransport(mockPlatformContextManager, defaultLogLevel, mockLogger, mockLogLevelService, {
+        info: { maxStringLength: 5 },
+      });
+
+      subject.log(
+        {
+          level: 'info',
+          message: 'This is an info Message',
+          metadata: {
+            timestamp: testTimestamp,
+            loggerName: 'loggerName',
+            testProperty: 'a very long string value that should be truncated',
+          },
+        },
+        mockNext,
+      );
+
+      expect(mockLogger.log).toHaveBeenCalledWith({
+        timestamp: new Date(testTimestamp),
+        level: 'info',
+        message: 'This is an info Message',
+        loggerName: 'loggerName',
+        metadata: { testProperty: 'a ver...' },
+      });
+      expect(mockNext).toHaveBeenCalled();
+    });
+
     it('should not log if below available log level', () => {
       mockLogLevelService.getLogLevel.mockReturnValue('error');
 
@@ -266,7 +300,13 @@ describe('AzFunctionsTransport', () => {
             }),
         }),
       );
-      subject = new AzFunctionsTransport(mockPlatformContextManager, defaultLogLevel, mockLogger, mockLogLevelService);
+      subject = new AzFunctionsTransport(
+        mockPlatformContextManager,
+        defaultLogLevel,
+        mockLogger,
+        mockLogLevelService,
+        undefined,
+      );
     });
 
     it.each<{ level: LogLevel; metaAdjustment: AnyValueMap }>([
@@ -459,7 +499,13 @@ describe('AzFunctionsTransport', () => {
     const mockConsoleInfo = jest.fn();
     const mockConsoleDebug = jest.fn();
     beforeEach(() => {
-      subject = new AzFunctionsTransport(mockPlatformContextManager, defaultLogLevel, undefined, mockLogLevelService);
+      subject = new AzFunctionsTransport(
+        mockPlatformContextManager,
+        defaultLogLevel,
+        undefined,
+        mockLogLevelService,
+        undefined,
+      );
 
       global.console = {
         log: mockConsoleLog,
@@ -539,7 +585,13 @@ describe('AzFunctionsTransport', () => {
   describe('log level filtering', () => {
     beforeEach(() => {
       mockLogLevelService.getLogLevel.mockReturnValue('info');
-      subject = new AzFunctionsTransport(mockPlatformContextManager, defaultLogLevel, undefined, mockLogLevelService);
+      subject = new AzFunctionsTransport(
+        mockPlatformContextManager,
+        defaultLogLevel,
+        undefined,
+        mockLogLevelService,
+        undefined,
+      );
     });
 
     it('should not log Messages below the set log level', () => {

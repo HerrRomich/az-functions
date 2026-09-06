@@ -3,7 +3,13 @@ import * as winston from 'winston';
 import { bindLoggerFactory, bindOtelLoggerProvider, bindWinstonLogger } from './bindings';
 import { LogLevelService } from './log-level.service';
 import { AzFunctionsTransport } from './log-transport.service';
-import { DEFAULT_LOG_LEVEL, LOGGER_FACTORY, LOGGER_PROVIDER, LoggerConfiguration } from './logger.model';
+import {
+  DEFAULT_LOG_LEVEL,
+  LOGGER_FACTORY,
+  LOGGER_PROVIDER,
+  LOGGER_SANITIZER_OPTIONS,
+  LoggerConfiguration,
+} from './logger.model';
 import { OtelLogger } from './otel.logger';
 
 export * from './logger.model';
@@ -17,6 +23,7 @@ export function provideLoggerModule(loggerConfiguration?: LoggerConfiguration): 
     options.bind(winston.Logger).toDynamicValue(context => bindWinstonLogger(context));
     options.bind(LOGGER_FACTORY).toFactory(context => bindLoggerFactory(context));
     options.bind(DEFAULT_LOG_LEVEL).toConstantValue(loggerConfiguration?.defaultLogLevel ?? 'info');
+    options.bind(LOGGER_SANITIZER_OPTIONS).toConstantValue(loggerConfiguration?.sanitizerOptions ?? {});
     if (loggerConfiguration?.otelConfiguration !== undefined) {
       const otelConfiguration = loggerConfiguration.otelConfiguration;
       options.bind(OtelLogger).toSelf();

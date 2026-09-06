@@ -212,7 +212,44 @@ export class HttpDirectResponseBuilderImpl<T = unknown> extends HttpDirectRespon
 }
 
 export function joinPosix(...segments: string[]): string {
-  return path.posix.join(...segments.map(s => _.trim(s, '/')));
+  return path.posix.join(...segments.map(s => _.trim(s, '/')).filter(s => s.length > 0));
+}
+
+const TEMPLATE_MATCH_REGEX = /^{([^{}]+)}$/;
+const TEMPLATE_NAME_REGEX = /^[A-Za-z0-9._-]+$/;
+
+export function assertOpenApiConsistentPath(routePath: string): string[] {
+  const errors: string[] = [];
+
+  if (!routePath.startsWith('/')) {
+    errors.push('Path must start with a leading slash');
+  }
+
+  const segments = routePath.split('/').slice(1); // skip leading empty segment
+
+  for (const seg of segments) {
+    if (seg === '') {
+      errors.push('Path must not contain empty segments');
+      continue;
+    }
+
+    // Template detection: segments containing braces must be exactly `{name}` with no nested braces
+    if (seg.includes('{') || seg.includes('}')) {
+      const templateMatch = TEMPLATE_MATCH_REGEX.exec(seg);
+      if (!templateMatch) {
+        errors.push(`Invalid template syntax in path segment '${seg}'`);
+        continue;
+      }
+
+      // OpenAPI template name rules
+      const name = templateMatch[1]!;
+      if (!TEMPLATE_NAME_REGEX.test(name)) {
+        errors.push(`Invalid template name '${name}'. Must match [A-Za-z0-9._-]`);
+      }
+    }
+  }
+
+  return errors;
 }
 
 const HttpResponseInitSchema = z

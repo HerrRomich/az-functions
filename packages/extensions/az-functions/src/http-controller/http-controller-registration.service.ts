@@ -2,6 +2,7 @@ import { app, HttpMethod } from '@azure/functions';
 import { Container, inject, injectable } from 'inversify';
 import { PLATFORM_CONTAINER, TriggerHandlerClass, TriggerHandlerRegistrationService } from 'shared';
 import { OperationMethod } from './decorators';
+import { joinPosix } from './http-controller.model';
 import { HttpHandlerFactory } from './http-handler.factory';
 import { HttpOperationRegistration, HttpOperationsRegistrationService } from './http-operations-registration.service';
 
@@ -34,7 +35,7 @@ export class HttpControllerRegistrationService implements TriggerHandlerRegistra
     const { operationId, controllerMethod, operationMetadata } = registrationData;
 
     const controllerPrototype = controller.constructor.prototype;
-    const route = registrationData.application.context + '/' + registrationData.route;
+    const route = joinPosix(registrationData.application.context, registrationData.route);
     const method = async (...args: unknown[]): Promise<unknown> => {
       return await controllerPrototype[controllerMethod].call(controller, ...args);
     };

@@ -3,7 +3,7 @@ import { RestApplication } from '@herrromich/az-functions';
 export const EVENT_HUB_API = 'event-hub-api';
 export const EVENT_HUB_REST_APPLICATION: RestApplication = {
   name: EVENT_HUB_API,
-  context: 'event-hub-api',
+  context: '/event-hub-api',
   openApiConfig: {
     openapi: '3.0.1',
     info: {

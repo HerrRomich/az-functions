@@ -2,8 +2,8 @@ import { inject, injectable } from 'inversify';
 import { LOGGER_FACTORY, LoggerFactory } from 'logger';
 import { TriggerHandlerClass, TriggerHandlerMetadataError } from 'shared';
 import { ControllerOperationMetadata, HttpControllerMetadata, HttpControllerMetadataReader } from './decorators';
-import { joinPosix, RestApplication } from './http-controller.model';
-import { OpenApiDefinitionService } from './open-api-definition.service';
+import { assertOpenApiConsistentPath, joinPosix, RestApplication } from './http-controller.model';
+import { OpenApiDefinitionError, OpenApiDefinitionService } from './open-api-definition.service';
 
 export interface HttpOperationRegistration {
   operationId: string;
@@ -30,6 +30,15 @@ export class HttpOperationsRegistrationService {
 
   registerOperations(controllerClass: TriggerHandlerClass, registerCallback: RegisterCallback): void {
     const controllerMetadata = this.metadataReader.getHandlerClassMetadata(controllerClass);
+    const pathErrors = assertOpenApiConsistentPath(controllerMetadata.path);
+    if (pathErrors.length > 0) {
+      throw new OpenApiDefinitionError(`Controller ${controllerClass.name} has inconsistent path`, {
+        details: {
+          controllerMetadata,
+          pathErrors,
+        },
+      });
+    }
     const prototype = controllerClass.prototype;
     const application = this.openApiDefinitionService.getApplication(controllerMetadata.application);
     this.logger.debug('Registering operations for controller started', {
@@ -42,8 +51,23 @@ export class HttpOperationsRegistrationService {
       if (operationMetadata === undefined) {
         continue;
       }
-      const route = joinPosix(controllerMetadata.path, operationMetadata.path ?? '.');
       const operationId = operationMetadata.operationId ?? controllerMethod;
+      if (operationMetadata.path !== undefined) {
+        const operationPathErrors = assertOpenApiConsistentPath(operationMetadata.path);
+        if (operationPathErrors.length > 0) {
+          throw new OpenApiDefinitionError(
+            `Operation ${operationId} in controller ${controllerClass.name} has inconsistent path`,
+            {
+              details: {
+                controllerMetadata,
+                operationMetadata,
+                operationPathErrors,
+              },
+            },
+          );
+        }
+      }
+      const route = joinPosix(controllerMetadata.path, operationMetadata.path ?? '');
       const operationRegistration: HttpOperationRegistration = {
         operationId,
         controllerMethod,

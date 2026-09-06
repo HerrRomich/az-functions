@@ -4,7 +4,7 @@ export const LOGGING_API = 'logging-api';
 export const BEARER_HTTP_AUTHENTICATION = 'bearerHttpAuthentication';
 export const LOGGING_REST_APPLICATION: RestApplication = {
   name: LOGGING_API,
-  context: 'logging-api',
+  context: '/logging-api',
   openApiConfig: {
     openapi: '3.0.1',
     info: {

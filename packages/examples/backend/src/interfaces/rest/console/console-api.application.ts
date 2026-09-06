@@ -4,7 +4,7 @@ import { RestApplication } from '@herrromich/az-functions';
 export const CONSOLE_API = 'console-api';
 export const CONSOLE_REST_APPLICATION: RestApplication = {
   name: CONSOLE_API,
-  context: 'console-api',
+  context: '/console-api',
   openApiConfig: {
     openapi: '3.0.1',
     info: {

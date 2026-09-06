@@ -12,12 +12,12 @@ import { OpenApiMetadataService } from './open-api-metadata.service';
 describe('OpenApiDefinitionService', () => {
   const testApplication1: RestApplication = {
     name: 'test-application1',
-    context: 'test-contest-1',
+    context: '/test-contest-1',
     openApiConfig: {} as OpenAPIObjectConfig,
   };
   const testApplication2: RestApplication = {
     name: 'test-application2',
-    context: 'test-contest-2',
+    context: '/test-contest-2',
     openApiConfig: {
       openapi: '3.0.1',
       info: {
@@ -48,7 +48,7 @@ describe('OpenApiDefinitionService', () => {
     it('should add new application', () => {
       const newApplication = getPartialFixture<RestApplication>({
         name: 'new-application',
-        context: 'new-contest',
+        context: '/new-contest',
         openApiConfig: {
           components: {
             schemas: {
@@ -75,6 +75,19 @@ describe('OpenApiDefinitionService', () => {
       expect(applications).toContain('new-application');
     });
 
+    it('should throw if application has inconsistent context path', () => {
+      const newApplication = getPartialFixture<RestApplication>({
+        name: 'inconsistent-application',
+        context: 'inconsistent//context',
+        openApiConfig: {} as OpenAPIObjectConfig,
+      });
+
+      expect(() => subject.addApplication(newApplication)).toThrowWithMessage(
+        OpenApiDefinitionError,
+        'Application inconsistent-application has inconsistent context path',
+      );
+    });
+
     it('should throw if application already exists', () => {
       expect(() => subject.addApplication(testApplication1)).toThrowWithMessage(
         OpenApiDefinitionError,
@@ -95,7 +108,7 @@ describe('OpenApiDefinitionService', () => {
 
       expect(application).toMatchObject({
         name: 'test-application1',
-        context: 'test-contest-1',
+        context: '/test-contest-1',
       });
     });
 
@@ -225,7 +238,7 @@ describe('OpenApiDefinitionService', () => {
         application: { name: 'test-application2' },
         operationMetadata: {
           method: 'post',
-          path: 'test-path',
+          path: '/test-path',
           operationId: 'test-controllerMethod',
           requestBody: {
             content: {

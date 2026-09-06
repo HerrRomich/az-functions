@@ -141,7 +141,7 @@ export class OrdersController {
   }
 
   @Get({
-    path: '{:orderId}',
+    path: '/{orderId}',
     description: 'Get order by ID',
     directResponse: {
       status: 200,

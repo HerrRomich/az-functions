@@ -9,5 +9,7 @@ DON'T commit changes, only provide the commit message.
 If there should be multiple commits, ask user to choose which one to select or provide messages for all of them, including the list of staged files for each commit. 
 Each commit message should be separated by a line containing only `---`.
 
-Try to hold the body as precise and small as possible, not overcoming 300 characters.
+Try to hold the body as precise and small as possible. It should contain  not more than 100 characters, preferable less than 50.
 If the branch name doesn't suit the changes show a warning and suggest a better branch name.
+
+

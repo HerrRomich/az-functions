@@ -4,7 +4,7 @@ import { inject, injectable } from 'inversify';
 import { LOGGER_FACTORY, LoggerFactory } from 'logger';
 import { ComponentsObject, OpenAPIObject } from 'openapi3-ts/oas30';
 import { AzFunctionsSystemError } from 'shared';
-import { RestApplication } from './http-controller.model';
+import { assertOpenApiConsistentPath, joinPosix, RestApplication } from './http-controller.model';
 import { HttpOperationRegistration } from './http-operations-registration.service';
 import { OpenApiMetadataService } from './open-api-metadata.service';
 
@@ -44,6 +44,15 @@ export class OpenApiDefinitionService {
   addApplication(application: RestApplication) {
     if (this.restOpenApiEntries[application.name]) {
       throw new OpenApiDefinitionError(`OpenAPI definition for application ${application.name} already exists`);
+    }
+    const pathErrors = assertOpenApiConsistentPath(application.context);
+    if (pathErrors.length > 0) {
+      throw new OpenApiDefinitionError(`Application ${application.name} has inconsistent context path`, {
+        details: {
+          application,
+          pathErrors,
+        },
+      });
     }
     const registry = new OpenAPIRegistry();
     const components = application.openApiConfig.components ?? {};
@@ -90,7 +99,7 @@ export class OpenApiDefinitionService {
         ...openApiConfig,
         servers: [
           {
-            url: apiUrl + '/' + application.context,
+            url: joinPosix(apiUrl, application.context),
           },
         ],
       };

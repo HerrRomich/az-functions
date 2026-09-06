@@ -1,12 +1,14 @@
 import { HttpResponseInit } from '@azure/functions/types/http';
 import { getReasonPhrase, StatusCodes } from 'http-status-codes';
 import {
+  assertOpenApiConsistentPath,
   BadRequestError,
   BaseHttpTriggerError,
   CommonHttpTriggerError,
   ForbiddenError,
   HttpDirectResponseBuilder,
   InternalServerError,
+  joinPosix,
   NotFoundError,
   UnauthorizedError,
 } from './http-controller.model';
@@ -163,5 +165,32 @@ describe('HttpDirectResponse', () => {
     expect(response.jsonBody).toEqual({
       stringProperty: 'test-value',
     });
+  });
+});
+
+describe('joinPosix', () => {
+  it('should join path segments with posix separator', () => {
+    const result = joinPosix('/test/', '/path/', 'to/', '/resource/');
+    expect(result).toEqual('test/path/to/resource');
+  });
+
+  it('should join path segments with posix separator and ignore empty segments', () => {
+    const result = joinPosix('/test/', '', '/path/', 'to/', '/', '/resource/');
+    expect(result).toEqual('test/path/to/resource');
+  });
+});
+
+describe('assertOpenApiConsistentPath', () => {
+  it('should not throw if path is consistent', () => {
+    const errors = assertOpenApiConsistentPath('/test-path/{param}');
+    expect(errors).toHaveLength(0);
+  });
+
+  it('should return multiple errors if path has no leading slash and contains multiple consecutive slashes', () => {
+    const errors = assertOpenApiConsistentPath('test-path//sub-path/sdfsdf{sadcascd/{pa&ram}');
+    expect(errors).toContain('Path must start with a leading slash');
+    expect(errors).toContain('Path must not contain empty segments');
+    expect(errors).toContain("Invalid template syntax in path segment 'sdfsdf{sadcascd'");
+    expect(errors).toContain("Invalid template name 'pa&ram'. Must match [A-Za-z0-9._-]");
   });
 });

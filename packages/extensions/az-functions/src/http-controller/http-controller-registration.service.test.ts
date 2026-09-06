@@ -95,5 +95,30 @@ describe('HttpControllerRegistrationService', () => {
       await method('arg1', 'arg2');
       expect(mockTestMethod).toHaveBeenCalledWith('arg1', 'arg2');
     });
+
+    it('should not produce a double slash when the context or route already contain leading/trailing slashes', () => {
+      const mockHandler = mockFn<RequestHandler>();
+      mockHandlerFactory.createHandler.mockReturnValue(mockHandler);
+      mockPlatformContainer.get.calledWith(TestController).mockReturnValue(new TestController());
+      const testRegistrationWithSlashes = getPartialFixture<HttpOperationRegistration>({
+        ...testRegistration,
+        application: {
+          context: 'test-invocationContext/',
+        },
+        route: '/test-route',
+      });
+
+      subject.register(TestController);
+
+      const handlerFactoryFunction = mockRegistrationService.registerOperations.mock.calls[0]![1];
+      handlerFactoryFunction(testRegistrationWithSlashes);
+
+      expect(app.http).toHaveBeenCalledWith(
+        testRegistrationWithSlashes.operationId,
+        expect.objectContaining({
+          route: 'test-invocationContext/test-route',
+        }),
+      );
+    });
   });
 });

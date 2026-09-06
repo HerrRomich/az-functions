@@ -1,5 +1,6 @@
 import { OpenApiPrintService, OpenApiRegistrationService } from 'http-controller';
 import { Container, ContainerModule } from 'inversify';
+import { spyOn } from 'jest-mock';
 import { mock, MockProxy } from 'jest-mock-extended';
 import { Logger, LOGGER_FACTORY } from 'logger';
 import { AzurePlatform, PlatformConfiguration } from 'platform';
@@ -21,8 +22,10 @@ describe('middleware', () => {
 
     let mockFrameworkContainer: MockProxy<Container>;
     let mockPlatformContainer: MockProxy<Container>;
+    let mockLogger: MockProxy<Logger>;
 
     let mockOpenApiRegistrationService: MockProxy<OpenApiRegistrationService>;
+    let spyProcessOn: jest.SpyInstance;
 
     beforeEach(() => {
       process.env = { ...OLD_ENV };
@@ -34,14 +37,18 @@ describe('middleware', () => {
         platformContainer: mockPlatformContainer,
       });
 
+      mockLogger = mock<Logger>();
+      mockFrameworkContainer.get.calledWith(LOGGER_FACTORY).mockReturnValue(() => mockLogger);
+
       mockOpenApiRegistrationService = mock<OpenApiRegistrationService>();
       mockFrameworkContainer.get
         .calledWith(OpenApiRegistrationService)
         .mockReturnValueOnce(mockOpenApiRegistrationService);
-      mockFrameworkContainer.get.calledWith(LOGGER_FACTORY).mockReturnValueOnce(() => mock<Logger>());
+      spyProcessOn = spyOn(process, 'on').mockImplementation(() => process);
     });
 
     afterEach(() => {
+      spyProcessOn.mockRestore();
       process.env = OLD_ENV;
     });
 
@@ -80,6 +87,52 @@ describe('middleware', () => {
       expect(mockAzurePlatform.start).toHaveBeenCalledWith(testConfig.triggerHandlerClasses);
 
       expect(mockPlatformContainer.loadSync).toHaveBeenCalledWith(...testConfig.modules);
+    });
+
+    it('shold register uncaughtException', () => {
+      process.env.PLATFORM_MODE = 'start';
+      const mockAzurePlatform = mock<AzurePlatform>();
+      mockFrameworkContainer.get.calledWith(AzurePlatform).mockReturnValueOnce(mockAzurePlatform);
+
+      startPlatform(testConfig);
+
+      expect(spyProcessOn).toHaveBeenCalledWith('uncaughtException', expect.any(Function));
+
+      const uncaughtExceptionCallback = spyProcessOn.mock.calls[0]?.[1];
+      expect(uncaughtExceptionCallback).toBeDefined();
+      const testError = new Error('Test uncaught exception');
+      uncaughtExceptionCallback!(testError);
+
+      expect(mockLogger.error).toHaveBeenCalledWith('Uncaught exception occurred', testError);
+    });
+
+    it('should register unhandledRejection', () => {
+      process.env.PLATFORM_MODE = 'start';
+      const mockAzurePlatform = mock<AzurePlatform>();
+      mockFrameworkContainer.get.calledWith(AzurePlatform).mockReturnValueOnce(mockAzurePlatform);
+
+      startPlatform(testConfig);
+
+      expect(spyProcessOn).toHaveBeenCalledWith('unhandledRejection', expect.any(Function));
+
+      const unhandledRejectionCallback = spyProcessOn.mock.calls[1]?.[1];
+      expect(unhandledRejectionCallback).toBeDefined();
+      const testReason = 'Test unhandled rejection';
+      unhandledRejectionCallback!(testReason);
+
+      expect(mockLogger.error).toHaveBeenCalledWith('Unhandled promise rejection occurred', { reason: testReason });
+    });
+
+    it('should log error and throw if an error occurs during platform start', () => {
+      const mockAzurePlatform = mock<AzurePlatform>();
+      mockFrameworkContainer.get.calledWith(AzurePlatform).mockReturnValueOnce(mockAzurePlatform);
+      const testError = new Error('Test error');
+      mockAzurePlatform.start.mockImplementationOnce(() => {
+        throw testError;
+      });
+
+      expect(() => startPlatform(testConfig)).toThrow(testError);
+      expect(mockLogger.error).toHaveBeenCalledWith('Error occurred during platform start', testError);
     });
   });
 });

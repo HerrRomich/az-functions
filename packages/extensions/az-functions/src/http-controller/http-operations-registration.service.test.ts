@@ -6,7 +6,7 @@ import { ControllerOperationMetadata, HttpControllerMetadata } from './decorator
 import { HttpControllerMetadataReader } from './http-controller-metadata.reader';
 import { RestApplication } from './http-controller.model';
 import { HttpOperationsRegistrationService, RegisterCallback } from './http-operations-registration.service';
-import { OpenApiDefinitionService } from './open-api-definition.service';
+import { OpenApiDefinitionError, OpenApiDefinitionService } from './open-api-definition.service';
 
 describe('HttpOperationsRegistrationService', () => {
   let mockMetadataReader: MockProxy<HttpControllerMetadataReader>;
@@ -34,7 +34,7 @@ describe('HttpOperationsRegistrationService', () => {
 
     const testMetadata = getPartialFixture<HttpControllerMetadata>({
       application: 'test-application',
-      path: 'test-path',
+      path: '/test-path',
     });
 
     beforeEach(() => {
@@ -49,7 +49,7 @@ describe('HttpOperationsRegistrationService', () => {
         .calledWith(TestControllerClass, 'testOperationMethod1')
         .mockReturnValue(testControllerOp1Metadata);
       const testControllerOp2Metadata = getPartialFixture<ControllerOperationMetadata>({
-        path: 'test-operation-path',
+        path: '/test-operation-path',
       });
       mockMetadataReader.getOperationMetadata
         .calledWith(TestControllerClass, 'testOperationMethod2')
@@ -100,6 +100,40 @@ describe('HttpOperationsRegistrationService', () => {
       expect(() => {
         subject.registerOperations(TestControllerClass, mockRegisterCallBack);
       }).toThrow(testError);
+    });
+
+    it('should fail if controller path is invalid', () => {
+      mockMetadataReader.getHandlerClassMetadata.calledWith(TestControllerClass).mockReturnValue(
+        getPartialFixture<HttpControllerMetadata>({
+          application: 'test-application',
+          path: 'test-path-without-leading-slash//{a&b}',
+        }),
+      );
+      const mockRegisterCallBack = mockFn<RegisterCallback>();
+
+      expect(() => {
+        subject.registerOperations(TestControllerClass, mockRegisterCallBack);
+      }).toThrowWithMessage(OpenApiDefinitionError, 'Controller TestControllerClass has inconsistent path');
+      expect(mockRegisterCallBack).not.toHaveBeenCalled();
+    });
+
+    it('should fail if operation path is invalid', () => {
+      const testControllerOp1Metadata = getPartialFixture<ControllerOperationMetadata>({
+        operationId: 'my-operation',
+        path: 'test-operation-path//{a&b}',
+      });
+      mockMetadataReader.getOperationMetadata
+        .calledWith(TestControllerClass, 'testOperationMethod1')
+        .mockReturnValue(testControllerOp1Metadata);
+      const mockRegisterCallBack = mockFn<RegisterCallback>();
+
+      expect(() => {
+        subject.registerOperations(TestControllerClass, mockRegisterCallBack);
+      }).toThrowWithMessage(
+        OpenApiDefinitionError,
+        'Operation my-operation in controller TestControllerClass has inconsistent path',
+      );
+      expect(mockRegisterCallBack).not.toHaveBeenCalled();
     });
   });
 });

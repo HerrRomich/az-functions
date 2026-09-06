@@ -25,6 +25,12 @@ export function startPlatform(config: PlatformConfiguration): Container {
   const { frameworkContainer, platformContainer } = createContainers(config.loggerConfiguration);
   const loggerFactory = frameworkContainer.get(LOGGER_FACTORY);
   const logger = loggerFactory(`${SYSTEM_LOGGER_NAME_PREFIX}.platform`);
+  process.on('uncaughtException', error => {
+    logger.error('Uncaught exception occurred', error);
+  });
+  process.on('unhandledRejection', reason => {
+    logger.error('Unhandled promise rejection occurred', { reason });
+  });
   logger.info(`Starting platform in mode: ${platformMode}`);
   try {
     switch (platformMode) {
@@ -42,7 +48,7 @@ export function startPlatform(config: PlatformConfiguration): Container {
       }
     }
   } catch (error) {
-    logger.error('Error occurred while starting the platform', error);
+    logger.error('Error occurred during platform start', error);
     throw error;
   }
   return platformContainer;

@@ -3,7 +3,7 @@ import { RestApplication } from '@herrromich/az-functions';
 export const ORDERS_API = 'orders-api';
 export const ORDERS_REST_APPLICATION: RestApplication = {
   name: ORDERS_API,
-  context: 'orders-api',
+  context: '/orders-api',
   openApiConfig: {
     openapi: '3.0.1',
     info: {

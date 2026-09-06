@@ -244,9 +244,63 @@ export interface OtelConfiguration {
   serviceVersion?: string;
 }
 
+/**
+ * SanitizerOptions is a type that defines the options for sanitizing log metadata.
+ * It includes limits for depth, trace length, array length, keys count, and string length.
+ *
+ * These options can be used to control the amount of data that is logged, preventing excessive logging of large or deeply nested objects.
+ *
+ * - maxDepth: The maximum depth to which nested objects will be sanitized. Default is 5.
+ * - maxTraceLength: The maximum number of lines from an error stack trace to include in the sanitized output. Default is 10.
+ * - maxArrayLength: The maximum number of elements from an array to include in the sanitized output. Default is 20.
+ * - maxKeysCount: The maximum number of keys from an object to include in the sanitized output. Default is 20.
+ * - maxStringLength: The maximum length of strings to include in the sanitized output. Strings longer than this will be truncated. Default is 250.
+ */
+export interface SanitizerOptions {
+  maxDepth?: number;
+  maxTraceLength?: number;
+  maxArrayLength?: number;
+  maxKeysCount?: number;
+  maxStringLength?: number;
+}
+
+/**
+ * LoggerSanitizerOptions is a type that defines the options for sanitizing log metadata based on log levels.
+ * It is a partial record where each log level can have its own SanitizerOptions.
+ */
+export type LoggerSanitizerOptions = Partial<Record<LogLevel, SanitizerOptions>>;
+
+/**
+ * LOGGER_SANITIZER_OPTIONS is a service identifier for the LoggerSanitizerOptions.
+ * It can be used to override the default sanitizer options for different log levels in the IoC container.
+ */
+export const LOGGER_SANITIZER_OPTIONS = serviceIdentifier<LoggerSanitizerOptions>(
+  'AzFunctions.Logger.LoggerSanitizerOptions',
+);
+
+export const DEFAULT_SANITIZER_OPTIONS: LoggerSanitizerOptions = {
+  error: {
+    maxDepth: Number.MAX_VALUE,
+    maxArrayLength: Number.MAX_VALUE,
+    maxKeysCount: Number.MAX_VALUE,
+    maxStringLength: Number.MAX_VALUE,
+  },
+  warn: { maxDepth: 10 },
+  http: { maxDepth: 5, maxArrayLength: 10 },
+  verbose: { maxDepth: 10 },
+  debug: { maxDepth: 20, maxArrayLength: 25, maxKeysCount: 25, maxStringLength: 1000 },
+  silly: {
+    maxDepth: Number.MAX_VALUE,
+    maxArrayLength: Number.MAX_VALUE,
+    maxKeysCount: Number.MAX_VALUE,
+    maxStringLength: Number.MAX_VALUE,
+  },
+};
+
 export interface LoggerConfiguration {
   defaultLogLevel?: LogLevel;
   otelConfiguration?: OtelConfiguration;
+  sanitizerOptions?: LoggerSanitizerOptions;
 }
 
 export interface PlatformLogInfo {

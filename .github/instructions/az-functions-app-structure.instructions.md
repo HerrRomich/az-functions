@@ -14,7 +14,7 @@ src/
 │   ├── rest/<feature>/        # HTTP controllers, DTOs, mappers, RestApplications
 │   └── event-hub/<feature>/   # Event Hub handlers
 └── shared/                   # domain/infrastructure layer
-    ├── application/<feature>/  # domain services & repositories
+    ├── domain/<feature>/  # domain services & repositories
     └── <cross-cutting>/          
 ```
 

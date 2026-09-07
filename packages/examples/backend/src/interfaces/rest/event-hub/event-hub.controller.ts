@@ -1,15 +1,7 @@
 import { EventHubService } from '@fleet-sight/shared/event-nub';
 import { Body, HttpController, Post } from '@herrromich/az-functions';
-import { z } from 'zod';
 import { EVENT_HUB_API } from './event-hub-api.application';
-
-const TruckTelemetryDtoSchema = z
-  .object({
-    speed: z.number(),
-  })
-  .openapi('TruckTelemetry');
-
-type TruckTelemetryDto = z.infer<typeof TruckTelemetryDtoSchema>;
+import { TruckTelemetryDto, TruckTelemetryDtoSchema } from './event-hub.dto';
 
 @HttpController({
   application: EVENT_HUB_API,

@@ -1,4 +1,4 @@
-import { BEARER_HTTP_AUTHENTICATION } from '@fleet-sight/shared/security/index';
+import { BEARER_HTTP_AUTHENTICATION, SharedSecuritySchemes } from '@fleet-sight/shared/security/index';
 import { RestApplication } from '@herrromich/az-functions';
 
 export const CONSOLE_API = 'console-api';
@@ -29,12 +29,7 @@ export const CONSOLE_REST_APPLICATION: RestApplication = {
     ],
     components: {
       securitySchemes: {
-        [BEARER_HTTP_AUTHENTICATION]: {
-          type: 'http',
-          name: '',
-          scheme: 'bearer',
-          bearerFormat: 'JWT',
-        },
+        [BEARER_HTTP_AUTHENTICATION]: SharedSecuritySchemes[BEARER_HTTP_AUTHENTICATION],
       },
     },
   },

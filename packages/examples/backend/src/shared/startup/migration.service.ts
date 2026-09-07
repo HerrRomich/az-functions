@@ -1,16 +1,11 @@
+import { AzFunctionsRuntimeError } from '@herrromich/az-functions';
 import { inject, injectable } from 'inversify';
 import { Migrator } from 'kysely/migration';
 import { APP_CONFIG, AppConfig } from '../app-config';
 import { FleetSightDatasource } from '../persistence';
 import { FleetSightMigrationProvider } from './migration.provider';
 
-export class MigrationError extends Error {
-  constructor(message: string, options?: ErrorOptions) {
-    super(message, options);
-    this.name = 'MigrationError';
-    Object.setPrototypeOf(this, MigrationError.prototype);
-  }
-}
+export class MigrationError extends AzFunctionsRuntimeError {}
 
 @injectable()
 export class FleetSightMigrationService {

@@ -1,6 +1,6 @@
 import { HttpResponseInit } from '@azure/functions';
-import { CustomerUsersService } from '@fleet-sight/shared/applications/customers';
-import { CustomersRepository, OrdersRepository } from '@fleet-sight/shared/applications/orders';
+import { CustomerUsersService } from '@fleet-sight/shared/domain/customers';
+import { CustomersRepository, OrdersRepository } from '@fleet-sight/shared/domain/orders';
 import { Pagination } from '@fleet-sight/shared/persistence';
 import { IdDtoSchema } from '@fleet-sight/shared/rest';
 import { typedKeys } from '@fleet-sight/shared/utils';
@@ -12,7 +12,6 @@ import {
   Get,
   HttpController,
   HttpDirectResponseBuilder,
-  Logger,
   LOGGER_FACTORY,
   LoggerFactory,
   NotFoundError,
@@ -24,7 +23,7 @@ import { Transactional } from '@herrromich/transaction-manager';
 import { UserAccount } from 'example-security';
 import { inject } from 'inversify';
 import { z } from 'zod';
-import { ORDERS_API } from './orders-api.application';
+import { ORDERS_API } from '../orders-api.application';
 import {
   OrderCreateRequestDto,
   OrderCreateRequestDtoSchema,
@@ -43,7 +42,7 @@ import { OrdersMapper } from './orders.mapper';
   tags: ['Orders'],
 })
 export class OrdersController {
-  private readonly logger: Logger;
+  private readonly logger;
 
   constructor(
     @inject(LOGGER_FACTORY) loggerFactory: LoggerFactory,

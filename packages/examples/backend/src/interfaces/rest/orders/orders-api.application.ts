@@ -1,3 +1,4 @@
+import { BEARER_HTTP_AUTHENTICATION, SharedSecuritySchemes } from '@fleet-sight/shared/security/index';
 import { RestApplication } from '@herrromich/az-functions';
 
 export const ORDERS_API = 'orders-api';
@@ -21,18 +22,10 @@ export const ORDERS_REST_APPLICATION: RestApplication = {
         description: 'Operations related to customers management',
       },
     ],
-    security: [
-      {
-        bearerHttpAuthentication: [],
-      },
-    ],
+    security: [],
     components: {
       securitySchemes: {
-        bearerHttpAuthentication: {
-          type: 'http',
-          scheme: 'bearer',
-          bearerFormat: 'JWT',
-        },
+        [BEARER_HTTP_AUTHENTICATION]: SharedSecuritySchemes[BEARER_HTTP_AUTHENTICATION],
       },
     },
   },

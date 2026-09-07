@@ -1,3 +1,4 @@
+import { AzFunctionsRuntimeError } from '@herrromich/az-functions';
 import { Point } from 'geojson';
 import { GeoJSONPoint } from '../../rest';
 
@@ -11,13 +12,7 @@ export interface RepositoryObjectWithTotal<T> {
   total: number;
 }
 
-export class GeoJsonConversionError extends Error {
-  constructor(message?: string, options?: ErrorOptions) {
-    super(message, options);
-    this.name = this.constructor.name;
-    Object.setPrototypeOf(this, new.target.prototype);
-  }
-}
+export class GeoJsonConversionError extends AzFunctionsRuntimeError {}
 
 export function pointToGeoJsonPoint(point: Point): GeoJSONPoint;
 export function pointToGeoJsonPoint(point: Point | null): GeoJSONPoint | undefined;

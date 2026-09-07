@@ -1,9 +1,9 @@
 # @herrromich/transaction-manager
 
 [![npm version](https://img.shields.io/npm/v/@herrromich/transaction-manager.svg)](https://www.npmjs.com/package/@herrromich/transaction-manager)
-[![npm downloads](https://img.shields.io/npm/dm/@herrromich/transaction-manager.svg)](https://www.npmjs.com/package/@herrromich/transaction-manager)
+[![npm downloads](https://img.shields.io/npm/dw/@herrromich/transaction-manager)](https://www.npmjs.com/package/@herrromich/transaction-manager)
 [![license](https://img.shields.io/npm/l/@herrromich/transaction-manager.svg)](https://github.com/herrromich/az-functions/blob/main/packages/extensions/transaction-manager/LICENSE)
-[![node](https://img.shields.io/node/v/@herrromich/transaction-manager.svg)](https://www.npmjs.com/package/@herrromich/transaction-manager)
+[![node](https://img.shields.io/node/v/@herrromich/transaction-manager)](https://www.npmjs.com/package/@herrromich/transaction-manager)
 
 A declarative transaction management extension for [Kysely](https://kysely.dev/) that provides Spring-style `@Transactional` decorator support with configurable propagation and isolation levels.
 

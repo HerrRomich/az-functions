@@ -1,7 +1,7 @@
+import { BEARER_HTTP_AUTHENTICATION, SharedSecuritySchemes } from '@fleet-sight/shared/security';
 import { RestApplication } from '@herrromich/az-functions';
 
 export const LOGGING_API = 'logging-api';
-export const BEARER_HTTP_AUTHENTICATION = 'bearerHttpAuthentication';
 export const LOGGING_REST_APPLICATION: RestApplication = {
   name: LOGGING_API,
   context: '/logging-api',
@@ -21,11 +21,7 @@ export const LOGGING_REST_APPLICATION: RestApplication = {
     security: [],
     components: {
       securitySchemes: {
-        [BEARER_HTTP_AUTHENTICATION]: {
-          type: 'http',
-          scheme: 'bearer',
-          bearerFormat: 'JWT',
-        },
+        [BEARER_HTTP_AUTHENTICATION]: SharedSecuritySchemes[BEARER_HTTP_AUTHENTICATION],
       },
     },
   },

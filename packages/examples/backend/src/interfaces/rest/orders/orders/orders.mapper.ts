@@ -1,4 +1,4 @@
-import { CreateOrder, OrderWithCustomer } from '@fleet-sight/shared/applications/orders';
+import { CreateOrder, OrderWithCustomer } from '@fleet-sight/shared/domain/orders';
 import { geoJsonPointToPoint, pointToGeoJsonPoint } from '@fleet-sight/shared/persistence';
 import { injectable } from 'inversify';
 import { OrderCreateRequestDto, OrderDto } from './orders.dto';

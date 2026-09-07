@@ -1,4 +1,4 @@
-import { TruckWithDriver } from '@fleet-sight/shared/applications/fleet';
+import { TruckWithDriver } from '@fleet-sight/shared/domain/fleet';
 import { pointToGeoJsonPoint } from '@fleet-sight/shared/persistence';
 import { injectable } from 'inversify';
 import { TruckDto, TruckStatus } from './trucks.dto';

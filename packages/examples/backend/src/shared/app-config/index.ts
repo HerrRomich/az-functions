@@ -1,14 +1,8 @@
-import { serviceIdentifier } from '@herrromich/az-functions';
+import { AzFunctionsRuntimeError, serviceIdentifier } from '@herrromich/az-functions';
 import { ContainerModule } from 'inversify';
 import { z } from 'zod';
 
-export class ConfigError extends Error {
-  constructor(message?: string, options?: ErrorOptions) {
-    super(message, options);
-    this.name = this.constructor.name;
-    Object.setPrototypeOf(this, new.target.prototype);
-  }
-}
+export class ConfigError extends AzFunctionsRuntimeError {}
 
 const ProcessEnvSchema = z.object({
   PersistenceConnectionString: z.string(),

@@ -1,4 +1,4 @@
-import { Customer } from '@fleet-sight/shared/applications/orders';
+import { Customer } from '@fleet-sight/shared/domain/orders';
 import { injectable } from 'inversify';
 import { CustomerDto } from './customers.dto';
 

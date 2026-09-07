@@ -175,7 +175,6 @@ import {
   Get,
   HttpController,
   HttpDirectResponseBuilder,
-  Logger,
   LOGGER_FACTORY,
   LoggerFactory,
   NotFoundError,
@@ -213,7 +212,7 @@ type OrderCreateRequest = z.infer<typeof OrderCreateRequestSchema>;
   tags: ['Orders'],
 })
 export class OrdersController {
-  private readonly logger: Logger;
+  private readonly logger;
 
   constructor(
     @inject(LOGGER_FACTORY) loggerFactory: LoggerFactory,
@@ -336,6 +335,27 @@ return HttpDirectResponseBuilder.builder<OrderDto>()
   .header('Location', `/orders/${order.id}`)
   .jsonBody(orderDto)
   .build();
+```
+
+### OpenAPI Generation
+
+Once the application is built, you can generate the OpenAPI specification in a special mode:
+
+```bash
+PLATFORM_MODE=print-open-api node dist/index.js
+```
+
+This outputs the OpenAPI JSON and YAML files for each registered REST application without starting the Azure Functions host.
+
+| Environment Variable  | Default                     | Description                                                                                            |
+|-----------------------|-----------------------------|--------------------------------------------------------------------------------------------------------|
+| `PLATFORM_MODE`       | `start`                     | Set to `print-open-api` to generate OpenAPI definitions instead of starting the host.                  |
+| `OPEN_API_PRINT_PATH` | `dist/open-api-definitions` | Directory where generated `.json` and `.yaml` files are written. Resolved relative to `process.cwd()`. |
+
+Example with a custom output path:
+
+```bash
+PLATFORM_MODE=print-open-api OPEN_API_PRINT_PATH=./docs/api node dist/index.js
 ```
 
 ## Event Hub Handler
@@ -495,11 +515,11 @@ Inject `LOGGER_FACTORY` and call it to create a logger scoped to your class:
 
 ```ts
 import { inject } from 'inversify';
-import { Logger, LOGGER_FACTORY, LoggerFactory } from '@herrromich/az-functions';
+import { LOGGER_FACTORY, LoggerFactory } from '@herrromich/az-functions';
 
 @injectable()
 export class OrdersService {
-  private readonly logger: Logger;
+  private readonly logger;
 
   constructor(@inject(LOGGER_FACTORY) loggerFactory: LoggerFactory) {
     this.logger = loggerFactory(); // auto-detects logger name from the call stack
@@ -818,26 +838,6 @@ startPlatform({
 
 If no `otelConfiguration` is provided, the framework falls back to the built-in Azure Functions `InvocationContext` logger.
 
-## OpenAPI Generation
-
-Once the application is built, you can generate the OpenAPI specification in a special mode:
-
-```bash
-PLATFORM_MODE=print-open-api node dist/index.js
-```
-
-This outputs the OpenAPI JSON and YAML files for each registered REST application without starting the Azure Functions host.
-
-| Environment Variable  | Default                     | Description                                                                                            |
-|-----------------------|-----------------------------|--------------------------------------------------------------------------------------------------------|
-| `PLATFORM_MODE`       | `start`                     | Set to `print-open-api` to generate OpenAPI definitions instead of starting the host.                  |
-| `OPEN_API_PRINT_PATH` | `dist/open-api-definitions` | Directory where generated `.json` and `.yaml` files are written. Resolved relative to `process.cwd()`. |
-
-Example with a custom output path:
-
-```bash
-PLATFORM_MODE=print-open-api OPEN_API_PRINT_PATH=./docs/api node dist/index.js
-```
 
 ## Registering Unsupported Azure Functions Triggers
 

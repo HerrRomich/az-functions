@@ -2,6 +2,7 @@ import { ZodContentObject } from '@asteasolutions/zod-to-openapi';
 import { HttpResponseInit } from '@azure/functions';
 import { LOGGER_NAME_PREFIX, TrieSearchLogLevelProvider } from '@fleet-sight/shared/logger';
 import { PERSISTENCE_KYSELY_LOGGER_NAME } from '@fleet-sight/shared/persistence/module';
+import { BEARER_HTTP_AUTHENTICATION } from '@fleet-sight/shared/security/index';
 import {
   Delete,
   DirectResponseObject,
@@ -13,8 +14,8 @@ import {
   StringSchema,
   SYSTEM_LOGGER_NAME_PREFIX,
 } from '@herrromich/az-functions';
-import { BEARER_HTTP_AUTHENTICATION, LOGGING_API } from '../logging-api.application';
-import { LogLevel, LogLevels, LogLevelSchema, LogLevelsSchema } from './log-levels.model';
+import { LOGGING_API } from '../logging-api.application';
+import { LogLevel, LogLevels, LogLevelSchema, LogLevelsSchema } from './log-levels.dto';
 
 const LogLevelsResponseContent: ZodContentObject = {
   'application/json': {

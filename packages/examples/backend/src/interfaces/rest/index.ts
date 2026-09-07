@@ -1,18 +1,17 @@
 import { RestApplication, TriggerHandlerClass } from '@herrromich/az-functions';
-import { CONSOLE_REST_APPLICATION, TrucksController } from './console';
-import { EVENT_HUB_REST_APPLICATION, EventHubController } from './event-hub/index';
-import { LOGGING_REST_APPLICATION, LogLevelsController } from './logging';
-import { CustomersController, ORDERS_REST_APPLICATION, OrdersController } from './orders';
+import { CONSOLE_REST_APPLICATION, ConsoleControllers } from './console';
+import { EVENT_HUB_REST_APPLICATION, EventHubControllers } from './event-hub/index';
+import { LOGGING_REST_APPLICATION, LoggingControllers } from './logging';
+import { ORDERS_REST_APPLICATION, OrdersControllers } from './orders';
 
 export { ConsoleRestModule } from './console';
 export { OrdersRestModule } from './orders';
 
 export const HttpControllers: TriggerHandlerClass[] = [
-  TrucksController,
-  CustomersController,
-  OrdersController,
-  LogLevelsController,
-  EventHubController,
+  ...ConsoleControllers,
+  ...OrdersControllers,
+  ...LoggingControllers,
+  ...EventHubControllers,
 ];
 export const RestApplications: RestApplication[] = [
   CONSOLE_REST_APPLICATION,

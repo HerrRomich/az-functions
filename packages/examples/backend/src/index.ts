@@ -1,13 +1,13 @@
-import { OtelConfiguration, startPlatform } from '@herrromich/az-functions';
-
 import './init';
+
+import { OtelConfiguration, startPlatform } from '@herrromich/az-functions';
 
 import { EventHubHandlers } from '@fleet-sight/interfaces/event-hub/index';
 import { ConsoleRestModule, HttpControllers, OrdersRestModule, RestApplications } from '@fleet-sight/interfaces/rest';
 import { AppConfigModule } from '@fleet-sight/shared/app-config';
-import { ApplicationCustomersModule } from '@fleet-sight/shared/applications/customers';
-import { ApplicationFleetModule } from '@fleet-sight/shared/applications/fleet';
-import { ApplicationOrdersModule } from '@fleet-sight/shared/applications/orders';
+import { ApplicationCustomersModule } from '@fleet-sight/shared/domain/customers';
+import { ApplicationFleetModule } from '@fleet-sight/shared/domain/fleet';
+import { ApplicationOrdersModule } from '@fleet-sight/shared/domain/orders';
 import { EventHubModule } from '@fleet-sight/shared/event-nub/index';
 import { LoggerModule } from '@fleet-sight/shared/logger';
 import { PersistenceModule } from '@fleet-sight/shared/persistence/module';

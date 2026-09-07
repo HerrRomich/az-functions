@@ -5,13 +5,13 @@ import { BearerAuthenticationService } from './bearer-authentication.service';
 import { JwtService } from './jwt.service';
 
 export const BEARER_HTTP_AUTHENTICATION = 'bearerHttpAuthentication';
-export const SharedSecuritySchemes: Record<string, SecuritySchemeObject> = {
+export const SharedSecuritySchemes = {
   [BEARER_HTTP_AUTHENTICATION]: {
     type: 'http',
     scheme: 'bearer',
     bearerFormat: 'JWT',
   },
-};
+} as const satisfies Record<string, SecuritySchemeObject>;
 
 export const SecurityModule = new ContainerModule(({ bind }) => {
   bind(JwtService).toSelf();

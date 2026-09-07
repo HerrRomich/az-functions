@@ -1,10 +1,10 @@
-import { IStartupService, Logger, LOGGER_FACTORY, LoggerFactory } from '@herrromich/az-functions';
+import { IStartupService, LOGGER_FACTORY, LoggerFactory } from '@herrromich/az-functions';
 import { inject, injectable } from 'inversify';
 import { FleetSightMigrationService } from './migration.service';
 
 @injectable()
 export class StartupService implements IStartupService {
-  private readonly logger: Logger;
+  private readonly logger;
   constructor(
     @inject(LOGGER_FACTORY) loggerFactory: LoggerFactory,
     private readonly migrationService: FleetSightMigrationService,

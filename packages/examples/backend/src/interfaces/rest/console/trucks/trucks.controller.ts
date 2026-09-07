@@ -1,5 +1,5 @@
 import { HttpResponseInit } from '@azure/functions';
-import { TrucksRepository } from '@fleet-sight/shared/applications/fleet';
+import { TrucksRepository } from '@fleet-sight/shared/domain/fleet';
 import { IdDtoSchema } from '@fleet-sight/shared/rest';
 import { BEARER_HTTP_AUTHENTICATION } from '@fleet-sight/shared/security/index';
 import {

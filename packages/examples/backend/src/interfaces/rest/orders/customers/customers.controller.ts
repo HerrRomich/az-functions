@@ -1,13 +1,13 @@
-import { CustomerUsersService } from '@fleet-sight/shared/applications/customers';
-import { CustomersRepository } from '@fleet-sight/shared/applications/orders';
+import { CustomerUsersService } from '@fleet-sight/shared/domain/customers';
+import { CustomersRepository } from '@fleet-sight/shared/domain/orders';
 import { AuthContext, AuthCtx, Get, HttpController, LOGGER_FACTORY, LoggerFactory } from '@herrromich/az-functions';
 import { Transactional } from '@herrromich/transaction-manager';
 import { UserAccount } from 'example-security';
 import { inject } from 'inversify';
 import { z } from 'zod';
+import { ORDERS_API } from '../orders-api.application';
 import { CustomerDto, CustomerDtoSchema } from './customers.dto';
 import { CustomersMapper } from './customers.mapper';
-import { ORDERS_API } from './orders-api.application';
 
 @HttpController({
   application: ORDERS_API,

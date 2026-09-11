@@ -8,7 +8,7 @@ import {
 import { provideRouter, withHashLocation } from '@angular/router';
 import * as backend from '@fleet/shared/apis/backend';
 
-import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi, withXhr } from '@angular/common/http';
 import {
   MSAL_GUARD_CONFIG,
   MSAL_INSTANCE,
@@ -34,7 +34,7 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideZonelessChangeDetection(),
     provideRouter(routes, withHashLocation()),
-    provideHttpClient(withInterceptorsFromDi()),
+    provideHttpClient(withXhr(), withInterceptorsFromDi()),
     { provide: HTTP_INTERCEPTORS, useClass: MsalInterceptor, multi: true },
 
     { provide: MSAL_INSTANCE, useFactory: MSALInstanceFactory },

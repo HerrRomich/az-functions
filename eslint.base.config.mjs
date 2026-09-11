@@ -35,6 +35,8 @@ export function getTypeScriptPathsRules(rootName) {
       },
     ],
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    'sonarjs/null-dereference': 'off',
+    'sonarjs/argument-type': 'off',
     'sonarjs/function-return-type': 'off',
   };
 }

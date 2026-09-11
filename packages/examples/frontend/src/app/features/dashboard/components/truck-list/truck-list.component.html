@@ -19,7 +19,9 @@
       <span fsEllipsis> {{ 'truck-list.table.columns.driver' | scopedTranslate }}</span>
     </mat-header-cell>
     <mat-cell *matCellDef="let element">
-      <a fsEllipsis [routerLink]="'/fleet/drivers/' + element.driver?.id">{{ element.driver?.name }} </a>
+      @if (element.driver; as driver) {
+        <a fsEllipsis [routerLink]="'/fleet/drivers/' + driver.id">{{ driver.name }} </a>
+      }
     </mat-cell>
   </ng-container>
   <ng-container matColumnDef="destination">

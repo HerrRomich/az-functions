@@ -34,7 +34,7 @@ describe('EventHubHandlerMetadataReader', () => {
 
       expect(() => subject.getHandlerClassMetadata(testHandlerClass)).toThrowWithMessage(
         TriggerHandlerMetadataError,
-        `Invalid type for handler class ${testHandlerClass.name}. Expected '${EVENT_HUB_HANDLER_TYPE}', but got '${mockMetadata.type}'.`,
+        `Invalid type for handler class ${testHandlerClass.name}. Expected '${EVENT_HUB_HANDLER_TYPE}', but got '${mockMetadata.type}'`,
       );
     });
   });

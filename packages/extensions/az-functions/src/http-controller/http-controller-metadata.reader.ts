@@ -15,7 +15,7 @@ export class HttpControllerMetadataReader {
     const handlerClassMetadata = this.metadataReader.getHandlerClassMetadata(triggerHandlerClass);
     if (handlerClassMetadata.type !== HTTP_CONTROLLER_TYPE) {
       throw new TriggerHandlerMetadataError(
-        `Invalid type for handler class ${triggerHandlerClass.name}. Expected '${HTTP_CONTROLLER_TYPE}', but got '${handlerClassMetadata.type}'.`,
+        `Invalid type for handler class ${triggerHandlerClass.name}. Expected '${HTTP_CONTROLLER_TYPE}', but got '${handlerClassMetadata.type}'`,
         {
           cause: {
             triggerHandlerClass: triggerHandlerClass.name,

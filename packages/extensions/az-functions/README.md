@@ -323,8 +323,174 @@ Throw these from controller methods to return appropriate HTTP error responses:
 |-----------------------|-------------|
 | `BadRequestError`     | 400         |
 | `UnauthorizedError`   | 401         |
+| `ForbiddenError`      | 403         |
 | `NotFoundError`       | 404         |
 | `InternalServerError` | 500         |
+
+### Security
+
+HTTP-level authentication/authorization is declarative: you describe **who may call an operation** using the
+same OpenAPI `security`/`securitySchemes` vocabulary you already use for documentation, and the framework
+resolves and enforces it at request time — no manual header parsing or auth checks in your controller code.
+
+#### 1. Declare a security scheme and require it
+
+Security schemes are declared once per `RestApplication` (`openApiConfig.components.securitySchemes`) and
+referenced by name from either the application (applies to every operation) or an individual operation
+(overrides the application-level requirement for that operation only):
+
+```ts
+export const ORDERS_REST_APPLICATION: RestApplication = {
+  name: ORDERS_API,
+  context: '/orders-api',
+  openApiConfig: {
+    // ...
+    security: [{ bearerAuth: [] }], // required for every operation unless overridden per-operation
+    components: {
+      securitySchemes: {
+        bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+      },
+    },
+  },
+};
+
+class OrdersController {
+  @Get({
+    description: 'Get order by ID',
+    // Overrides the application-level requirement for just this operation, and requires a scope:
+    security: [{ bearerAuth: ['Orders.Read'] }],
+    directResponse: { status: 200, description: 'Order', jsonContent: { schema: OrderDtoSchema } },
+  })
+  async getOrderById(@PathParam({ name: 'orderId', schema: IdDtoSchema }) orderId: string): Promise<OrderDto> {
+    // ...
+  }
+}
+```
+
+- `security` is an array of **OR**-ed requirement objects — any one of them satisfies the operation.
+- Each requirement object can list **multiple** scheme keys — all of them must succeed (**AND**) for that
+  requirement to be satisfied.
+- The array of strings per scheme is the list of **scopes** required from the resolved principal.
+- Omitting `security` on both the operation and the application leaves the operation unauthenticated — the
+  framework injects a default `AuthContext` (`principal: null`, `principals: []`, `scopes: []`).
+
+#### 2. Implement an `AuthenticationService` per scheme
+
+Each scheme name used in `securitySchemes` must resolve to an `AuthenticationService` bound under
+`AUTHENTICATION_SERVICE`, scoped to that scheme name via `.whenNamed(...)`:
+
+```ts
+import { AuthenticationError, AuthenticationService, AUTHENTICATION_SERVICE } from '@herrromich/az-functions';
+import { HttpRequest } from '@azure/functions';
+import { ContainerModule, injectable } from 'inversify';
+
+@injectable()
+export class BearerAuthenticationService implements AuthenticationService {
+  async authenticate(request: HttpRequest): Promise<Principal> {
+    const authHeader = request.headers.get('authorization');
+    if (typeof authHeader !== 'string' || !authHeader.startsWith('Bearer ')) {
+      throw new AuthenticationError('Invalid or missing Authorization Bearer token');
+    }
+    const token = authHeader.split(' ')[1] ?? '';
+    // ...verify the token (e.g. via jwks-rsa/jsonwebtoken)...
+    const scopes: string[] = []; // resolved scopes/permissions
+    return { subject: 'user-id', type: 'user', scheme: 'bearer', scopes };
+  }
+}
+
+export const SecurityModule = new ContainerModule(({ bind }) => {
+  bind(AUTHENTICATION_SERVICE).to(BearerAuthenticationService).whenNamed('bearerAuth');
+});
+```
+
+- Throw `AuthenticationError` (not a generic `Error`) when the request simply isn't authenticated — the
+  framework turns this into a `401 Unauthorized` response. Any other error propagates and is treated as an
+  unexpected failure (`500`).
+- Register the module in `startPlatform({ modules: [...] })` like any other `ContainerModule`.
+- The same scheme name can be bound differently **per `RestApplication`** by additionally tagging the
+  binding, if different applications need different authentication logic under the same scheme name — not
+  needed for the common case of one implementation per scheme name across the whole app.
+
+#### 3. `Principal` and `AuthContext`
+
+An `AuthenticationService.authenticate(...)` call resolves a `Principal`:
+
+```ts
+interface Principal {
+  subject: string; // unique identifier of the principal (e.g. user id)
+  type: string; // e.g. "user", "service"
+  scheme: string; // auth scheme used (e.g. "bearer")
+  scopes: string[]; // scopes/permissions granted to the principal
+  meta?: Record<string, unknown>;
+}
+```
+
+When an operation's requirement object has multiple schemes (AND), the resulting `Principal`s are merged
+into a single `AuthContext`:
+
+```ts
+interface AuthContext {
+  principal: Principal | null; // the (first) resolved principal, or null when unauthenticated
+  principals: Principal[]; // every principal resolved for the operation (AND-composed schemes)
+  scopes: string[]; // union of scopes across all resolved principals
+}
+```
+
+By default, merging is **strict**: all AND-composed principals must share the same `subject`/`type`, or an
+`AuthenticationError` is thrown (surfaced as `401`). Bind a custom `PrincipalMergeService` under
+`PRINCIPAL_MERGE_SERVICE` to override this behavior (e.g. to allow combining a user principal with a
+service principal under different rules).
+
+Required scopes (from `security: [{ scheme: [...scopes] }]`) are checked against the resolved principal's
+`scopes` **after** authentication succeeds — a missing scope results in a `403 Forbidden` response rather
+than `401`, since the caller *is* authenticated but not authorized for that operation.
+
+#### 4. Access the `AuthContext` in a controller
+
+Inject it into an operation method with `@AuthCtx()`:
+
+```ts
+class OrdersController {
+  async getOrderById(
+    @AuthCtx() authContext: AuthContext,
+    @PathParam({ name: 'orderId', schema: IdDtoSchema }) orderId: string,
+  ): Promise<OrderDto> {
+    const subject = authContext.principal?.subject;
+    // ...
+  }
+}
+```
+
+Outside a controller method — e.g. in a mapper or a domain service that still needs the current caller's
+identity — inject `SecurityContext` instead and call `getAuthentication()`, which reads the same
+`AuthContext` from the active `PlatformContextManager` scope:
+
+```ts
+import { SecurityContext } from '@herrromich/az-functions';
+import { inject, injectable } from 'inversify';
+
+@injectable()
+export class OrdersMapper {
+  constructor(@inject(SecurityContext) private readonly securityContext: SecurityContext) {}
+
+  toDto(order: Order) {
+    const authContext = this.securityContext.getAuthentication();
+    // ...
+  }
+}
+```
+
+#### 5. Error responses
+
+| Condition                                                              | Response |
+|--------------------------------------------------------------------------|----------|
+| No `AuthenticationService` for a requirement's scheme(s) succeeds        | `401 Unauthorized` |
+| At least one scheme succeeds, but the resolved principal is missing a required scope | `403 Forbidden`   |
+
+These are enforced by the framework itself before your operation method runs — you don't need to (and
+shouldn't) throw `UnauthorizedError`/a forbidden response for missing/insufficient authentication yourself;
+reserve throwing `UnauthorizedError`/`BadRequestError`/`NotFoundError` in your own code for
+business-logic-level authorization/validation failures instead (see the "HTTP Error Classes" section above).
 
 ### `HttpDirectResponseBuilder`
 

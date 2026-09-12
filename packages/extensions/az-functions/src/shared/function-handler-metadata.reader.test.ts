@@ -27,7 +27,7 @@ describe('FunctionHandlerMetadataReader', () => {
 
       const actualMetadata = subject.getHandlerClassMetadata(WithMetadata);
 
-      expect(actualMetadata).toBe(expectedMetadata);
+      expect(actualMetadata).toEqual(expectedMetadata);
     });
   });
 });

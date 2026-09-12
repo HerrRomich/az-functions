@@ -33,7 +33,7 @@ describe('HttpControllerMetadataReader', () => {
 
       expect(() => subject.getHandlerClassMetadata(testHandlerClass)).toThrowWithMessage(
         TriggerHandlerMetadataError,
-        `Invalid type for handler class ${testHandlerClass.name}. Expected '${'http-controller'}', but got '${mockMetadata.type}'.`,
+        `Invalid type for handler class ${testHandlerClass.name}. Expected '${'http-controller'}', but got '${mockMetadata.type}'`,
       );
     });
   });

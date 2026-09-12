@@ -15,7 +15,7 @@ export class EventHubHandlerMetadataReader {
     const handlerClassMetadata = this.metadataReader.getHandlerClassMetadata(azureFunction);
     if (handlerClassMetadata.type !== EVENT_HUB_HANDLER_TYPE) {
       throw new TriggerHandlerMetadataError(
-        `Invalid type for handler class ${azureFunction.name}. Expected '${EVENT_HUB_HANDLER_TYPE}', but got '${handlerClassMetadata.type}'.`,
+        `Invalid type for handler class ${azureFunction.name}. Expected '${EVENT_HUB_HANDLER_TYPE}', but got '${handlerClassMetadata.type}'`,
       );
     }
     return handlerClassMetadata as EventHubHandlerMetadata;

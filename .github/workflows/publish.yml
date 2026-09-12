@@ -7,10 +7,6 @@ on:
         required: true
         type: string
 
-permissions:
-  contents: read
-  id-token: write
-
 env:
   NODE_VERSION: 22
   PNPM_VERSION: 10.30.3
@@ -34,7 +30,6 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
-          registry-url: https://registry.npmjs.org
           package-manager-cache: false
 
       - name: Install dependencies

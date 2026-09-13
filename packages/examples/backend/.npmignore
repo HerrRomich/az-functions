@@ -1,8 +1,13 @@
 # Exclude tests and config files
 /**/*.test.ts
+/src
+/docs
+/coverage
+/node_modules
 .eslintrc.js
 eslint.config.mjs
 jest.config.mjs
 jest.setup.mjs
 webpack.config.mjs
 tsconfig.json
+tsconfig.test.json

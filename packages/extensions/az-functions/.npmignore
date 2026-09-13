@@ -6,3 +6,6 @@ jest.setup.mjs
 babel.config.mjs
 webpack.config.mjs
 tsconfig.json
+tsconfig.test.json
+src/
+coverage/

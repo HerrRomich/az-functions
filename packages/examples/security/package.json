@@ -10,7 +10,7 @@
     "dist:build": "pnpm run dist:clean && webpack --mode=production",
     "build:recursive": "pnpm -r --sort --filter {.}... run dist:build",
     "watch": "webpack --mode=development --watch",
-    "watch:recursive": "pnpm -r --sort --filter {.}... --parallel --stream run watch",
+    "watch:recursive": "pnpm -r --filter {.}... --parallel --stream run watch",
     "test": "jest --env=node --colors --coverage",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",

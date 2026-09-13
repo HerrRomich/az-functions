@@ -18,7 +18,7 @@
     "watch:fix-types": "tsc-alias -p tsconfig.json --outDir dist --watch",
     "watch:webpack": "webpack --mode=development --watch",
     "watch": "pnpm run watch:webpack & pnpm run watch:fix-types",
-    "watch:recursive": "pnpm -r --sort --filter {.}... --parallel --stream run watch",
+    "watch:recursive": "pnpm -r --filter {.}... --parallel --stream run watch",
     "test": "jest --env=node --colors --coverage",
     "lint": "eslint",
     "lint:fix": "eslint --fix",

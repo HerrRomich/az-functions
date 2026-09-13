@@ -4,7 +4,7 @@ import { inject, injectable } from 'inversify';
 import { LOGGER_FACTORY, LoggerFactory } from 'logger';
 import { ComponentsObject, OpenAPIObject } from 'openapi3-ts/oas30';
 import { AzFunctionsSystemError } from 'shared';
-import { assertOpenApiConsistentPath, joinPosix, RestApplication } from './http-controller.model';
+import { assertOpenApiConsistentPath, RestApplication } from './http-controller.model';
 import { HttpOperationRegistration } from './http-operations-registration.service';
 import { OpenApiMetadataService } from './open-api-metadata.service';
 
@@ -99,7 +99,7 @@ export class OpenApiDefinitionService {
         ...openApiConfig,
         servers: [
           {
-            url: joinPosix(apiUrl, application.context),
+            url: apiUrl + application.context,
           },
         ],
       };

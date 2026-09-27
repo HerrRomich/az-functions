@@ -192,6 +192,30 @@ describe('HttpRequestArgProviderFactory', () => {
       expect(result).toEqual(false);
     });
 
+    it('should create a query item arg provider that parses the request query parameters with the optional schema and return number value', async () => {
+      const provider = subject.createQueryItemArgProvider({
+        name: 'number-query-param',
+        type: 'query',
+        schema: z.number().optional(),
+      });
+
+      const result = await provider(testInput);
+
+      expect(result).toEqual(123);
+    });
+
+    it('should create a query item arg provider that parses the request query parameters with the optional schema and return undefined if the query parameter is not present', async () => {
+      const provider = subject.createQueryItemArgProvider({
+        name: 'optional-query-param',
+        type: 'query',
+        schema: z.number().optional(),
+      });
+
+      const result = await provider(testInput);
+
+      expect(result).toBeUndefined();
+    });
+
     it('should create a query item arg provider that parses the request query parameters with the array schema', async () => {
       const provider = subject.createQueryItemArgProvider({
         name: 'array-query-param',

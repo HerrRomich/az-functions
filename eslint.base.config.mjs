@@ -1,9 +1,9 @@
 import eslintJavascript from '@eslint/js';
 import eslintPluginJson from 'eslint-plugin-json';
+import esLintPluginN from 'eslint-plugin-n';
 import eslintPluginPrettier from 'eslint-plugin-prettier/recommended';
 import eslintPluginSonar from 'eslint-plugin-sonarjs';
 import globals from 'globals';
-import gts from 'gts';
 import * as jsoncParser from 'jsonc-eslint-parser';
 
 import path from 'node:path';
@@ -28,6 +28,26 @@ export function getTypeScriptPathsRules(rootName) {
   const tsConfig = rootName ? loadConfig(rootName) : undefined;
   const paths = Object.keys(tsConfig.paths ?? {}).map(path => path.replace(/\/\*$/, ''));
   return {
+    'prettier/prettier': 'error',
+    'block-scoped-var': 'error',
+    'eqeqeq': 'error',
+    'no-var': 'error',
+    'prefer-const': 'error',
+    'eol-last': 'error',
+    'prefer-arrow-callback': 'error',
+    'no-trailing-spaces': 'error',
+    'quotes': ['warn', 'single', { avoidEscape: true }],
+    'no-restricted-properties': [
+      'error',
+      {
+        object: 'describe',
+        property: 'only',
+      },
+      {
+        object: 'it',
+        property: 'only',
+      },
+    ],
     'n/no-extraneous-import': [
       'error',
       {
@@ -45,10 +65,12 @@ export function getTypescriptConfig(rootName, tsConfigName = 'tsconfig.json', ts
   const fullConfigName = path.resolve(rootName, tsConfigName);
   const fullTestConfigName = path.resolve(rootName, tsTestConfigName);
   return [
-    ...eslintTypescript.configs.stylistic,
     {
       files: ['**/*.ts', '**/*.tsx'],
       ignores: ['**/*.test.ts', '**/*.test.tsx'],
+      plugins: {
+        n: esLintPluginN,
+      },
       languageOptions: {
         parserOptions: {
           rootName,
@@ -59,6 +81,9 @@ export function getTypescriptConfig(rootName, tsConfigName = 'tsconfig.json', ts
     },
     {
       files: ['**/*.test.ts', '**/*.test.tsx'],
+      plugins: {
+        n: esLintPluginN,
+      },
       languageOptions: {
         parserOptions: {
           rootName,
@@ -99,5 +124,11 @@ export function provideBaseConfig() {
     ignores: ['*.json', '**/*.html'],
     ...eslintPluginSonar.configs.recommended,
   };
-  return [sonarConfigRecommended, eslintPluginPrettier, ...javascriptConfig, ...gts, jsonConfig];
+  return [
+    sonarConfigRecommended,
+    eslintPluginPrettier,
+    ...javascriptConfig,
+    ...eslintTypescript.configs.recommended,
+    jsonConfig,
+  ];
 }

@@ -9,7 +9,7 @@ on:
 
 env:
   NODE_VERSION: 22
-  PNPM_VERSION: 12.4.1
+  PNPM_VERSION: 12.6.0
 
 jobs:
   validate:

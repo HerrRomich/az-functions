@@ -1,7 +1,7 @@
 import { injectable } from 'inversify';
 import * as _ from 'lodash';
 import { HandlerArgsParseError, parseWithZod, ZodParserError } from 'shared';
-import { z, ZodArray, ZodPipe, ZodType } from 'zod';
+import { z, ZodArray, ZodOptional, ZodPipe, ZodType } from 'zod';
 import { ControllerOperationPathArgMetadata, ControllerOperationQueryArgMetadata, QueryItemType } from './decorators';
 import { BadRequestError, OptionalStringSchema, StringSchema } from './http-controller.model';
 import { HttpRequestArgProvider, HttpRequestArgsProvider } from './http-handler-support.factory';
@@ -120,7 +120,12 @@ export class HttpRequestArgProviderFactory {
       .string()
       .optional()
       .transform(val => {
-        const singleTypeName = singleType.type;
+        const isOptional = singleType.type === 'optional';
+        if (isOptional && val === undefined) {
+          return undefined;
+        }
+        const innerType = isOptional ? ((singleType as ZodOptional).def.innerType as ZodType) : singleType;
+        const singleTypeName = innerType.type;
         if (singleTypeName === 'boolean') {
           if (val === 'true') {
             return true;
@@ -130,7 +135,7 @@ export class HttpRequestArgProviderFactory {
             return val;
           }
         } else if (singleTypeName === 'number') {
-          const numVal = Number(val).valueOf();
+          const numVal = Number(val);
           return Number.isNaN(numVal) ? val : numVal;
         } else {
           return val;

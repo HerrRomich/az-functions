@@ -34,7 +34,6 @@
     "eslint-plugin-prettier": "catalog:",
     "eslint-plugin-sonarjs": "catalog:",
     "globals": "catalog:",
-    "gts": "catalog:",
     "jest": "catalog:",
     "jsonc-eslint-parser": "catalog:",
     "prettier": "catalog:",
@@ -51,5 +50,5 @@
     "webpack": "catalog:",
     "webpack-cli": "catalog:"
   },
-  "packageManager": "pnpm@12.4.1"
+  "packageManager": "pnpm@12.6.0"
 }

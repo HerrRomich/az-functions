@@ -13,7 +13,7 @@ export function provideBaseConfig(tsTestConfigName = 'tsconfig.test.json', esmPa
     restoreMocks: true,
     preset: 'ts-jest',
     coverageReporters: ['lcov', 'text', 'cobertura'],
-    coveragePathIgnorePatterns: ['/test/'],
+    coveragePathIgnorePatterns: ['/node_modules/', '/test/'],
     testPathIgnorePatterns: ['/dist/', '/node_modules/', '/test/'],
     ...(esmPackageNames.length > 0
       ? {

@@ -6,3 +6,4 @@ dist/
 coverage
 /.yarn/install-state.gz
 /.debug/
+.DS_Store

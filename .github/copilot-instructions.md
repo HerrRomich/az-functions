@@ -77,92 +77,20 @@ change is workspace-wide.
 
 ## Package-Specific Guidance
 
-### `packages/extensions/az-functions` — `@herrromich/az-functions`
+Package- and area-specific rules live in scoped files under `.github/instructions/` (each declares its
+`applyTo` path pattern) and are loaded only when working on matching files:
 
-Core published library. Extends the Azure Functions v4 Node.js programming model with:
-
-- Decorator-based **HTTP controllers** (`@HttpController`, `@Get/@Post/@Put/@Patch/@Delete/@Head`, parameter
-  decorators like `@Body`, `@QueryParam`, `@PathParam`, `@HeaderParam`, `@AuthCtx`) and **Event Hub handlers**
-  (`@EventHubHandler`, `@OnEventHubTrigger`, `@Message(s)`/`@RawMessage(s)`).
-- An Inversify-based IoC container bootstrapped via `startPlatform(...)`.
-- Zod-driven request/message validation and **code-first OpenAPI** generation (`RestApplication`,
-  `PLATFORM_MODE=print-open-api`).
-- Structured logging (`LOGGER_FACTORY`, `Logger`, `LogLevelProvider`, `TrieSearchService`) with log
-  sanitization and optional OpenTelemetry/Application Insights export.
-- HTTP error classes (`BadRequestError`, `UnauthorizedError`, `NotFoundError`, `InternalServerError`) and
-  `HttpDirectResponseBuilder` for fine-grained responses.
-
-Conventions when editing this package:
-- Requires `experimentalDecorators` + `emitDecoratorMetadata`; `reflect-metadata` must be imported first at
-  the entry point (`src/init.ts`).
-- Keep the public surface exported from `src/index.ts` in sync with the README (`README.md` documents the
-  full public API — update both together).
-- Internal/system loggers must use the `#az-functions` (`SYSTEM_LOGGER_NAME_PREFIX`) naming convention.
-- Build: webpack (production bundle to `dist/`) + `tsc-alias` for `.d.ts` path fixing. Test: Jest,
-  `--env=node`, with coverage. `@azure/functions`, `inversify`, `reflect-metadata`, `zod`,
-  `@asteasolutions/zod-to-openapi` are **peer dependencies**, not regular dependencies.
-
-### `packages/extensions/transaction-manager` — `@herrromich/transaction-manager`
-
-Published library providing Spring-style declarative transaction management for **Kysely**:
-
-- `@Transactional(config?)` decorator, usable on classes and/or methods (method-level overrides class-level).
-- Propagation strategies: `required`, `requires_new`, `mandatory`, `never`, `supports`, `not_supported`,
-  `nested` (savepoints).
-- Isolation levels: `default`, `read_commited`, `read_uncommited`, `repeatable_read`, `serializable`.
-- `registerDataSource(kyselyProvider, name?)` returns a `DataSource<DB>` proxy that transparently routes
-  queries to the active `AsyncLocalStorage`-scoped transaction, or falls back to the root Kysely instance.
-- Designed to integrate with Inversify (`bind(AppDataSource).toDynamicValue(...)`) but has no hard dependency
-  on it.
-
-Conventions: `kysely` is a **peer dependency**. Keep behavior changes covered by the corresponding
-`*.test.ts` files (decorators, storage, wrapper/transactional methods) and reflected in `README.md`.
-
-### `packages/examples/backend` — `example-backend`
-
-Reference Azure Functions app (private, not published) that consumes `@herrromich/az-functions`,
-`@herrromich/transaction-manager`, `@utilities/test-utilities`, `@forks/source-map-support`, and
-`example-security`. Demonstrates: HTTP controllers + Event Hub handlers, Inversify container modules,
-PostgreSQL access via Kysely (`pg`, `wkx`/`zod-geojson` for geo data), Redis (`@redis/client`,
-`@redis/entraid`), JWT-based auth (`jsonwebtoken`, `jwks-rsa`), and OpenAPI generation consumed by the
-frontend's generated API client. Run locally with `func start` (Azure Functions Core Tools) or via
-`swa` alongside the frontend. `dist:assemble` packages the deployable artifact (see `scripts/assemble.mjs`).
-
-### `packages/examples/frontend` — `example-frontend`
-
-Reference Angular SPA (private) built with Angular CLI, Angular Material, `@ngrx/signals`, OpenLayers maps,
-and MSAL for Entra ID auth. Consumes `example-security` and a **generated** OpenAPI client
-(`api:generate:console`, via `@openapitools/openapi-generator-cli`) built from the backend's OpenAPI JSON —
-regenerate the client after changing backend controller contracts rather than hand-editing generated files.
-Served/proxied together with the backend via Azure Static Web Apps CLI (`swa`).
-
-### `packages/examples/security` — `example-security`
-
-Small, private, shared library consumed by **both** `example-backend` and `example-frontend`. Holds
-authentication/security models and utilities that must stay consistent between frontend and backend (e.g.
-token/claims shapes). Depends only on `@herrromich/az-functions`. Changes here typically require checking
-both consumers for breakage.
-
-### `packages/forks/source-map-support` — `@forks/source-map-support`
-
-Private, vendored fork of the [`source-map-support`](https://www.npmjs.com/package/source-map-support)
-package, kept in-repo to allow local patches. Prefer minimal, well-documented diffs against upstream; note any
-divergence from the original package in comments so future upgrades are easier to reconcile.
-
-### `packages/utilities/test-utilities` — `@utilities/test-utilities`
-
-Private, shared **test-only** helpers used across the other packages' Jest suites. Has `@jest/globals`,
-`jest`, and `expect` as peer dependencies (never bundle these as regular dependencies). Built with plain
-`tsc --build` (no webpack) since it only needs to ship type-checked JS + `.d.ts` files for other workspace
-packages to consume via `workspace:*`.
-
-### `infra/` — Terraform infrastructure
-
-Provisions the Azure resources backing the examples: Functions/console app hosting, PostgreSQL database,
-Event Hub, Redis cache, storage, and shared "persistence" resources, split into subfolders
-(`cache/`, `console_app/`, `database/`, `eventhub/`, `persistence/`, `storage/`) each with their own
-`main.tf`/`variables.tf`. Root `main.tf` wires modules together; `infra.tfvars` holds environment values.
-Deploy via `pnpm run infra:deploy` (root script) — avoid editing `terraform.tfstate*` by hand.
+| Area | Instruction file |
+|------|------------------|
+| `packages/extensions/az-functions` | `az-functions-extension.instructions.md` |
+| `packages/extensions/transaction-manager` | `transaction-manager.instructions.md` |
+| `packages/examples/backend` | `az-functions-app-*.instructions.md` |
+| `packages/examples/frontend` | `example-frontend.instructions.md` |
+| `packages/examples/security` | `example-security.instructions.md` |
+| `packages/forks/source-map-support` | `source-map-support-fork.instructions.md` |
+| `packages/utilities/test-utilities` | `test-utilities.instructions.md` |
+| `infra/` | `infra.instructions.md` |
+| Branches, commits, tags (all) | `git-naming-conventions.instructions.md` |
 
 ## General Conventions
 

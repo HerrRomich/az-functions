@@ -11,17 +11,6 @@ General-purpose, **read-only** agent for gathering git/VCS information about the
 status, staged and unstaged files, diffs, the current branch, and commit history. Report findings back
 accurately; do not interpret them beyond what the caller asks.
 
-## Tool preference: IntelliJ MCP first
-
-For every git-related read operation, **prefer the IntelliJ MCP server tools** (the JetBrains IDE MCP) over
-shell commands. The IDE's VCS view is the source of truth for what is staged and which branch is selected.
-
-- Use the IntelliJ MCP tools to list changed/staged files, read diffs, get the current branch, and browse
-  recent commits.
-- Fall back to the terminal (`git --no-pager status`, `git --no-pager diff --staged`,
-  `git --no-pager branch --show-current`, `git --no-pager log`) **only** when the IntelliJ MCP does not
-  expose the needed information or is unavailable. State briefly when a fallback is used.
-
 ## Restrictions
 
 - Never run mutating git commands (`add`, `commit`, `reset`, `checkout`, `switch`, `stash`, `merge`,

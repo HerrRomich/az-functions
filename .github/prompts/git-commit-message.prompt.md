@@ -1,10 +1,16 @@
 ---
 name: git-commit-message
+agent: git-inspector
+description: >-
+  Propose a git commit message based on all changed files added to VCS (staged and unstaged tracked
+  changes) and current branch. Follows #git-naming-conventions.instructions.md (Conventional Commits:
+  type, scope, description). If multiple commits are needed, propose a message for each, with its
+  changed file list and
 ---
-Delegate git inspection (staged files, diffs, current branch, history) to the `git-inspector` agent
+Delegate git inspection (staged and unstaged changes, diffs, current branch, history) to the `git-inspector` agent
 (`.github/agents/git-inspector.agent.md`), which prefers the IntelliJ MCP server over shell git commands.
 
-Analyze the staged files and current branch, then propose a commit message following
+Analyze ALL tracked changes known to VCS — staged and unstaged — plus the current branch, then propose a commit message following
 #git-naming-conventions.instructions.md (Conventional Commits: type, scope, description).
 
 Format rules:
@@ -13,7 +19,7 @@ Format rules:
   context beyond the header; omit it when the header is self-explanatory.
 - Footer: only when needed (breaking change, issue reference).
 
-Multiple commits: if the changes should be split, propose a message for each, with its staged file list and a
+Multiple commits: if the changes should be split, propose a message for each, with its changed file list (staged and unstaged) and a
 proposed branch name (per §2 of the naming conventions, one branch per commit/scope). Separate proposals with
 a line containing only `---`.
 

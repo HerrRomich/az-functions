@@ -1,4 +1,4 @@
-import { effect, inject, Injectable, OnDestroy } from '@angular/core';
+import { effect, inject, Injectable, OnDestroy, signal } from '@angular/core';
 import { Feature, Map, View } from 'ol';
 import { Point } from 'ol/geom';
 import TileLayer from 'ol/layer/Tile';
@@ -6,9 +6,10 @@ import VectorLayer from 'ol/layer/Vector';
 import { fromLonLat } from 'ol/proj';
 import { OSM } from 'ol/source';
 import VectorSource from 'ol/source/Vector';
-import { Fill, Stroke, Style, Text } from 'ol/style';
+import { Style } from 'ol/style';
 import { ViewOptions } from 'ol/View';
 import { z } from 'zod';
+import { Truck } from '../models/truck-model';
 import { TrucksStore } from '../stores/trucks-store';
 
 const ViewSettingsSchema = z.object({
@@ -20,11 +21,93 @@ const ViewSettingsSchema = z.object({
 export class OlMapService implements OnDestroy {
   private readonly fleetStore = inject(TrucksStore);
   private readonly map: Map;
+  readonly selectedTruck = signal<string | undefined>(undefined);
+  private prevSelectedTruck: string | undefined = undefined;
 
   constructor() {
     const source = new VectorSource();
+    this.map = this.initMap(source);
+    effect(() => {
+      const trucks = this.fleetStore.entities();
+      for (const truck of trucks) {
+        if (!source.getFeatureById(truck.id)) {
+          const feature = new Feature({
+            geometry: new Point(fromLonLat(truck.location.coordinates)),
+          });
+          feature.setId(truck.id);
+          feature.setGeometry(new Point(fromLonLat(truck.location.coordinates)));
+          feature.setStyle(this.getTruckStyle(truck));
+          source.addFeature(feature);
+        }
+      }
+    });
+    effect(() => {
+      const selectedTruckId = this.selectedTruck();
+      const trucksMap = this.fleetStore.entityMap();
+      const selectedTruck = selectedTruckId !== undefined ? trucksMap[selectedTruckId] : undefined;
+      const prevSelectedTruck = this.prevSelectedTruck !== undefined ? trucksMap[this.prevSelectedTruck] : undefined;
+      if (selectedTruck !== undefined) {
+        const truckFeature = source.getFeatureById(selectedTruck.id);
+        truckFeature?.setStyle(this.getTruckStyle(selectedTruck, true));
+      }
+      if (prevSelectedTruck !== undefined) {
+        const truckFeature = source.getFeatureById(prevSelectedTruck.id);
+        truckFeature?.setStyle(this.getTruckStyle(prevSelectedTruck, false));
+      }
+      this.prevSelectedTruck = selectedTruck?.id;
+    });
+  }
+
+  private getTruckStyle(truck: Truck, isSelected = false): Style {
+    const color = isSelected ? 'rgba(255, 0, 0, 1)' : 'rgba(0, 0, 255, 1)';
+    return new Style({
+      zIndex: isSelected ? 1000 : 0,
+      renderer: (coordinates, state) => {
+        const context = state.context;
+        if (!Array.isArray(coordinates) || typeof coordinates[0] !== 'number' || typeof coordinates[1] !== 'number')
+          return;
+        const [x, y] = coordinates;
+        const label = truck.licensePlate;
+
+        context.save();
+        context.font = '18px Roboto';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+
+        const width = context.measureText(label).width + 16;
+        const height = 18;
+
+        context.beginPath();
+        context.moveTo(x - width / 2 + 8, y - height - 16);
+        context.lineTo(x + width / 2 - 8, y - height - 16);
+        context.arcTo(x + width / 2, y - height - 16, x + width / 2, y - height - 8, 8);
+        context.lineTo(x + width / 2, y - 16);
+        context.arcTo(x + width / 2, y - 8, x + width / 2 - 8, y - 8, 8);
+        context.lineTo(x - 4, y - 8);
+        context.lineTo(x, y);
+        context.lineTo(x - 8, y - 8);
+        context.lineTo(x - width / 2 + 8, y - 8);
+        context.arcTo(x - width / 2, y - 8, x - width / 2, y - height - 8, 8);
+        context.lineTo(x - width / 2, y - height - 8);
+        context.arcTo(x - width / 2, y - height - 16, x - width / 2 + 8, y - height - 16, 8);
+        context.closePath();
+        context.fillStyle = 'rgba(230, 230, 230, 1)';
+        context.fill();
+        context.strokeStyle = '#555';
+        context.lineWidth = 1;
+        context.stroke();
+
+        context.fillStyle = color;
+        context.font = '18px Roboto';
+        context.fillText(label, x, y - 10 - height / 2);
+        context.restore();
+      },
+    });
+  }
+
+  private initMap(source: VectorSource): Map {
     const view = new View(this.getViewOptions());
-    this.map = new Map({
+    const map = new Map({
       layers: [
         new TileLayer({
           source: new OSM(),
@@ -37,7 +120,7 @@ export class OlMapService implements OnDestroy {
       controls: [],
     });
 
-    this.map.on('moveend', () => {
+    map.on('moveend', () => {
       const view = this.map.getView();
       this.fleetStore.setBox(view.calculateExtent(this.map.getSize()));
     });
@@ -47,40 +130,7 @@ export class OlMapService implements OnDestroy {
         zoom: this.map.getView().getZoom(),
       });
     });
-    effect(() => {
-      const trucksMap = this.fleetStore.entityMap();
-      source.forEachFeature(feature => {
-        const featureId = feature.getId();
-        if (featureId === undefined || trucksMap[featureId] === undefined) {
-          source.removeFeature(feature);
-        } else {
-          const truck = trucksMap[featureId];
-          feature.setGeometry(new Point(truck.location.coordinates));
-        }
-      });
-      const trucks = this.fleetStore.entities();
-      for (const truck of trucks) {
-        if (!source.getFeatureById(truck.id)) {
-          const feature = new Feature({
-            geometry: new Point(fromLonLat(truck.location.coordinates)),
-          });
-          feature.setId(truck.id);
-          feature.setStyle(
-            new Style({
-              text: new Text({
-                text: truck.licensePlate,
-                font: '18px Roboto',
-                backgroundFill: new Fill({ color: 'rgba(230, 230, 230, 1)' }),
-                padding: [3, 3, 3, 3],
-                textAlign: 'left',
-                stroke: new Stroke({ color: '#fff', width: 2 }),
-              }),
-            }),
-          );
-          source.addFeature(feature);
-        }
-      }
-    });
+    return map;
   }
 
   ngOnDestroy(): void {

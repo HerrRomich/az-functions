@@ -4,7 +4,7 @@ import { provideScopedTranslateService } from '@fleet/shared/scoped-translations
 import { RouterConfigElementData } from '@fleet/shared/services/router-support/router-support.model';
 import { InteractiveMap } from './components/interactive-map/interactive-map';
 import { Dashboard } from './pages/dashboard/dashboard.component';
-import { Truck } from './pages/truck/truck';
+import { TruckComponent } from './pages/truck/truck.component';
 import { DashboardService } from './services/dashboard.service';
 import { TruckStore } from './stores/truck-store';
 import { TrucksStore } from './stores/trucks-store';
@@ -61,7 +61,7 @@ export const ROUTES: Routes = [
         children: [
           {
             path: ':truckId',
-            component: Truck,
+            component: TruckComponent,
             canActivate: [
               async route => {
                 const truckId = route['params']['truckId'];

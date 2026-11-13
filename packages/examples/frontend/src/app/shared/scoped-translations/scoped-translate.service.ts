@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, Signal } from '@angular/core';
 import {
   FallbackLangChangeEvent,
   InterpolatableTranslationObject,
@@ -14,6 +14,7 @@ import {
 } from '@ngx-translate/core';
 import { Observable } from 'rxjs';
 import { TRANSLATION_NAMESPACE_TOKEN } from './scoped-translate.providers';
+
 @Injectable()
 export class ScopedTranslateService implements ITranslateService {
   private readonly namespace = inject(TRANSLATION_NAMESPACE_TOKEN);
@@ -39,10 +40,6 @@ export class ScopedTranslateService implements ITranslateService {
     return this.translateService.onFallbackLangChange;
   }
 
-  get onDefaultLangChange(): Observable<FallbackLangChangeEvent> {
-    return this.translateService.onDefaultLangChange;
-  }
-
   setFallbackLang(lang: Language): Observable<InterpolatableTranslationObject> {
     return this.translateService.setFallbackLang(lang);
   }
@@ -51,7 +48,7 @@ export class ScopedTranslateService implements ITranslateService {
     return this.translateService.use(lang);
   }
 
-  getCurrentLang(): Language {
+  getCurrentLang(): Language | null {
     return this.translateService.getCurrentLang();
   }
 
@@ -70,44 +67,65 @@ export class ScopedTranslateService implements ITranslateService {
   getParsedResult(
     key: string | string[],
     interpolateParams?: InterpolationParameters,
+    lang?: Language,
   ): StrictTranslation | Observable<StrictTranslation> {
-    return this.translateService.getParsedResult(this.toScopedKeys(key), interpolateParams);
+    return this.translateService.getParsedResult(this.toScopedKeys(key), interpolateParams, lang);
   }
 
   toScopedKeys(key: string | string[]): string | string[] {
-    if (typeof key === 'string') {
-      key = this.toScopedKey(key);
-    } else if (Array.isArray(key)) {
-      key = key.map(k => `${this.namespace}.${k}`);
-    }
-    return key;
+    return Array.isArray(key) ? key.map(k => this.toScopedKey(k)) : this.toScopedKey(key);
   }
 
   toScopedKey(key: string) {
     return this.namespace ? `${this.namespace}.${key}` : key;
   }
 
-  get(key: string | string[], interpolateParams?: InterpolationParameters): Observable<Translation> {
-    return this.translateService.get(this.toScopedKeys(key), interpolateParams);
+  get(key: string | string[], interpolateParams?: InterpolationParameters, lang?: Language): Observable<Translation> {
+    return this.translateService.get(this.toScopedKeys(key), interpolateParams, lang);
   }
 
   getStreamOnTranslationChange(
     key: string | string[],
     interpolateParams?: InterpolationParameters,
+    lang?: Language,
   ): Observable<Translation> {
-    return this.translateService.getStreamOnTranslationChange(this.toScopedKeys(key), interpolateParams);
+    return this.translateService.getStreamOnTranslationChange(this.toScopedKeys(key), interpolateParams, lang);
   }
 
-  stream(key: string | string[], interpolateParams?: InterpolationParameters): Observable<Translation> {
-    return this.translateService.stream(this.toScopedKeys(key), interpolateParams);
+  stream(
+    key: string | string[],
+    interpolateParams?: InterpolationParameters,
+    lang?: Language,
+  ): Observable<Translation> {
+    return this.translateService.stream(this.toScopedKeys(key), interpolateParams, lang);
   }
 
-  instant(key: string | string[], interpolateParams?: InterpolationParameters) {
-    return this.translateService.instant(this.toScopedKeys(key), interpolateParams);
+  instant(key: string | string[], interpolateParams?: InterpolationParameters, lang?: Language): Translation {
+    return this.translateService.instant(this.toScopedKeys(key), interpolateParams, lang);
+  }
+
+  translate(
+    key: string | string[] | (() => string | string[]),
+    params?: InterpolationParameters | (() => InterpolationParameters | undefined),
+    lang?: Language | (() => Language | undefined),
+  ): Signal<Translation | TranslationObject> {
+    return this.translateService.translate(
+      typeof key === 'function' ? () => this.toScopedKeys(key()) : this.toScopedKeys(key),
+      params,
+      lang,
+    );
   }
 
   set(key: string, translation: string | TranslationObject, lang?: Language): void {
     this.translateService.set(this.toScopedKey(key), translation, lang);
+  }
+
+  setCompiledTranslation(lang: Language, translations: InterpolatableTranslationObject, shouldMerge?: boolean): void {
+    this.translateService.setCompiledTranslation(lang, translations, shouldMerge);
+  }
+
+  getTranslations(language: Language): InterpolatableTranslationObject {
+    return this.translateService.getTranslations(language);
   }
 
   reloadLang(lang: Language): Observable<InterpolatableTranslationObject> {
@@ -126,27 +144,55 @@ export class ScopedTranslateService implements ITranslateService {
     return this.translateService.getBrowserCultureLang();
   }
 
-  setDefaultLang(lang: Language): Observable<InterpolatableTranslationObject> {
-    return this.translateService.setDefaultLang(lang);
-  }
-
-  getDefaultLang(): Language | null {
-    return this.translateService.getDefaultLang();
-  }
-
-  get currentLang(): string {
+  get currentLang(): Signal<Language | null> {
     return this.translateService.currentLang;
   }
 
-  get defaultLang(): string | null {
-    return this.translateService.defaultLang;
+  get fallbackLang(): Signal<Language | null> {
+    return this.translateService.fallbackLang;
   }
 
-  get langs(): readonly Language[] {
-    return this.translateService.langs;
+  get fallbackLangs(): Signal<readonly Language[]> {
+    return this.translateService.fallbackLangs;
+  }
+
+  get isLoading(): Signal<boolean> {
+    return this.translateService.isLoading;
+  }
+
+  get onTranslationRefresh(): Observable<void> {
+    return this.translateService.onTranslationRefresh;
   }
 
   addLangs(langs: string[]): void {
     this.translateService.addLangs(langs);
+  }
+
+  setFallbackLangs(langs: readonly Language[]): Observable<InterpolatableTranslationObject[]> {
+    return this.translateService.setFallbackLangs(langs);
+  }
+
+  getFallbackLangs(): readonly Language[] {
+    return this.translateService.getFallbackLangs();
+  }
+
+  deleteLanguage(lang: Language): void {
+    this.translateService.deleteLanguage(lang);
+  }
+
+  getAsync(key: string | string[], interpolateParams?: InterpolationParameters, lang?: Language): Promise<Translation> {
+    return this.translateService.getAsync(this.toScopedKeys(key), interpolateParams, lang);
+  }
+
+  hasTranslationKey(key: string, lang?: Language): boolean {
+    return this.translateService.hasTranslationKey(this.toScopedKey(key), lang);
+  }
+
+  getParent(): ITranslateService | null {
+    return this.translateService.getParent();
+  }
+
+  getRoot(): ITranslateService {
+    return this.translateService.getRoot();
   }
 }

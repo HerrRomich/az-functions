@@ -50,7 +50,6 @@ export const appConfig: ApplicationConfig = {
     provideTranslateService({
       fallbackLang: 'en',
       lang: 'en',
-      extend: true,
     }),
     RouterSupportService,
     importProvidersFrom([

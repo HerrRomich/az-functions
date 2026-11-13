@@ -73,14 +73,17 @@
     }
 
     .mat-mdc-row {
-      &.selected-truck {
-        background-color: var.$selected-table-background !important;
-      }
        &:nth-child(odd) {
         background-color: var.$odd-table-background;
       }
       &:nth-child(even) {
         background-color: var.$even-table-background;
+      }
+      &:hover {
+        background-color: var.$hovered-table-background;
+      }
+      &.selected-truck {
+        background-color: var.$selected-table-background;
       }
     }
   }

@@ -10,6 +10,6 @@ export class ScopedTranslatePipe extends TranslatePipe implements PipeTransform 
   constructor() {
     super();
     const translateService = inject(ScopedTranslateService);
-    Reflect.set(this, 'translate', translateService);
+    Reflect.set(this, 'translateService', translateService);
   }
 }

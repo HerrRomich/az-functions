@@ -1,5 +1,4 @@
 import { TranslationObject } from '@ngx-translate/core';
-import { PartialDeep } from 'type-fest';
 
 export const EN = {
   'truck-list': {
@@ -14,4 +13,4 @@ export const EN = {
   },
 } satisfies TranslationObject;
 
-export type Translations = PartialDeep<typeof EN>;
+export type Translations = typeof EN;

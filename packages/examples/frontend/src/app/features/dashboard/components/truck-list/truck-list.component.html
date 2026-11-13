@@ -50,5 +50,7 @@
   <mat-row
     *matRowDef="let row; columns: displayedColumns()"
     [ngClass]="{ 'selected-truck': selectedTruck()?.id === row.id }"
+    (mouseenter)="hoverTruck(row.id)"
+    (mouseleave)="hoverTruck()"
   ></mat-row>
 </mat-table>

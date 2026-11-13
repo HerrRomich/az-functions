@@ -77,4 +77,8 @@ export class TruckList {
         return STATE_ICONS.maintenance;
     }
   }
+
+  protected hoverTruck(truckId?: string) {
+    this.olMapService.selectedTruck.set(truckId);
+  }
 }

@@ -16,8 +16,7 @@ errors); 7–8 cover the folder as a published contract and its versioning lifec
 
 A `RestApplication` (`@herrromich/az-functions`) is **one OpenAPI document**: one `name`, one `context`
 (URL prefix — the platform builds each route as `context + '/' + controllerPath + operationPath`), one
-`openApiConfig` (title, version, tags, security schemes). Everything registered under it shares that
-context, that security scheme set, and that published spec.
+`openApiConfig` (title, version, tags, security schemes).
 
 - One folder per `RestApplication`: `rest/<application>/`, e.g. `rest/orders/`, `rest/console/`,
   `rest/logging/`.
@@ -50,10 +49,8 @@ in the URL, stay consistent within a folder:
   `rest/logging/log-levels/`.
 - **Hierarchical subfolders** (a resource is nested under its parent in the URL path): mirror that URL
   nesting as folder nesting, one level per path segment owning an id, each level keeping its own
-  `<resource>.controller.ts`/`.dto.ts`/`.mapper.ts`. A controller at a given level declares only its own
-  path segment (`path: '/{customerId}/orders'`, `path: '/{orderId}/items'`, ...) — the platform
-  concatenates the ancestors' `path`s, it does not come from the folder nesting itself. For
-  `/customers/{customerId}/orders/{orderId}/items/{itemId}`:
+  `<resource>.controller.ts`/`.dto.ts`/`.mapper.ts` and declaring only its own path segment (the platform
+  concatenates ancestors' `path`s). For `/customers/{customerId}/orders/{orderId}/items/{itemId}`:
 
   ```
   rest/orders/
@@ -68,19 +65,13 @@ Every application folder ends with an `index.ts` barrel that:
 - re-exports the `RestApplication` constant from the folder;
 - declares and exports an aggregated `<App>Controllers` constant — an array listing every
   `@HttpController` class of the application, e.g.
-  `export const OrdersControllers = [OrdersController, CustomersController];` — used to register the
-  application's controllers as a single unit;
+  `export const OrdersControllers = [OrdersController, CustomersController];` — this is the **only** way
+  controllers are consumed outside the folder; individual `@HttpController` classes are never re-exported
+  or referenced directly from outside;
 - declares and exports the feature's `ContainerModule` (`<Application>RestModule`, e.g.
-  `OrdersRestModule`, `ConsoleRestModule`) binding its mappers (`bind(<Resource>Mapper).toSelf()`).
-
-> **Note:** Only declare/export a `ContainerModule` when the folder has something to bind besides the
-> `@HttpController`s themselves (mappers, or any other injectable) — controllers are registered via
-> `<App>Controllers`/`HttpControllers`, not via the container module. If the application has no such
-> extra bindings, omit `<Application>RestModule` entirely rather than exporting an empty one.
-
-Individual `@HttpController` classes are **not** re-exported from the barrel — they are only ever consumed
-in aggregate via `<App>Controllers`/`HttpControllers`, imported directly by the barrel from their own
-`<resource>.controller.ts` file and never referenced from outside the folder.
+  `OrdersRestModule`, `ConsoleRestModule`) binding its mappers (`bind(<Resource>Mapper).toSelf()`) — only
+  when the folder has something to bind besides the controllers themselves; omit it entirely otherwise
+  rather than exporting an empty module.
 
 `rest/index.ts` (top-level barrel) aggregates every application: `HttpControllers` (the concatenation of
 every application's `<App>Controllers` array), `RestApplications` (all `RestApplication` consts), and
@@ -133,25 +124,10 @@ shape) and, where relevant, `responses` (documented error statuses).
   resource/feature into another's DTO or controller, even inside the same `RestApplication`, and even if
   the shape looks identical — duplication is the default, not a smell. Each controller's contract must be
   able to evolve (rename a field, tighten a constraint, add a property) without touching any other
-  controller's schema or breaking its consumers:
-
-  ```ts
-  // interfaces/rest/orders/orders.dto.ts — CustomerDtoSchema is NEVER imported here
-  export const OrderDtoSchema = z
-    .object({
-      id: IdDtoSchema.openapi({ description: 'Unique identifier of the order' }),
-      customer: z // duplicated, inline — not a reference to customers.dto.ts's CustomerDtoSchema
-        .object({ id: IdDtoSchema, name: z.string().openapi({ description: 'Name of the customer' }) })
-        .openapi({ description: 'Customer information' }),
-      status: OrderStatusScheme.openapi({ description: 'Status of the order' }),
-    })
-    .openapi('Order');
-  export type OrderDto = z.infer<typeof OrderDtoSchema>;
-  ```
-
-  Note that `customer` here only carries `id`/`name` — a subset of `CustomerDtoSchema`'s fields (which also
-  has `email`) — and is free to diverge further without ever touching `customers.dto.ts` or breaking
-  `GET /customers`.
+  controller's schema or breaking its consumers. E.g. `orders.dto.ts`'s `OrderDtoSchema` must declare its
+  own inline `customer: { id, name }` shape rather than importing `customers.dto.ts`'s `CustomerDtoSchema`
+  — even though both describe a customer — so it stays free to diverge (a subset of fields, a renamed
+  field, …) without touching or breaking `GET /customers`.
 
 - The only place a schema may be genuinely shared is `src/shared/rest/` (`IdDtoSchema`, `GeoJSONPointSchema`,
   `provideListResponseDtoSchema`, …). Reach for this **only** when the shape is a structural/technical
@@ -217,11 +193,9 @@ header, and request body with a parameter decorator on the method signature** �
 `@QueryParam`, `@HeaderParam`, `@Body` — over hand-writing the equivalent entry under
 `parameters`/`requestBody` in the operation decorator. A parameter decorator does two things at once: it
 binds/validates the runtime value against its Zod `schema` **and** documents that same parameter in the
-generated OpenAPI operation, so the contract and the implementation can't drift apart. The raw
-`parameters`/`requestBody` config only documents — it does nothing at runtime — so a hand-written entry
-there is an accepted equivalent (e.g. for the rare part of an operation that genuinely has no
-parameter-decorator equivalent), it's just **not preferable**: reach for it only when a parameter decorator
-doesn't cover what you need, not as a shortcut for something it already covers.
+generated OpenAPI operation, so the contract and the implementation can't drift apart. The raw config only
+documents (it does nothing at runtime), so reach for it only when a parameter decorator genuinely doesn't
+cover what you need — never as a shortcut for something it already covers.
 
 Everything else about the operation — `description`, `summary`, `tags`, `security`, `operationId` — stays
 in the verb decorator's config object; only the request-shape parts move onto the method signature.
@@ -318,13 +292,8 @@ fromCreateDto(createOrderRequestDto: OrderCreateRequestDto): CreateOrder {
 }
 ```
 
-```ts
-// interfaces/rest/orders/orders.controller.ts
-const order = await this.ordersRepository.getOrderById(orderId);
-if (!order) {
-  throw new NotFoundError(`Order with id=${orderId} not found`);
-}
-```
+A controller method follows the same pattern directly (see `getOrderById` in §6.1's example: `throw new
+NotFoundError(...)` when the lookup is empty — no `try`/`catch` needed since there's no error to translate).
 
 Never construct a `BaseHttpTriggerError` in a `<resource>.dto.ts` schema or a mapper's pure `toDto(...)`
 direction — those layers only produce/consume DTOs and domain objects, they don't know about HTTP status
@@ -387,10 +356,8 @@ This DTO ⇄ domain boundary is a hard rule, not a style preference:
   the domain result into the DTO shape (again, inline or via a mapper) before returning it or handing it to
   `HttpDirectResponseBuilder`.
 
-Respecting this boundary is what keeps the REST contract (DTOs) independent from business-logic changes: a
-domain type can be renamed or restructured without forcing every consumer of the generated OpenAPI spec to
-change, as long as the controller/mapper layer keeps translating between the two instead of leaking one
-into the other.
+Respecting this boundary keeps the REST contract (DTOs) independent from business-logic changes: a domain
+type can be renamed or restructured without forcing every consumer of the generated OpenAPI spec to change.
 
 ## 7. A `RestApplication` folder is a contract
 
@@ -413,14 +380,12 @@ in place:
   `v2` for the first time) holding its own controllers/dto/mapper/index, independent from other versions.
 - **Context**: give the versioned app its own `context`, e.g. `context: 'orders-api/v2'` (previous version
   keeps `'orders-api/v1'`, never bare `'orders-api'` once versioning starts) — this is the literal URL
-  prefix, so mismatched/overlapping contexts between versions is a routing collision, not just a style
-  issue.
+  prefix, so overlapping contexts between versions is a routing collision, not just a style issue.
 - **Documentation**: give the versioned app its own `name` constant (e.g. `ORDERS_API_V2`) and its own
   `openApiConfig.info.version`/`title` (or a version suffix in the title) so each version publishes a
   distinct OpenAPI document.
-- **No overlap, ever**: two versions of the same logical application must not share a `context`, a `name`,
-  or a folder — each is registered as its own independent `RestApplication` entry in `RestApplications`
-  (via the top-level `rest/index.ts` barrel) and contributes its own `<App>Controllers` constant (e.g.
+- Each version is registered as its own independent `RestApplication` entry in `RestApplications` (via the
+  top-level `rest/index.ts` barrel) and contributes its own `<App>Controllers` constant (e.g.
   `OrdersControllersV2`) to `HttpControllers`. Retiring an old version means removing its
   folder/registration, not overwriting it in place.
 - DTOs are **not** shared across versions either, for the same reasons as §4 — a v2 DTO evolving away from

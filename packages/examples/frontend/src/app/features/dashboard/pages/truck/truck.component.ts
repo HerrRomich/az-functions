@@ -7,10 +7,10 @@ import { DashboardService } from '../../services/dashboard.service';
 @Component({
   selector: 'fs-truck',
   imports: [RouterModule, MatButtonModule, MatIconModule],
-  templateUrl: './truck.html',
-  styleUrl: './truck.scss',
+  templateUrl: './truck.component.html',
+  styleUrl: './truck.component.scss',
 })
-export class Truck {
+export class TruckComponent {
   private readonly router = inject(Router);
   private readonly dashboardService = inject(DashboardService);
 

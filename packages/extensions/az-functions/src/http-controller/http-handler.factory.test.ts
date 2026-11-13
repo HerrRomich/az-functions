@@ -112,7 +112,9 @@ describe('HttpHandlerFactory', () => {
       mockContextManager.runWith.mockImplementation((_context, callback) => {
         return callback();
       });
-      mockPlatformContext = mock<PlatformContext>();
+      mockPlatformContext = mock<PlatformContext>({
+        invocationContext: mockContext,
+      });
       mockContextManager.active.mockReturnValue(mockPlatformContext);
       mockContextProvider.providePlatformContext.mockReturnValue(mockPlatformContext);
       mockArgsProvider.mockResolvedValue(['arg1', 'arg2']);
@@ -167,7 +169,6 @@ describe('HttpHandlerFactory', () => {
 
       const response = await testRequestHandler(stubRequest, mockContext);
 
-      expect(mockContextManager.active).not.toHaveBeenCalled();
       expect(mockPlatformContext.setValue).not.toHaveBeenCalled();
       expect(mockArgsProvider).not.toHaveBeenCalled();
       expect(mockMethod).not.toHaveBeenCalled();

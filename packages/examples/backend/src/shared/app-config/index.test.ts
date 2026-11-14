@@ -1,6 +1,5 @@
-import { PLATFORM_MODE } from '@herrromich/az-functions';
+import { APP_CONFIG, AppConfigModule, ConfigError } from '@fleet-sight/shared/app-config';
 import { Container } from 'inversify';
-import { APP_CONFIG, appConfigModule, ConfigError } from 'shared/app.config';
 
 describe('App config', () => {
   const OLD_ENV = process.env;
@@ -8,7 +7,6 @@ describe('App config', () => {
 
   beforeEach(() => {
     container = new Container({ defaultScope: 'Singleton' });
-    container.bind(PLATFORM_MODE).toConstantValue('start');
   });
 
   afterEach(() => {
@@ -23,7 +21,7 @@ describe('App config', () => {
       PersistenceSchema: 'test-schema',
       WorkerCount: '4',
     };
-    container.loadSync(appConfigModule);
+    container.loadSync(AppConfigModule);
 
     const appConfig = container.get(APP_CONFIG);
 
@@ -39,23 +37,8 @@ describe('App config', () => {
   it('should throw error if environment variables are missing', () => {
     process.env = { ...OLD_ENV };
     expect(() => {
-      container.loadSync(appConfigModule);
+      container.loadSync(AppConfigModule);
       container.get(APP_CONFIG);
     }).toThrowWithMessage(ConfigError, /^Invalid environment configuration:/);
-  });
-
-  it('should provide dummy config in non-start mode', () => {
-    container.rebindSync(PLATFORM_MODE).toConstantValue('print-open-api');
-    container.loadSync(appConfigModule);
-
-    const appConfig = container.get(APP_CONFIG);
-
-    expect(appConfig).toEqual({
-      persistence: {
-        connectionString: 'dummy-connection-string',
-        secureConnection: false,
-        schema: 'dummy-schema',
-      },
-    });
   });
 });

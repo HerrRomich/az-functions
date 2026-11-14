@@ -1,8 +1,9 @@
+import { AppConfig } from '@fleet-sight/shared/app-config';
 import { DataSource } from '@herrromich/transaction-manager';
 import { getPartialFixture } from '@utilities/test-utilities';
 import { mock, MockProxy } from 'jest-mock-extended';
-import { Migrator } from 'kysely';
-import { AppConfig } from 'shared/app.config';
+import { Migrator } from 'kysely/migration';
+import { IFleetSightDatabase } from '../persistence/index';
 import { FleetSightMigrationProvider } from './migration.provider';
 import { FleetSightMigrationService, MigrationError } from './migration.service';
 
@@ -15,12 +16,12 @@ jest.mock('kysely', () => {
 });
 
 describe('Migration service', () => {
-  let mockDataSource: MockProxy<DataSource<unknown>>;
+  let mockDataSource: MockProxy<DataSource<IFleetSightDatabase>>;
   let mockMigrationProvider: MockProxy<FleetSightMigrationProvider>;
   let subject: FleetSightMigrationService;
 
   beforeEach(() => {
-    mockDataSource = mock<DataSource<unknown>>();
+    mockDataSource = mock<DataSource<IFleetSightDatabase>>();
     mockMigrationProvider = mock<FleetSightMigrationProvider>();
 
     const testAppConfig = getPartialFixture<AppConfig>({

@@ -13,8 +13,10 @@ import {
   PostgresDialect,
 } from 'kysely';
 import { Pool } from 'pg';
-import { APP_CONFIG } from '../../app-config';
-import { DB_FACTORY, IFleetSightDatabase, KYSELY_DIALECT_FACTORY, PersistenceModule, PG_POOL_PROVIDER } from './index';
+import { PartialDeep } from 'type-fest';
+import { APP_CONFIG, AppConfig } from '../../app-config';
+import { IFleetSightDatabase } from '../database';
+import { DB_FACTORY, KYSELY_DIALECT_FACTORY, PersistenceModule, PG_POOL_PROVIDER } from './index';
 import { initPersistence } from './init';
 
 jest.mock('pg', () => ({
@@ -51,7 +53,7 @@ describe('PersistenceModule', () => {
         secureConnection: true,
         schema: 'test-schema',
       },
-    });
+    } as PartialDeep<AppConfig> as AppConfig);
     container.loadSync(PersistenceModule);
 
     mockLogger = mock<Logger>();

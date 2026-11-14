@@ -1,7 +1,7 @@
+import { FleetSightMigrationService } from '@fleet-sight/shared/startup/migration.service';
+import { StartupService } from '@fleet-sight/shared/startup/startup.service';
 import { Logger } from '@herrromich/az-functions';
 import { mock, MockProxy } from 'jest-mock-extended';
-import { FleetSightMigrationService } from 'shared/startup/migration.service';
-import { StartupService } from 'shared/startup/startup.service';
 
 describe('StartupService', () => {
   let mockLogger: MockProxy<Logger>;

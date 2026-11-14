@@ -1,5 +1,5 @@
+import { IFleetSightMigration } from '@fleet-sight/shared/startup/migration.model';
 import { mock } from 'jest-mock-extended';
-import { IFleetSightMigration } from 'shared/startup/migration.model';
 import { FleetSightMigrationProvider } from './migration.provider';
 
 describe('Migration provider', () => {

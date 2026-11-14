@@ -4,7 +4,7 @@ import { ContainerModule } from 'inversify';
 import { CamelCasePlugin, Dialect, Kysely, PostgresDialect } from 'kysely';
 import { Pool } from 'pg';
 import { APP_CONFIG } from '../../app-config';
-import { LOGGER_NAME_PREFIX } from '../../logger';
+import { LOG_LEVEL_DEFAULTS, LOGGER_NAME_PREFIX } from '../../logger';
 import { IFleetSightDatabase } from '../database';
 import { initPersistence } from './init';
 
@@ -75,4 +75,8 @@ export const PersistenceModule = new ContainerModule(({ bind }) => {
       return dbFactory();
     }),
   );
+  bind(LOG_LEVEL_DEFAULTS).toConstantValue({
+    key: PERSISTENCE_KYSELY_LOGGER_NAME,
+    value: 'error',
+  });
 });

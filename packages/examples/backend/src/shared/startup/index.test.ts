@@ -1,8 +1,8 @@
+import { APP_CONFIG, AppConfig } from '@fleet-sight/shared/app-config';
 import { Logger, LOGGER_FACTORY, STARTUP_SERVICE } from '@herrromich/az-functions';
 import { DataSource } from '@herrromich/transaction-manager';
 import { Container } from 'inversify';
 import { mock, MockProxy } from 'jest-mock-extended';
-import { APP_CONFIG, AppConfig } from 'shared/app.config';
 import { StartupModule } from '.';
 import { HashUtilitiesService } from '../utils';
 import { MIGRATION } from './migration.model';
